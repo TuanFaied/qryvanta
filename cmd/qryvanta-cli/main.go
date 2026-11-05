@@ -27,6 +27,16 @@ Commands:
   config show    Print the effective configuration (JSON)
   connections list [--json]
                  List saved connection profiles (passwords are never shown)
+  connections add --name N --server S [--port P] [--database D]
+                  [--auth sql|windows] [--user U] [--password-stdin]
+                  [--encrypt mandatory|strict|optional] [--trust-server-certificate]
+                  [--read-only-intent] [--timeout SECONDS]
+                 Save a profile. The password is read from stdin, never from a flag,
+                 and stored in the OS credential manager.
+  connections test NAME|ID [--json]
+                 Connect, report the server version and login, and disconnect
+  connections remove NAME|ID
+                 Delete a profile and its stored password
 
 Global flags:
   --config PATH  Use this configuration file instead of the default

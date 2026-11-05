@@ -124,8 +124,12 @@ func (p Profile) Validate() error {
 		errs["port"] = "must be between 1 and 65535, or 0 for the default"
 	}
 
-	if len([]rune(p.Database)) > MaxIdentLength || hasControl(p.Database) {
+	switch {
+	case len([]rune(p.Database)) > MaxIdentLength || hasControl(p.Database):
 		errs["database"] = fmt.Sprintf("must be at most %d characters without control characters", MaxIdentLength)
+	case p.ReadOnlyIntent && p.Database == "":
+		// SQL Server only routes read-intent connections when the database is named.
+		errs["database"] = "is required when read-only application intent is enabled"
 	}
 
 	switch p.Auth {

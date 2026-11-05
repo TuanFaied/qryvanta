@@ -54,6 +54,7 @@ func TestValidateRejectsInvalidFields(t *testing.T) {
 		{"trustServerCertificate", func(p *Profile) { p.Encrypt = EncryptStrict; p.TrustServerCertificate = true }},
 		{"connectTimeoutSeconds", func(p *Profile) { p.ConnectTimeoutSeconds = MaxConnectTimeout + 1 }},
 		{"database", func(p *Profile) { p.Database = "bad\x00name" }},
+		{"database", func(p *Profile) { p.ReadOnlyIntent = true; p.Database = "" }},
 	}
 	for _, tt := range tests {
 		p := validSQLProfile().Normalize()
