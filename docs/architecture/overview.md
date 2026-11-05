@@ -120,7 +120,11 @@ placeholder packages.
    them through small interfaces defined by the consumer.
 4. The frontend contains no SQL execution logic, no credential handling, and no diagnostic
    rules. It renders what the core returns.
-5. Credentials never cross into JavaScript. The frontend refers to a connection by ID only.
+5. Stored credentials never cross into JavaScript. The frontend refers to a connection by ID.
+   A password moves in one direction only: the connection dialog may send a new one
+   (`desktop.ConnectionInput`, with a keep, set or clear action), but no bound method ever
+   returns one. Responses carry `hasPassword` instead, and a test checks that no response
+   contains a password field.
 
 ## 5. Key decisions
 

@@ -58,6 +58,17 @@ var ErrPasswordRequired = errors.New("a password is required for this connection
 // ErrNotConnected is returned when a profile has no open connection.
 var ErrNotConnected = errors.New("not connected")
 
+// CertificateHint is appended by drivers to TLS certificate validation errors, so CLI users
+// see what to do. Front ends with their own guidance can strip it with TrimCertificateHint.
+const CertificateHint = "The server's TLS certificate is not trusted by this computer: install a " +
+	"trusted certificate on the server, or, for a local development server with a self-signed " +
+	"certificate, enable \"Trust server certificate\" for this connection"
+
+// TrimCertificateHint removes CertificateHint from an error message.
+func TrimCertificateHint(msg string) string {
+	return strings.TrimSuffix(msg, ". "+CertificateHint)
+}
+
 // ServerError is a database error reported by the server, with secrets removed.
 type ServerError struct {
 	Number  int32  `json:"number"`

@@ -22,6 +22,16 @@ All notable changes to this project are documented here. The format follows
   `QryvantaSample` fixture database, plus a read-only `qryvanta_reader` login.
 - Ten sample queries (`tests/sample_queries`), each buggy and corrected, with the expected
   results in `manifest.json`, checked by `tests/integration` and a Linux CI job.
+- Connection management in the desktop app:
+  - A connection dialog to create, edit and test connections, with cancellable tests and
+    specific guidance for login, certificate, timeout and network failures.
+  - Delete with confirmation.
+  - An explorer list with search, a context menu and keyboard actions (Enter, F2, Del).
+  - A header connection selector, and connection details in the status bar.
+  - Passwords are write-only from the UI: the frontend can set, replace or remove one but never
+    receives it.
+- `QRYVANTA_CONFIG` points the desktop app at another config (and connections) file for
+  development and manual testing.
 - Architecture document, roadmap, and Phase 1 plan.
 - Wails v3 desktop application and `qryvanta-cli`, sharing one Go core.
 - Configuration with validation and atomic saves. An invalid file is moved aside at desktop startup.
@@ -36,8 +46,13 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - Profiles with read-only application intent must name a database (a SQL Server requirement).
+- The explorer and analysis panels keep their pixel width when the window is resized, and start
+  at 260 px and 300 px, so they no longer collapse on narrow windows.
 
 ### Fixed
+
+- The Settings dialog no longer overflows its frame on short windows. It now scrolls inside the
+  dialog, with the footer kept visible.
 
 - `--password-stdin` ignores the UTF-8 byte-order mark that Windows PowerShell 5.1 puts in front
   of piped text. Before this fix, passwords piped from PowerShell were stored with three

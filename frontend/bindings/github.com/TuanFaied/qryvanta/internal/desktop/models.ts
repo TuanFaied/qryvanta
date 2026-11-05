@@ -6,6 +6,9 @@
 import * as config$0 from "../config/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as connection$0 from "../connection/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as version$0 from "../version/models.js";
 
 /**
@@ -19,11 +22,116 @@ export interface AppInfo {
 }
 
 /**
+ * ConnectResult is returned by Connect.
+ */
+export interface ConnectResult {
+    "ok": boolean;
+    "server": connection$0.ServerInfo;
+    "error": ConnectionError | null;
+}
+
+/**
+ * ConnectionDTO is a saved connection as the UI sees it.
+ */
+export interface ConnectionDTO {
+    "profile": connection$0.Profile;
+    "hasPassword": boolean;
+    "connected": boolean;
+}
+
+/**
+ * ConnectionError is a failure the UI can display. Message never contains secrets.
+ */
+export interface ConnectionError {
+    "code": ErrorCode;
+
+    /**
+     * ServerErrorNumber is the SQL Server error number, when the server reported one.
+     */
+    "serverErrorNumber": number;
+    "message": string;
+}
+
+/**
+ * ConnectionInput is what the connection dialog submits. Profile.ID is empty for a new
+ * connection.
+ */
+export interface ConnectionInput {
+    "profile": connection$0.Profile;
+    "passwordAction": PasswordAction;
+    "password": string;
+}
+
+/**
+ * ErrorCode classifies connection failures so the UI can show specific guidance.
+ */
+export enum ErrorCode {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ErrPasswordRequired = "password_required",
+    ErrLoginFailed = "login_failed",
+    ErrCertificate = "certificate",
+    ErrTimeout = "timeout",
+    ErrCancelled = "cancelled",
+    ErrServer = "server",
+    ErrNetwork = "network",
+    ErrNotFound = "not_found",
+};
+
+/**
+ * PasswordAction says what to do with the stored password when saving or testing.
+ */
+export enum PasswordAction {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * PasswordKeep keeps the stored password (none, for a new connection).
+     */
+    PasswordKeep = "keep",
+
+    /**
+     * PasswordSet uses ConnectionInput.Password.
+     */
+    PasswordSet = "set",
+
+    /**
+     * PasswordClear removes the stored password.
+     */
+    PasswordClear = "clear",
+};
+
+/**
  * SaveConfigResult reports the outcome of UpdateConfig. Field errors are returned as data,
  * not as a rejected promise, so the settings form can show them next to each field.
  */
 export interface SaveConfigResult {
     "ok": boolean;
     "config": config$0.Config;
+    "fieldErrors": { [_ in string]?: string } | null;
+}
+
+/**
+ * SaveConnectionResult is returned by Save. Validation problems are data, not errors.
+ */
+export interface SaveConnectionResult {
+    "ok": boolean;
+    "connection": ConnectionDTO | null;
+    "fieldErrors": { [_ in string]?: string } | null;
+}
+
+/**
+ * TestConnectionResult is returned by Test.
+ */
+export interface TestConnectionResult {
+    "ok": boolean;
+    "server": connection$0.ServerInfo;
+    "latencyMs": number;
+    "error": ConnectionError | null;
     "fieldErrors": { [_ in string]?: string } | null;
 }

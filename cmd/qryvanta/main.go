@@ -22,7 +22,12 @@ func main() {
 }
 
 func run() error {
-	core, err := app.New(app.Options{RecoverInvalidConfig: true})
+	core, err := app.New(app.Options{
+		// QRYVANTA_CONFIG points the app at another config file (and the connections file next
+		// to it), for development and manual testing without touching real settings.
+		ConfigPath:           os.Getenv("QRYVANTA_CONFIG"),
+		RecoverInvalidConfig: true,
+	})
 	if err != nil {
 		return fmt.Errorf("start qryvanta: %w", err)
 	}
@@ -34,6 +39,7 @@ func run() error {
 		Logger:      core.Logger(),
 		Services: []application.Service{
 			application.NewService(desktop.NewAppService(core)),
+			application.NewService(desktop.NewConnectionService(core)),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(frontend.Assets),

@@ -5,11 +5,16 @@ import { Header } from "@/components/shell/Header";
 import { StatusBar } from "@/components/shell/StatusBar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { AnalysisPanel } from "@/features/analysis/AnalysisPanel";
+import { ConnectionDialog } from "@/features/connections/ConnectionDialog";
+import { useConnectionDialog } from "@/features/connections/connection-dialog-store";
+import { ConnectionSelector } from "@/features/connections/ConnectionSelector";
+import { DeleteConnectionDialog } from "@/features/connections/DeleteConnectionDialog";
 import { ExplorerPanel } from "@/features/explorer/ExplorerPanel";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
 import { BottomPanel } from "@/features/workspace/BottomPanel";
 import { WelcomePage } from "@/features/workspace/WelcomePage";
-import type { AppInfo, Config, SaveResult, Theme } from "@/services/backend";
+import { backend, type AppInfo, type Config, type SaveResult, type Theme } from "@/services/backend";
+import { useConnectionStore } from "@/stores/connection-store";
 import { safeStorage } from "@/utils/safe-storage";
 import type { PanelId } from "./panels";
 
@@ -53,6 +58,12 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
 
   const openSettings = () => setSettingsOpen(true);
 
+  const conn = useConnectionStore();
+  const dialog = useConnectionDialog();
+  const active = conn.connections.find((c) => c.profile.id === conn.activeId) ?? null;
+  const connect = (id: string) => void conn.connect(id);
+  const disconnect = () => void conn.disconnect();
+
   return (
     <div className="flex h-full flex-col">
       <Header
@@ -62,6 +73,19 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         onOpenSettings={openSettings}
         panels={visible}
         onTogglePanel={togglePanel}
+        database={conn.activeServer?.database ?? null}
+        connectionControls={
+          <ConnectionSelector
+            connections={conn.connections}
+            activeId={conn.activeId}
+            connectingId={conn.connectingId}
+            connectError={conn.connectError}
+            onConnect={connect}
+            onDisconnect={disconnect}
+            onNew={dialog.openNew}
+            onEdit={dialog.openEdit}
+          />
+        }
       />
 
       <ResizablePanelGroup
@@ -73,14 +97,27 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         <ResizablePanel
           id="explorer"
           panelRef={refs.explorer}
-          defaultSize="18"
+          defaultSize={260}
+          groupResizeBehavior="preserve-pixel-size"
           minSize={180}
           maxSize="40"
           collapsible
           collapsedSize={0}
           onResize={trackVisibility("explorer")}
         >
-          <ExplorerPanel />
+          <ExplorerPanel
+            connections={conn.connections}
+            activeId={conn.activeId}
+            connectingId={conn.connectingId}
+            loading={conn.status === "loading"}
+            loadError={conn.loadError}
+            onRefresh={() => void conn.load()}
+            onNew={dialog.openNew}
+            onEdit={dialog.openEdit}
+            onDelete={dialog.confirmDelete}
+            onConnect={connect}
+            onDisconnect={disconnect}
+          />
         </ResizablePanel>
         <ResizableHandle />
 
@@ -103,7 +140,11 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
                   </div>
                 </div>
                 <div className="min-h-0 flex-1">
-                  <WelcomePage warnings={info.startupWarnings ?? []} />
+                  <WelcomePage
+                    warnings={info.startupWarnings ?? []}
+                    connectedTo={active && conn.activeServer ? active.profile.name : null}
+                    onNewConnection={dialog.openNew}
+                  />
                 </div>
               </main>
             </ResizablePanel>
@@ -126,7 +167,8 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         <ResizablePanel
           id="analysis"
           panelRef={refs.analysis}
-          defaultSize="22"
+          defaultSize={300}
+          groupResizeBehavior="preserve-pixel-size"
           minSize={220}
           maxSize="45"
           collapsible
@@ -137,7 +179,24 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      <StatusBar config={config} onOpenSettings={openSettings} />
+      <StatusBar
+        config={config}
+        onOpenSettings={openSettings}
+        connection={active && conn.activeServer ? { name: active.profile.name, server: conn.activeServer } : null}
+      />
+
+      <ConnectionDialog
+        open={dialog.open}
+        onOpenChange={(open) => !open && dialog.close()}
+        editing={dialog.editing}
+        onSave={conn.save}
+        onTest={backend.testConnection}
+      />
+      <DeleteConnectionDialog
+        target={dialog.deleteTarget}
+        onCancel={() => dialog.confirmDelete(null)}
+        onConfirm={conn.remove}
+      />
 
       <SettingsDialog
         open={settingsOpen}

@@ -9,11 +9,11 @@ import {
   PanelLeft,
   PanelRight,
   Play,
-  Plug,
   Settings,
   Square,
   Sun,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ import { IconButton } from "@/components/shell/IconButton";
 import { Theme } from "@/services/backend";
 import type { PanelId } from "@/layouts/panels";
 
-const notYet = "Available once connections and the editor land (Phase 2–3)";
+const notYet = "Available once the SQL editor lands (Phase 3)";
 
 const themeOptions = [
   { value: Theme.ThemeDark, label: "Dark", icon: Moon },
@@ -44,9 +44,22 @@ interface HeaderProps {
   onOpenSettings: () => void;
   panels: Record<PanelId, boolean>;
   onTogglePanel: (id: PanelId) => void;
+  /** The connection selector, provided by the connections feature. */
+  connectionControls: ReactNode;
+  /** Current database of the active connection, if any. */
+  database: string | null;
 }
 
-export function Header({ version, theme, onThemeChange, onOpenSettings, panels, onTogglePanel }: HeaderProps) {
+export function Header({
+  version,
+  theme,
+  onThemeChange,
+  onOpenSettings,
+  panels,
+  onTogglePanel,
+  connectionControls,
+  database,
+}: HeaderProps) {
   const ThemeIcon = themeOptions.find((t) => t.value === theme)?.icon ?? Moon;
 
   return (
@@ -54,31 +67,20 @@ export function Header({ version, theme, onThemeChange, onOpenSettings, panels, 
       <Logo className="px-1.5" />
       <Separator orientation="vertical" className="mx-1.5 !h-5" />
 
-      {/* Connection and database context. Real selectors arrive in Phase 2. */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span tabIndex={0} className="inline-flex">
-            <Button variant="ghost" size="sm" disabled className="h-7 gap-1.5 px-2 text-xs font-normal">
-              <Plug className="size-3.5" />
-              <span className="size-1.5 rounded-full bg-muted-foreground/50" aria-hidden="true" />
-              No connection
-              <ChevronDown className="size-3 opacity-60" />
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Connection management arrives in Phase 2</TooltipContent>
-      </Tooltip>
+      {connectionControls}
       <Tooltip>
         <TooltipTrigger asChild>
           <span tabIndex={0} className="inline-flex">
             <Button variant="ghost" size="sm" disabled className="h-7 gap-1.5 px-2 text-xs font-normal">
               <Database className="size-3.5" />
-              No database
+              {database || "No database"}
               <ChevronDown className="size-3 opacity-60" />
             </Button>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Select a connection first</TooltipContent>
+        <TooltipContent side="bottom">
+          {database ? "Switching databases arrives with the schema explorer (#9)" : "Connect to a server first"}
+        </TooltipContent>
       </Tooltip>
 
       <Separator orientation="vertical" className="mx-1.5 !h-5" />

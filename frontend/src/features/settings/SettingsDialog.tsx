@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { LogLevel, Theme, type AppInfo, type Config, type SaveResult } from "@/services/backend";
@@ -106,7 +105,7 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <form
             id="settings-form"
             className="space-y-6 px-5 py-4"
@@ -209,7 +208,7 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
               )}
             </Section>
           </form>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="items-center border-t px-5 py-3 sm:justify-between">
           <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => void resetToDefaults()}>
