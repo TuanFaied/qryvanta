@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Connection profiles (`internal/connection`): validation, `connections.json` store, passwords in
+  Windows Credential Manager, and a manager that keeps profiles and credentials consistent.
+- `qryvanta-cli connections list [--json]`.
+
 - Architecture document, roadmap, and Phase 1 plan.
 - Wails v3 desktop application and `qryvanta-cli`, sharing one Go core.
 - Configuration with validation and atomic saves. An invalid file is moved aside at desktop startup.

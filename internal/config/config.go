@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/TuanFaied/qryvanta/internal/fsutil"
 )
 
 // SchemaVersion is the current configuration file format version.
@@ -231,35 +233,8 @@ func Save(path string, cfg Config) error {
 		return fmt.Errorf("encode config: %w", err)
 	}
 	data = append(data, '\n')
-
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("create config directory: %w", err)
-	}
-	tmp, err := os.CreateTemp(dir, ".config-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("create temp config: %w", err)
-	}
-	tmpName := tmp.Name()
-	cleanup := func() { _ = os.Remove(tmpName) }
-
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		cleanup()
-		return fmt.Errorf("write temp config: %w", err)
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		cleanup()
-		return fmt.Errorf("sync temp config: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		cleanup()
-		return fmt.Errorf("close temp config: %w", err)
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		cleanup()
-		return fmt.Errorf("replace config: %w", err)
+	if err := fsutil.WriteFileAtomic(path, data, 0o600); err != nil {
+		return fmt.Errorf("save config: %w", err)
 	}
 	return nil
 }

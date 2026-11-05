@@ -25,6 +25,8 @@ Commands:
   version        Print version information
   config path    Print the configuration file path
   config show    Print the effective configuration (JSON)
+  connections list [--json]
+                 List saved connection profiles (passwords are never shown)
 
 Global flags:
   --config PATH  Use this configuration file instead of the default
@@ -75,6 +77,8 @@ func dispatch(args []string, stdout io.Writer) error {
 		return cmdVersion(rest[1:], stdout)
 	case "config":
 		return cmdConfig(rest[1:], *configPath, stdout)
+	case "connections":
+		return cmdConnections(rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout)
 	case "help":
 		return flag.ErrHelp
 	default:

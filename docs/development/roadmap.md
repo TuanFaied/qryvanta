@@ -18,16 +18,16 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 
 Details: [phase-1-plan.md](phase-1-plan.md)
 
-## Phase 2: Database connectivity ⬜
+## Phase 2: Database connectivity 🚧
 
-- `dialect` interface and SQL Server implementation (go-mssqldb)
-- Connection profiles: create, edit, delete, test, connect, disconnect
-- SQL Server authentication and Windows integrated authentication
-- Passwords in Windows Credential Manager. The config stores only a reference.
-- Database selection; schema explorer (schemas, tables, views, procedures, columns)
-- Permission check: report whether the login can write
-- Docker Compose with SQL Server 2022 and the **fixture database** (10 problem scenarios)
-- CLI: `qryvanta-cli connections list|test`
+- ✅ Connection profile model, file store, and credential storage in Windows Credential Manager (#5)
+- `dialect` interface and SQL Server implementation (go-mssqldb) (#6)
+- Connection profiles: test, connect, disconnect; management UI (#8)
+- SQL Server authentication and Windows integrated authentication (#6)
+- Database selection; schema explorer (schemas, tables, views, procedures, columns) (#9)
+- Permission check: report whether the login can write (#10)
+- Docker Compose with SQL Server 2022 and the **fixture database** (10 problem scenarios) (#7)
+- CLI: ✅ `qryvanta-cli connections list` (#5); `connections test` (#6)
 
 ## Phase 3: SQL editor and execution ⬜
 

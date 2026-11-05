@@ -1,7 +1,7 @@
 // Package app is the composition root shared by the desktop app and the CLI.
 //
-// It owns configuration and logging, and (in later phases) constructs the concrete
-// implementations of the core engine: SQL Server dialect, parser sidecar, local store.
+// It owns configuration, logging and connection profiles, and (in later phases) constructs
+// the remaining core implementations: SQL Server dialect, parser sidecar, local store.
 // Front ends depend on *Core and never build those pieces themselves.
 package app
 
@@ -11,11 +11,13 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"slices"
 	"sync"
 	"time"
 
 	"github.com/TuanFaied/qryvanta/internal/config"
+	"github.com/TuanFaied/qryvanta/internal/connection"
 	"github.com/TuanFaied/qryvanta/internal/logging"
 	"github.com/TuanFaied/qryvanta/internal/version"
 )
@@ -32,13 +34,20 @@ type Options struct {
 	// defaults, recording a startup warning. The desktop app sets it so a bad file cannot
 	// prevent the app from opening; the CLI leaves it off and reports the error.
 	RecoverInvalidConfig bool
+	// ConnectionsPath overrides the connections file (default: connections.json next to the
+	// config file).
+	ConnectionsPath string
+	// Credentials overrides the credential store (default: the OS credential manager).
+	// Tests pass connection.NewMemoryStore() so they never touch the real keyring.
+	Credentials connection.CredentialStore
 }
 
 // Core holds the shared application state.
 type Core struct {
-	configPath string
-	log        *logging.Logger
-	warnings   []string
+	configPath  string
+	log         *logging.Logger
+	warnings    []string
+	connections *connection.Manager
 
 	mu  sync.RWMutex
 	cfg config.Config
@@ -98,8 +107,21 @@ func New(opts Options) (*Core, error) {
 		log.Warn(w)
 	}
 
-	return &Core{configPath: path, log: log, cfg: cfg, warnings: warnings}, nil
+	connPath := opts.ConnectionsPath
+	if connPath == "" {
+		connPath = filepath.Join(filepath.Dir(path), connection.FileName)
+	}
+	creds := opts.Credentials
+	if creds == nil {
+		creds = connection.NewKeyringStore()
+	}
+	conns := connection.NewManager(connection.NewStore(connPath), creds, log.Logger)
+
+	return &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns}, nil
 }
+
+// Connections returns the connection profile manager.
+func (c *Core) Connections() *connection.Manager { return c.connections }
 
 // StartupWarnings returns problems found during startup that the user should see.
 func (c *Core) StartupWarnings() []string { return slices.Clone(c.warnings) }
