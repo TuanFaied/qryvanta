@@ -44,9 +44,52 @@ pnpm -C frontend test
 - Keep TypeScript strict. Components call the backend only through `frontend/src/services`.
 - Update the documentation in the same pull request when behavior or architecture changes.
 
-## Commit messages
+## Workflow
 
-Use short, imperative subject lines (`Add JOIN fan-out probe`). Reference issues where relevant.
+1. Every change starts from an issue. Use the issue templates.
+2. Create a branch from `main` named after the issue:
+
+   ```
+   <type>/<issue-number>-<short-kebab-description>
+   ```
+
+   | Type | Use for |
+   |---|---|
+   | `feat` | New functionality |
+   | `fix` | Bug fixes |
+   | `docs` | Documentation only |
+   | `refactor` | Code changes that do not change behavior |
+   | `test` | Tests only |
+   | `chore` | Build, dependencies, tooling |
+   | `ci` | GitHub Actions and release automation |
+
+   Examples: `feat/3-connection-profiles`, `fix/12-settings-timeout-validation`, `docs/7-threat-model`.
+3. Open a pull request against `main` using the template, and link the issue with `Closes #<n>`.
+4. CI (Go vet/test, frontend typecheck/test/build, and the Wails desktop build) must pass.
+5. Pull requests are squash-merged, so the PR title becomes the commit on `main`.
+
+## Commit messages and PR titles
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat(connection): add connection profile store
+fix(settings): reject zero query timeout
+docs: describe probe approval flow
+```
+
+Scopes match package or feature names: `config`, `logging`, `connection`, `executor`, `parser`,
+`analyzer`, `plan`, `ui`, `cli`, `ci`, and so on.
+
+## Labels
+
+| Prefix | Meaning |
+|---|---|
+| `type:` | bug, feature, task, diagnostic-rule, docs, chore |
+| `area:` | core, connectivity, execution, parser, diagnostics, plans, ui, cli, security, ci, deps |
+| `phase:` | Roadmap phase the work belongs to |
+| `status:` | triage, blocked |
+| `good first issue`, `help wanted` | Contributor-friendly issues |
 
 ## License
 

@@ -1,0 +1,50 @@
+name: Feature request
+description: Suggest a new capability or an improvement.
+title: "feat: "
+labels: ["type: feature", "status: triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should Qryvanta behave? Mock-ups or examples are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Desktop app (UI)
+        - CLI
+        - Connections
+        - Query execution
+        - Parser
+        - Diagnostics
+        - Execution plans
+        - Result comparison
+        - Reports and history
+        - Security
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles
+      description: Qryvanta is deterministic, local and read-only by default ([architecture](https://github.com/TuanFaied/qryvanta/blob/main/docs/architecture/overview.md)).
+      options:
+        - label: This request does not require sending queries or results to an external service.
+          required: true

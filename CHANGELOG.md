@@ -16,3 +16,5 @@ All notable changes to this project are documented here. The format follows
   Panels are resizable and collapsible, with dark and light themes.
 - Settings dialog backed by the real configuration, with per-field validation errors.
 - Architecture test that keeps the core free of Wails.
+- GitHub issue forms (bug, feature, SQL logic case, task), PR template, CODEOWNERS, Dependabot,
+  Code of Conduct, and a CI workflow (Go, frontend, and the Wails desktop build on Windows).

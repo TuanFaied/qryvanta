@@ -1,0 +1,48 @@
+name: SQL logic case (diagnostic rule)
+description: A query that ran without errors but returned the wrong rows. These become diagnostic rules and test fixtures.
+title: "diag: "
+labels: ["type: diagnostic-rule", "area: diagnostics", "status: triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Real-world SQL logic bugs are the most valuable contribution to Qryvanta.
+        Please use **made-up table and column names** and synthetic data.
+  - type: textarea
+    id: query
+    attributes:
+      label: The query
+      render: sql
+    validations:
+      required: true
+  - type: textarea
+    id: schema
+    attributes:
+      label: Minimal schema and data
+      description: CREATE TABLE and INSERT statements that reproduce the problem.
+      render: sql
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: What did you expect, for example "one row per order" or "312 employees"?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: cause
+    attributes:
+      label: Root cause (if known)
+      description: For example, "OrderItems has several rows per OrderID, so the JOIN multiplies rows before SUM".
+  - type: textarea
+    id: evidence
+    attributes:
+      label: How could a tool prove it?
+      description: Which evidence would confirm the issue? For example, the query text alone, column metadata, the execution plan, or a COUNT probe.

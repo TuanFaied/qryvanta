@@ -1,0 +1,28 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    labels: ["type: chore", "area: deps"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    labels: ["type: chore", "area: deps"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      frontend-minor:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: ["type: chore", "area: ci"]
+    commit-message:
+      prefix: "ci"
