@@ -1,0 +1,62 @@
+version: '3'
+
+vars:
+  APP_NAME: "qryvanta"
+  BIN_DIR: "bin"
+  # Desktop entry point. Wails bindings, Windows resources and the desktop binary all use it.
+  MAIN_PKG: "./cmd/qryvanta"
+  CLI_PKG: "./cmd/qryvanta-cli"
+  PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "pnpm"}}'
+  VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  VERSION: '{{.VERSION | default "0.1.0-dev"}}'
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo unknown
+  VERSION_LDFLAGS: >-
+    -X github.com/TuanFaied/qryvanta/internal/version.Version={{.VERSION}}
+    -X github.com/TuanFaied/qryvanta/internal/version.Commit={{.COMMIT}}
+  GOOS: '{{.GOOS | default OS}}'
+
+includes:
+  common: ./build/Taskfile.yml
+  windows: ./build/windows/Taskfile.yml
+  darwin: ./build/darwin/Taskfile.yml
+  linux: ./build/linux/Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the desktop application
+    cmds:
+      - task: "{{.GOOS}}:build"
+
+  build:cli:
+    summary: Builds the command-line tool
+    cmds:
+      - go build -trimpath -ldflags="-s -w {{.VERSION_LDFLAGS}}" -o "{{.BIN_DIR}}/{{.APP_NAME}}-cli{{exeExt}}" {{.CLI_PKG}}
+
+  package:
+    summary: Packages a production build of the desktop application
+    cmds:
+      - task: "{{.GOOS}}:package"
+
+  run:
+    summary: Runs the desktop application
+    cmds:
+      - task: "{{.GOOS}}:run"
+
+  dev:
+    summary: Runs the desktop application in development mode with hot reload
+    cmds:
+      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+
+  test:
+    summary: Runs Go and frontend tests
+    cmds:
+      - go vet ./...
+      - go test ./...
+      - task: common:install:frontend:deps
+      - pnpm -C frontend test
+
+  lint:frontend:
+    summary: Type-checks the frontend
+    cmds:
+      - pnpm -C frontend typecheck

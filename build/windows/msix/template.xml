@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MsixPackagingToolTemplate
+    xmlns="http://schemas.microsoft.com/msix/packaging/msixpackagingtool/template/2022">
+    <Settings
+        AllowTelemetry="false"
+        ApplyACLsToPackageFiles="true"
+        GenerateCommandLineFile="true"
+        AllowPromptForPassword="false">
+    </Settings>
+    <Installer
+        Path="qryvanta.exe"
+        Arguments=""
+        InstallLocation="C:\Program Files\Qryvanta contributors\Qryvanta">
+    </Installer>
+    <PackageInformation
+        PackageName="Qryvanta"
+        PackageDisplayName="Qryvanta"
+        PublisherName="CN=Qryvanta contributors"
+        PublisherDisplayName="Qryvanta contributors"
+        Version="0.1.0.0"
+        PackageDescription="SQL execution debugging platform">
+        <Capabilities>
+            <Capability Name="runFullTrust" />
+            
+        </Capabilities>
+        <Applications>
+            <Application
+                Id="io.qryvanta.app"
+                Description="SQL execution debugging platform"
+                DisplayName="Qryvanta"
+                ExecutableName="qryvanta.exe"
+                EntryPoint="Windows.FullTrustApplication">
+                
+            </Application>
+        </Applications>
+        <Resources>
+            <Resource Language="en-us" />
+        </Resources>
+        <Dependencies>
+            <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+        </Dependencies>
+        <Properties>
+            <Framework>false</Framework>
+            <DisplayName>Qryvanta</DisplayName>
+            <PublisherDisplayName>Qryvanta contributors</PublisherDisplayName>
+            <Description>SQL execution debugging platform</Description>
+            <Logo>Assets\AppIcon.png</Logo>
+        </Properties>
+    </PackageInformation>
+    <SaveLocation PackagePath="qryvanta.msix" />
+    <PackageIntegrity>
+        <CertificatePath></CertificatePath>
+    </PackageIntegrity>
+</MsixPackagingToolTemplate>
