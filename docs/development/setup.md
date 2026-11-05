@@ -32,6 +32,27 @@ if you have go-task installed).
 | `wails3 task common:generate:bindings` | Regenerates TypeScript bindings after changing a bound Go service |
 | `wails3 package` | NSIS installer (requires NSIS, Phase 10) |
 
+## Testing the UI without touching your settings
+
+Set `QRYVANTA_CONFIG` to a scratch file before starting the app. Settings and saved connections
+then go there instead of `%AppData%\Qryvanta`. Saved passwords still go to Windows Credential
+Manager, so prefer Windows-authentication profiles, or delete test connections from the app
+(that removes their credentials too).
+
+To drive the real app from a browser (for example with browser automation), build it in Wails
+server mode. The frontend and the Go services are then served over HTTP on localhost:
+
+```powershell
+pnpm -C frontend build; go build -tags server -o bin/qryvanta-server.exe ./cmd/qryvanta
+```
+
+```powershell
+$env:QRYVANTA_CONFIG = "$env:TEMP\qryvanta-test\config.json"; $env:WAILS_SERVER_PORT = '18080'; .\bin\qryvanta-server.exe
+```
+
+Then open `http://localhost:18080`. Server mode is a development aid only: it listens on
+localhost without authentication and must not be shipped.
+
 ## Project layout
 
 See [the architecture document](../architecture/overview.md#3-repository-layout).

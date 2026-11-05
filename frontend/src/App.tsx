@@ -6,13 +6,20 @@ import { applyTheme, watchSystemTheme } from "@/features/theme/theme";
 import { Workbench } from "@/layouts/Workbench";
 import { backend, Theme } from "@/services/backend";
 import { useAppStore } from "@/stores/app-store";
+import { useConnectionStore } from "@/stores/connection-store";
 
 export default function App() {
   const { status, error, info, config, load, saveConfig, setTheme } = useAppStore();
 
+  const loadConnections = useConnectionStore((s) => s.load);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (status === "ready") void loadConnections();
+  }, [status, loadConnections]);
 
   const theme = config?.appearance.theme ?? Theme.ThemeDark;
   useEffect(() => {

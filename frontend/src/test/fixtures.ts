@@ -1,4 +1,50 @@
-import { LogLevel, Theme, type AppInfo, type Config } from "@/services/backend";
+import {
+  AuthMethod,
+  EncryptMode,
+  LogLevel,
+  Theme,
+  type AppInfo,
+  type Config,
+  type ConnectionDTO,
+  type ServerInfo,
+} from "@/services/backend";
+
+export function testConnection(overrides: Partial<ConnectionDTO["profile"]> = {}, extra: Partial<ConnectionDTO> = {}): ConnectionDTO {
+  return {
+    profile: {
+      id: "c1",
+      name: "Sales reporting",
+      server: "db1.corp.local",
+      port: 0,
+      database: "Sales",
+      auth: AuthMethod.AuthSQL,
+      username: "reader",
+      encrypt: EncryptMode.EncryptMandatory,
+      trustServerCertificate: false,
+      connectTimeoutSeconds: 0,
+      readOnlyIntent: false,
+      createdAt: "2026-11-06T09:00:00Z",
+      updatedAt: "2026-11-06T09:00:00Z",
+      ...overrides,
+    },
+    hasPassword: true,
+    connected: false,
+    ...extra,
+  };
+}
+
+export function testServer(): ServerInfo {
+  return {
+    serverName: "DB1",
+    productVersion: "16.0.4305.5",
+    productLevel: "RTM",
+    edition: "Developer Edition (64-bit)",
+    engineEdition: 3,
+    cloud: false,
+    database: "Sales",
+    login: "reader",
+  };
+}
 
 /** Mirrors config.Default() in Go. */
 export function testConfig(): Config {

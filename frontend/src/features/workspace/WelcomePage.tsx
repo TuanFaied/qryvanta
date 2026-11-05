@@ -1,12 +1,13 @@
-import { AlertTriangle, Bug, FileCode2, Plug } from "lucide-react";
+import { AlertTriangle, Bug, Check, FileCode2, Plug } from "lucide-react";
 import { LogoMark } from "@/components/brand/Logo";
+import { Button } from "@/components/ui/button";
 
 const steps = [
   {
     icon: Plug,
     title: "Connect to SQL Server",
     body: "Save a connection. Passwords are kept in Windows Credential Manager, never in config files.",
-    phase: "Phase 2",
+    phase: "",
   },
   {
     icon: FileCode2,
@@ -29,7 +30,14 @@ const shortcuts: [string, string][] = [
   ["Save query", "Ctrl+S"],
 ];
 
-export function WelcomePage({ warnings }: { warnings: string[] }) {
+interface WelcomePageProps {
+  warnings: string[];
+  /** Name of the active connection, if any. */
+  connectedTo: string | null;
+  onNewConnection: () => void;
+}
+
+export function WelcomePage({ warnings, connectedTo, onNewConnection }: WelcomePageProps) {
   return (
     <div className="h-full overflow-auto bg-editor">
       <div className="mx-auto flex max-w-2xl flex-col gap-8 px-8 py-12">
@@ -63,10 +71,22 @@ export function WelcomePage({ warnings }: { warnings: string[] }) {
                   <span className="text-[13px] font-medium">
                     {i + 1}. {s.title}
                   </span>
-                  <span className="rounded-sm bg-muted px-1.5 py-px text-[10px] text-muted-foreground">{s.phase}</span>
+                  {s.phase && (
+                    <span className="rounded-sm bg-muted px-1.5 py-px text-[10px] text-muted-foreground">{s.phase}</span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{s.body}</p>
               </div>
+              {i === 0 &&
+                (connectedTo ? (
+                  <span className="flex shrink-0 items-center gap-1 self-center text-xs text-success">
+                    <Check className="size-3.5" /> Connected to {connectedTo}
+                  </span>
+                ) : (
+                  <Button size="sm" className="h-7 shrink-0 self-center text-xs" onClick={onNewConnection}>
+                    New connection
+                  </Button>
+                ))}
             </li>
           ))}
         </ol>

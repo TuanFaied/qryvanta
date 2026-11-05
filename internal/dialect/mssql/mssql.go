@@ -170,9 +170,7 @@ func convertError(err error) error {
 		return &connection.ServerError{Number: me.Number, State: me.State, Class: me.Class, Message: me.Message}
 	}
 	if isCertificateError(err) {
-		return fmt.Errorf("%w. The server's TLS certificate is not trusted by this computer: install a "+
-			"trusted certificate on the server, or, for a local development server with a self-signed "+
-			"certificate, enable \"Trust server certificate\" for this connection", err)
+		return fmt.Errorf("%w. %s", err, connection.CertificateHint)
 	}
 	return err
 }

@@ -1,14 +1,23 @@
 import { ShieldAlert, ShieldCheck } from "lucide-react";
-import type { Config } from "@/services/backend";
+import type { Config, ServerInfo } from "@/services/backend";
 
 interface StatusBarProps {
   config: Config;
   onOpenSettings: () => void;
+  /** The active connection, if any. */
+  connection: { name: string; server: ServerInfo } | null;
+}
+
+function shortVersion(s: ServerInfo): string {
+  // "16.0.4305.5" -> "SQL Server 16.0"; Azure reports its own version line.
+  const [major, minor] = s.productVersion.split(".");
+  if (s.cloud) return "Azure SQL";
+  return major ? `SQL Server ${major}.${minor ?? "0"}` : "SQL Server";
 }
 
 const fmt = new Intl.NumberFormat();
 
-export function StatusBar({ config, onOpenSettings }: StatusBarProps) {
+export function StatusBar({ config, onOpenSettings, connection }: StatusBarProps) {
   const { readOnly, timeoutSeconds, maxRows } = config.execution;
   return (
     <footer className="flex h-6 shrink-0 items-center gap-3 border-t bg-chrome px-2 text-[11px] text-muted-foreground">
@@ -28,7 +37,13 @@ export function StatusBar({ config, onOpenSettings }: StatusBarProps) {
           </>
         )}
       </button>
-      <span>No connection</span>
+      {connection ? (
+        <span className="truncate" title={`${connection.server.serverName} · ${connection.server.edition}`}>
+          {connection.name} · {shortVersion(connection.server)} · {connection.server.login} · {connection.server.database}
+        </span>
+      ) : (
+        <span>No connection</span>
+      )}
       <div className="flex-1" />
       <button
         type="button"
