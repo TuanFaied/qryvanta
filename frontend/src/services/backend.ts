@@ -2,7 +2,10 @@
  * The only module that talks to the Go backend. Components and stores import from here,
  * never from ../bindings directly, so the transport can change without touching the UI.
  */
-import { AppService, ConnectionService } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
+import { AppService, ConnectionService, SchemaService } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
+import type { MetadataError } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop/models";
+import type { Column, Database, $Object as SchemaObject } from "../../bindings/github.com/TuanFaied/qryvanta/internal/schema/models";
+import { ObjectKind } from "../../bindings/github.com/TuanFaied/qryvanta/internal/schema/models";
 import type {
   AppInfo,
   ConnectionDTO,
@@ -17,7 +20,14 @@ import type { Profile, ServerInfo } from "../../bindings/github.com/TuanFaied/qr
 import { AuthMethod, EncryptMode } from "../../bindings/github.com/TuanFaied/qryvanta/internal/connection/models";
 
 export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, Profile, SaveConfigResult, ServerInfo };
-export { AuthMethod, EncryptMode, ErrorCode, LogLevel, PasswordAction, Theme };
+export type { Column, Database, MetadataError, SchemaObject };
+export { AuthMethod, EncryptMode, ErrorCode, LogLevel, ObjectKind, PasswordAction, Theme };
+
+/** A metadata call's result: data, or the error to show on the tree node. */
+export interface MetadataResult<T> {
+  data: T;
+  error: MetadataError | null;
+}
 
 /** Normalised result of saving settings. */
 export interface SaveResult {
@@ -129,6 +139,24 @@ export const backend = {
     call("Connect", () => withSignal(ConnectionService.Connect(id), signal)),
 
   disconnect: (id: string): Promise<void> => call("Disconnect", () => ConnectionService.Disconnect(id)),
+
+  listDatabases: (connectionId: string): Promise<MetadataResult<Database[]>> =>
+    call("Load databases", async () => {
+      const res = await SchemaService.Databases(connectionId);
+      return { data: res.databases ?? [], error: res.error };
+    }),
+
+  listObjects: (connectionId: string, database: string): Promise<MetadataResult<SchemaObject[]>> =>
+    call("Load objects", async () => {
+      const res = await SchemaService.Objects(connectionId, database);
+      return { data: res.objects ?? [], error: res.error };
+    }),
+
+  listColumns: (connectionId: string, database: string, schema: string, object: string): Promise<MetadataResult<Column[]>> =>
+    call("Load columns", async () => {
+      const res = await SchemaService.Columns(connectionId, database, schema, object);
+      return { data: res.columns ?? [], error: res.error };
+    }),
 };
 
 export type Backend = typeof backend;

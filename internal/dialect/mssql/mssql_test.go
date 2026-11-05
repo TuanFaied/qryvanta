@@ -136,6 +136,13 @@ func TestConvertErrorKeepsServerErrorNumber(t *testing.T) {
 	}
 }
 
+func TestConvertErrorNil(t *testing.T) {
+	// Callers pass rows.Err() straight through, which is nil on success.
+	if err := convertError(nil); err != nil {
+		t.Fatalf("convertError(nil) = %v", err)
+	}
+}
+
 func TestConvertErrorExplainsUntrustedCertificates(t *testing.T) {
 	// go-mssqldb reports this as text, as seen against SQL Server Express with a self-signed cert.
 	raw := errors.New("TLS Handshake failed: tls: failed to verify certificate: x509: certificate signed by unknown authority")

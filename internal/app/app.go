@@ -20,6 +20,7 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/connection"
 	"github.com/TuanFaied/qryvanta/internal/dialect/mssql"
 	"github.com/TuanFaied/qryvanta/internal/logging"
+	"github.com/TuanFaied/qryvanta/internal/schema"
 	"github.com/TuanFaied/qryvanta/internal/version"
 )
 
@@ -43,6 +44,8 @@ type Options struct {
 	Credentials connection.CredentialStore
 	// Driver overrides the database driver (default: SQL Server).
 	Driver connection.Driver
+	// Schema overrides the metadata reader (default: SQL Server catalog views).
+	Schema schema.Reader
 }
 
 // Core holds the shared application state.
@@ -51,6 +54,7 @@ type Core struct {
 	log         *logging.Logger
 	warnings    []string
 	connections *connection.Manager
+	schema      schema.Reader
 	pool        *connection.Pool
 
 	mu  sync.RWMutex
@@ -125,7 +129,11 @@ func New(opts Options) (*Core, error) {
 	if driver == nil {
 		driver = mssql.New()
 	}
-	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns}
+	reader := opts.Schema
+	if reader == nil {
+		reader = mssql.Metadata{}
+	}
+	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns, schema: reader}
 	c.pool = connection.NewPool(conns, driver, c.openOptions, log.Logger)
 	return c, nil
 }
@@ -135,6 +143,9 @@ func (c *Core) Connections() *connection.Manager { return c.connections }
 
 // Pool returns the open-connection pool.
 func (c *Core) Pool() *connection.Pool { return c.pool }
+
+// Schema returns the metadata reader for the configured dialect.
+func (c *Core) Schema() schema.Reader { return c.schema }
 
 // openOptions reads the current settings each time a connection is opened.
 func (c *Core) openOptions() connection.OpenOptions {

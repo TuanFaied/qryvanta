@@ -165,6 +165,9 @@ func (Driver) ServerInfo(ctx context.Context, db *sql.DB) (connection.ServerInfo
 // convertError maps driver errors to connection.ServerError so callers can inspect the SQL
 // Server error number without depending on go-mssqldb.
 func convertError(err error) error {
+	if err == nil {
+		return nil
+	}
 	var me mssqldb.Error
 	if errors.As(err, &me) {
 		return &connection.ServerError{Number: me.Number, State: me.State, Class: me.Class, Message: me.Message}

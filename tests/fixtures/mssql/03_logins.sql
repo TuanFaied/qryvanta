@@ -23,4 +23,7 @@ CREATE USER qryvanta_reader FOR LOGIN qryvanta_reader;
 ALTER ROLE db_datareader ADD MEMBER qryvanta_reader;
 -- SHOWPLAN lets the login read estimated execution plans (Phase 6) without executing writes.
 GRANT SHOWPLAN TO qryvanta_reader;
+-- VIEW DEFINITION makes procedures and functions visible in the schema explorer; without it
+-- SQL Server hides their metadata from a db_datareader-only login. It grants no execution.
+GRANT VIEW DEFINITION TO qryvanta_reader;
 GO
