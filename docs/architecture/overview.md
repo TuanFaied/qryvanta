@@ -69,7 +69,8 @@ internal/
   logging/             slog setup, file logging, secret redaction
   security/            Redaction helpers, execution policy (Phase 2+)
   version/             Build version information
-  connection/          (Phase 2) Connection profiles, pooling, keyring credentials
+  fsutil/              Atomic file writes shared by config and connections
+  connection/          Connection profiles, keyring credentials; (Phase 2) pooling
   dialect/             (Phase 2) Dialect interface; mssql implementation
   executor/            (Phase 3) Query execution, limits, cancellation, result streaming
   parser/              (Phase 4) Parser interface, sidecar client, structured query model
@@ -222,9 +223,14 @@ documentation states clearly which guarantees are hard and which are best effort
 - Metadata and history: SQLite through `modernc.org/sqlite` (pure Go, so the build stays
   `CGO_ENABLED=0`). By default it stores SQL text, timings, row counts, and findings, but
   **no result rows**. A retention policy prunes old sessions.
-- Secrets: Windows Credential Manager through `github.com/zalando/go-keyring`. The config file
-  stores only a credential reference. Passwords are never logged, and connection strings are
-  never logged in full.
+- Connection profiles: `connections.json` next to `config.json`, written atomically. Profiles
+  have no password field.
+- Secrets: Windows Credential Manager through `github.com/zalando/go-keyring`, as generic
+  credentials named `Qryvanta:connection:<profile id>`. Passwords are never logged, and
+  connection strings are never logged in full.
+- `connection.Manager` keeps the two consistent. A failed save rolls back the credential
+  change, and deleting a profile removes its credential first, so a secret is never orphaned.
+  Windows-authentication profiles never store a password.
 
 ### D8. Logging
 

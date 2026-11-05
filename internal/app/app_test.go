@@ -8,18 +8,34 @@ import (
 	"testing"
 
 	"github.com/TuanFaied/qryvanta/internal/config"
+	"github.com/TuanFaied/qryvanta/internal/connection"
 )
 
 func newTestCore(t *testing.T) (*Core, string) {
 	t.Helper()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
-	c, err := New(Options{ConfigPath: cfgPath, LogDir: filepath.Join(dir, "logs")})
+	c, err := New(Options{
+		ConfigPath:  cfgPath,
+		LogDir:      filepath.Join(dir, "logs"),
+		Credentials: connection.NewMemoryStore(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = c.Close() })
 	return c, cfgPath
+}
+
+func TestConnectionsAreStoredNextToConfig(t *testing.T) {
+	c, cfgPath := newTestCore(t)
+	_, err := c.Connections().Create(connection.Profile{Name: "dev", Server: "localhost", Auth: connection.AuthWindows}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(cfgPath), connection.FileName)); err != nil {
+		t.Errorf("connections file not next to config: %v", err)
+	}
 }
 
 func TestNewUsesDefaultsWithoutConfigFile(t *testing.T) {
