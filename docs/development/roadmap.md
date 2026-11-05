@@ -26,7 +26,7 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 - Connection management UI (#8)
 - Database selection; schema explorer (schemas, tables, views, procedures, columns) (#9)
 - Permission check: report whether the login can write (#10)
-- Docker Compose with SQL Server 2022 and the **fixture database** (10 problem scenarios) (#7)
+- ✅ Docker Compose with SQL Server 2022, the **fixture database** (10 problem scenarios), a read-only login, and a Linux CI integration job (#7)
 - ✅ CLI: `qryvanta-cli connections list` (#5); `connections add|test|remove` (#6)
 
 ## Phase 3: SQL editor and execution ⬜

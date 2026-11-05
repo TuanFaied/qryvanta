@@ -18,11 +18,10 @@ All notable changes to this project are documented here. The format follows
   timeouts, cancellation, and sanitized errors that keep the SQL Server error number.
 - `qryvanta-cli connections add|test|remove`, with passwords read only through `--password-stdin`.
 - Integration tests (`-tags integration`) configured through `QRYVANTA_TEST_MSSQL_*` variables.
-
-### Changed
-
-- Profiles with read-only application intent must name a database (a SQL Server requirement).
-
+- `docker-compose.yml` with SQL Server 2022 Developer edition and a one-shot loader for the
+  `QryvantaSample` fixture database, plus a read-only `qryvanta_reader` login.
+- Ten sample queries (`tests/sample_queries`), each buggy and corrected, with the expected
+  results in `manifest.json`, checked by `tests/integration` and a Linux CI job.
 - Architecture document, roadmap, and Phase 1 plan.
 - Wails v3 desktop application and `qryvanta-cli`, sharing one Go core.
 - Configuration with validation and atomic saves. An invalid file is moved aside at desktop startup.
@@ -33,3 +32,13 @@ All notable changes to this project are documented here. The format follows
 - Architecture test that keeps the core free of Wails.
 - GitHub issue forms (bug, feature, SQL logic case, task), PR template, CODEOWNERS, Dependabot,
   Code of Conduct, and a CI workflow (Go, frontend, and the Wails desktop build on Windows).
+
+### Changed
+
+- Profiles with read-only application intent must name a database (a SQL Server requirement).
+
+### Fixed
+
+- `--password-stdin` ignores the UTF-8 byte-order mark that Windows PowerShell 5.1 puts in front
+  of piped text. Before this fix, passwords piped from PowerShell were stored with three
+  invisible extra bytes and the login failed.

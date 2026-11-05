@@ -1,0 +1,194 @@
+{
+  "database": "QryvantaSample",
+  "scenarios": [
+    {
+      "id": "01",
+      "title": "Employees without matching departments",
+      "question": "List every employee with their department.",
+      "cause": "INNER JOIN drops 2 employees with a NULL DepartmentID and 1 whose department no longer exists.",
+      "buggy": {
+        "file": "01_employees_without_department.buggy.sql",
+        "rows": 9,
+        "checks": [{ "row": 8, "column": "EmployeeID", "value": "9" }]
+      },
+      "correct": {
+        "file": "01_employees_without_department.correct.sql",
+        "rows": 12,
+        "checks": [
+          { "row": 9, "column": "Department", "value": "(no department)" },
+          { "row": 11, "column": "EmployeeID", "value": "12" }
+        ]
+      }
+    },
+    {
+      "id": "02",
+      "title": "One-to-many fan-out",
+      "question": "Total paid and items bought per customer.",
+      "cause": "Joining OrderItems and Payments to the same order multiplies rows; the inner join to Payments also drops a customer with an unpaid order.",
+      "buggy": {
+        "file": "02_one_to_many_fanout.buggy.sql",
+        "rows": 3,
+        "checks": [
+          { "row": 0, "column": "TotalPaid", "value": "105.00" },
+          { "row": 0, "column": "ItemsBought", "value": "9" },
+          { "row": 1, "column": "TotalPaid", "value": "545.00" }
+        ]
+      },
+      "correct": {
+        "file": "02_one_to_many_fanout.correct.sql",
+        "rows": 4,
+        "checks": [
+          { "row": 0, "column": "TotalPaid", "value": "60.00" },
+          { "row": 0, "column": "ItemsBought", "value": "6" },
+          { "row": 1, "column": "TotalPaid", "value": "315.00" },
+          { "row": 3, "column": "TotalPaid", "value": "0.00" }
+        ]
+      }
+    },
+    {
+      "id": "03",
+      "title": "Duplicate records",
+      "question": "How many distinct customers do we have?",
+      "cause": "Two people were entered twice with different capitalisation and spacing in their email.",
+      "buggy": {
+        "file": "03_duplicate_customers.buggy.sql",
+        "rows": 1,
+        "checks": [{ "row": 0, "column": "Customers", "value": "8" }]
+      },
+      "correct": {
+        "file": "03_duplicate_customers.correct.sql",
+        "rows": 1,
+        "checks": [{ "row": 0, "column": "Customers", "value": "6" }]
+      }
+    },
+    {
+      "id": "04",
+      "title": "NOT IN with a NULL",
+      "question": "Which customers have never placed an order?",
+      "cause": "Orders contains a NULL CustomerID, so NOT IN is never true and the query returns nothing.",
+      "buggy": {
+        "file": "04_not_in_with_null.buggy.sql",
+        "rows": 0,
+        "checks": []
+      },
+      "correct": {
+        "file": "04_not_in_with_null.correct.sql",
+        "rows": 4,
+        "checks": [
+          { "row": 0, "column": "CustomerID", "value": "5" },
+          { "row": 3, "column": "Name", "value": "Omar Haddad" }
+        ]
+      }
+    },
+    {
+      "id": "05",
+      "title": "Date boundary filtering",
+      "question": "Orders placed in January 2026.",
+      "cause": "BETWEEN ... AND '2026-01-31' ends at midnight, missing an order placed on 31 January at 16:45.",
+      "buggy": {
+        "file": "05_date_boundary.buggy.sql",
+        "rows": 3,
+        "checks": [{ "row": 2, "column": "OrderID", "value": "104" }]
+      },
+      "correct": {
+        "file": "05_date_boundary.correct.sql",
+        "rows": 4,
+        "checks": [{ "row": 2, "column": "OrderID", "value": "103" }]
+      }
+    },
+    {
+      "id": "06",
+      "title": "AND/OR precedence",
+      "question": "Shipped or delivered orders going to Sri Lanka.",
+      "cause": "AND binds tighter than OR, so shipped orders to every country are included.",
+      "buggy": {
+        "file": "06_and_or_precedence.buggy.sql",
+        "rows": 5,
+        "checks": [{ "row": 3, "column": "ShipCountry", "value": "GB" }]
+      },
+      "correct": {
+        "file": "06_and_or_precedence.correct.sql",
+        "rows": 3,
+        "checks": [{ "row": 2, "column": "OrderID", "value": "103" }]
+      }
+    },
+    {
+      "id": "07",
+      "title": "COUNT versus COUNT DISTINCT",
+      "question": "Number of orders and units bought per customer.",
+      "cause": "After joining OrderItems there is one row per order line, so COUNT counts lines.",
+      "buggy": {
+        "file": "07_count_vs_count_distinct.buggy.sql",
+        "rows": 4,
+        "checks": [
+          { "row": 0, "column": "Orders", "value": "3" },
+          { "row": 1, "column": "Orders", "value": "4" },
+          { "row": 0, "column": "Units", "value": "6" }
+        ]
+      },
+      "correct": {
+        "file": "07_count_vs_count_distinct.correct.sql",
+        "rows": 4,
+        "checks": [
+          { "row": 0, "column": "Orders", "value": "2" },
+          { "row": 1, "column": "Orders", "value": "2" },
+          { "row": 0, "column": "Units", "value": "6" }
+        ]
+      }
+    },
+    {
+      "id": "08",
+      "title": "Incorrect join key",
+      "question": "The lines of order 103 with their product names.",
+      "cause": "ProductID is compared with OrderItemID: the names are wrong and one line disappears.",
+      "buggy": {
+        "file": "08_wrong_join_key.buggy.sql",
+        "rows": 2,
+        "checks": [{ "row": 0, "column": "Product", "value": "Desk lamp" }]
+      },
+      "correct": {
+        "file": "08_wrong_join_key.correct.sql",
+        "rows": 3,
+        "checks": [
+          { "row": 0, "column": "Product", "value": "Notebook" },
+          { "row": 2, "column": "Product", "value": "Pen set" }
+        ]
+      }
+    },
+    {
+      "id": "09",
+      "title": "Unexpected aggregation granularity",
+      "question": "What is the average order value?",
+      "cause": "AVG runs over order lines (610 / 12) instead of orders (610 / 8).",
+      "buggy": {
+        "file": "09_aggregation_granularity.buggy.sql",
+        "rows": 1,
+        "checks": [{ "row": 0, "column": "AvgOrderValue", "value": "50.83" }]
+      },
+      "correct": {
+        "file": "09_aggregation_granularity.correct.sql",
+        "rows": 1,
+        "checks": [{ "row": 0, "column": "AvgOrderValue", "value": "76.25" }]
+      }
+    },
+    {
+      "id": "10",
+      "title": "Missing join predicate",
+      "question": "The customer for each order placed in January 2026.",
+      "cause": "A comma join without a join predicate pairs each of the 4 orders with all 8 customers.",
+      "buggy": {
+        "file": "10_missing_join_predicate.buggy.sql",
+        "rows": 32,
+        "checks": [{ "row": 1, "column": "Customer", "value": "Sara Khan" }]
+      },
+      "correct": {
+        "file": "10_missing_join_predicate.correct.sql",
+        "rows": 4,
+        "checks": [
+          { "row": 0, "column": "Customer", "value": "Nimal Perera" },
+          { "row": 3, "column": "Customer", "value": "Tom Baker" }
+        ]
+      }
+    }
+  ]
+}
