@@ -71,7 +71,7 @@ internal/
   version/             Build version information
   fsutil/              Atomic file writes shared by config and connections
   connection/          Connection profiles, keyring credentials; (Phase 2) pooling
-  dialect/             (Phase 2) Dialect interface; mssql implementation
+  dialect/mssql/       SQL Server driver: DSN building, server info, error mapping
   executor/            (Phase 3) Query execution, limits, cancellation, result streaming
   parser/              (Phase 4) Parser interface, sidecar client, structured query model
   analyzer/            (Phase 5) Rules that turn query structure + evidence into findings
@@ -232,6 +232,31 @@ documentation states clearly which guarantees are hard and which are best effort
   change, and deleting a profile removes its credential first, so a secret is never orphaned.
   Windows-authentication profiles never store a password.
 
+### D7a. Connecting to SQL Server
+
+- `connection.Driver` is a small interface defined by its consumer, `connection.Pool`. It
+  has two methods: `Open` and `ServerInfo`. `internal/dialect/mssql` implements it with
+  `github.com/microsoft/go-mssqldb`. Later dialects add their own packages under
+  `internal/dialect/`, and the interface grows only when a feature needs it (metadata in #9,
+  plans in Phase 6).
+- The DSN is built with `net/url`, which escapes every component, and parsed by the driver's
+  own `msdsn.Parse`. Values are never concatenated into a connection string. The unit tests
+  check what the driver parses, including passwords containing `@:/?#&;=%'"`.
+- Encryption is `mandatory` by default, with `strict` (TDS 8) and `optional` also available.
+  There is no option that disables encryption, because the login packet carries the password.
+  The server certificate is validated unless the profile sets *Trust server certificate*, and
+  certificate errors explain that choice to the user.
+- Windows authentication sends no user name, so go-mssqldb uses SSPI as the current OS user.
+  TCP is tried first, then named pipes and shared memory, so default local SQL Server Express
+  installs (TCP disabled) work.
+- `connection.Pool` keeps one `*sql.DB` per connected profile (4 open, 2 idle, 5-minute
+  idle timeout). Every open is bounded by the connect timeout (profile setting, else the
+  application setting) and by the caller's context. A connection test opens a temporary
+  handle, runs a server-info query that needs no extra permissions, and closes it.
+- Errors leaving the pool are sanitized: the password and `key=value` secrets are scrubbed,
+  SQL Server errors keep their number, state and class (`connection.ServerError`), and
+  `context.Canceled`/`DeadlineExceeded` stay detectable with `errors.Is`.
+
 ### D8. Logging
 
 `log/slog` with JSON output to `%LocalAppData%\Qryvanta\logs\qryvanta.log`, with size-based
@@ -292,7 +317,7 @@ line, but never the connection string.
 |---|---|
 | config, logging, security, compare, plan parsing, analyzer rules | Pure unit tests, table-driven, run on every build |
 | parser | Golden tests: SQL file → expected `QueryModel` JSON, run against the real sidecar |
-| executor, connection, dialect | Integration tests against SQL Server 2022 in Docker (`tests/integration`, build tag `integration`) |
+| executor, connection, dialect | Integration tests against a real SQL Server (build tag `integration`, configured through `QRYVANTA_TEST_MSSQL_*` variables; Docker setup in #7) |
 | diagnostics end to end | The fixture database's 10 scenario queries must produce the expected findings |
 | architecture | `internal/archtest` checks that core packages do not import Wails |
 | frontend | Vitest + Testing Library for components and stores |

@@ -18,6 +18,7 @@ import (
 
 	"github.com/TuanFaied/qryvanta/internal/config"
 	"github.com/TuanFaied/qryvanta/internal/connection"
+	"github.com/TuanFaied/qryvanta/internal/dialect/mssql"
 	"github.com/TuanFaied/qryvanta/internal/logging"
 	"github.com/TuanFaied/qryvanta/internal/version"
 )
@@ -40,6 +41,8 @@ type Options struct {
 	// Credentials overrides the credential store (default: the OS credential manager).
 	// Tests pass connection.NewMemoryStore() so they never touch the real keyring.
 	Credentials connection.CredentialStore
+	// Driver overrides the database driver (default: SQL Server).
+	Driver connection.Driver
 }
 
 // Core holds the shared application state.
@@ -48,6 +51,7 @@ type Core struct {
 	log         *logging.Logger
 	warnings    []string
 	connections *connection.Manager
+	pool        *connection.Pool
 
 	mu  sync.RWMutex
 	cfg config.Config
@@ -117,11 +121,29 @@ func New(opts Options) (*Core, error) {
 	}
 	conns := connection.NewManager(connection.NewStore(connPath), creds, log.Logger)
 
-	return &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns}, nil
+	driver := opts.Driver
+	if driver == nil {
+		driver = mssql.New()
+	}
+	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns}
+	c.pool = connection.NewPool(conns, driver, c.openOptions, log.Logger)
+	return c, nil
 }
 
 // Connections returns the connection profile manager.
 func (c *Core) Connections() *connection.Manager { return c.connections }
+
+// Pool returns the open-connection pool.
+func (c *Core) Pool() *connection.Pool { return c.pool }
+
+// openOptions reads the current settings each time a connection is opened.
+func (c *Core) openOptions() connection.OpenOptions {
+	cfg := c.Config()
+	return connection.OpenOptions{
+		ConnectTimeout: time.Duration(cfg.Execution.ConnectTimeoutSec) * time.Second,
+		AppName:        "Qryvanta " + version.Get().Version,
+	}
+}
 
 // StartupWarnings returns problems found during startup that the user should see.
 func (c *Core) StartupWarnings() []string { return slices.Clone(c.warnings) }
@@ -164,6 +186,9 @@ func (c *Core) UpdateConfig(cfg config.Config) error {
 func (c *Core) Close() error {
 	c.log.Info("qryvanta stopping")
 	var errs []error
+	if err := c.pool.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("close connections: %w", err))
+	}
 	if err := c.log.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close log: %w", err))
 	}
