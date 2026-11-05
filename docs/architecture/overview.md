@@ -87,9 +87,10 @@ sidecar/
 frontend/              React + Vite + Tailwind + shadcn/ui
 docs/                  Architecture, features, development, security
 tests/
-  integration/         (Phase 2+) Tests against a real SQL Server in Docker
-  fixtures/            Sample database with intentionally problematic data
-  sample_queries/      Buggy queries matching the fixture scenarios
+  integration/         End-to-end tests against the fixture database (build tag `integration`)
+  fixtures/mssql/      QryvantaSample: schema, problem data, read-only login, loader script
+  sample_queries/      10 buggy queries with corrected versions and expected results
+docker-compose.yml     SQL Server 2022 Developer + one-shot fixture loader
 build/                 Wails build assets (icons, manifests, installers)
 scripts/               Developer scripts
 ```
@@ -317,8 +318,9 @@ line, but never the connection string.
 |---|---|
 | config, logging, security, compare, plan parsing, analyzer rules | Pure unit tests, table-driven, run on every build |
 | parser | Golden tests: SQL file → expected `QueryModel` JSON, run against the real sidecar |
-| executor, connection, dialect | Integration tests against a real SQL Server (build tag `integration`, configured through `QRYVANTA_TEST_MSSQL_*` variables; Docker setup in #7) |
-| diagnostics end to end | The fixture database's 10 scenario queries must produce the expected findings |
+| executor, connection, dialect | Integration tests against a real SQL Server (build tag `integration`, configured through `QRYVANTA_TEST_MSSQL_*` variables). CI runs them on Linux against `docker-compose.yml`, as the read-only `qryvanta_reader` login. |
+| fixture data | `tests/integration` runs the 10 scenario queries in `tests/sample_queries` and checks the documented wrong and correct results |
+| diagnostics end to end (Phase 5) | Each buggy scenario query must produce its finding, and each corrected query must not |
 | architecture | `internal/archtest` checks that core packages do not import Wails |
 | frontend | Vitest + Testing Library for components and stores |
 

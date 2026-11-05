@@ -90,6 +90,19 @@ func TestConnectionsAddTestRemove(t *testing.T) {
 	}
 }
 
+func TestReadPasswordStripsPowerShellBOM(t *testing.T) {
+	// Bytes captured from `'secret' | qryvanta-cli ...` in Windows PowerShell 5.1.
+	pw, err := readPassword(strings.NewReader("\xef\xbb\xbfSample_R3adOnly!\r\n"))
+	if err != nil || pw != "Sample_R3adOnly!" {
+		t.Fatalf("readPassword = %q, %v", pw, err)
+	}
+	// A BOM in the middle is kept: only the encoding marker at the start is removed.
+	pw, _ = readPassword(strings.NewReader("a\xef\xbb\xbfb\n"))
+	if pw != "a\xef\xbb\xbfb" {
+		t.Errorf("readPassword = %q", pw)
+	}
+}
+
 func TestConnectionsAddReportsFieldErrors(t *testing.T) {
 	opts, _, _ := testOpts(t)
 	err := cmdConnections([]string{"add", "--name", "x", "--auth", "sql"}, opts, &bytes.Buffer{})

@@ -24,7 +24,7 @@ jobs:
       - name: gofmt
         shell: bash
         run: |
-          unformatted=$(gofmt -l cmd internal frontend/embed.go)
+          unformatted=$(gofmt -l cmd internal tests frontend/embed.go)
           if [ -n "$unformatted" ]; then echo "Run gofmt on:"; echo "$unformatted"; exit 1; fi
       - run: go vet ./...
       - run: go test -count=1 ./...
@@ -78,3 +78,29 @@ jobs:
       - name: Bindings are up to date
         shell: bash
         run: git diff --exit-code -- frontend/bindings
+
+  integration:
+    name: Integration (SQL Server)
+    # Linux runners can run the SQL Server container; the Windows runners cannot.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Start SQL Server and load the fixture database
+        run: docker compose run --rm fixtures
+      - name: Integration tests (read-only login)
+        env:
+          QRYVANTA_TEST_MSSQL_SERVER: localhost
+          QRYVANTA_TEST_MSSQL_PORT: "14333"
+          QRYVANTA_TEST_MSSQL_USER: qryvanta_reader
+          QRYVANTA_TEST_MSSQL_PASSWORD: Sample_R3adOnly!
+          QRYVANTA_TEST_MSSQL_TRUST: "true"
+        run: go test -tags integration -count=1 -v ./internal/dialect/mssql/ ./tests/integration/
+      - name: SQL Server logs
+        if: failure()
+        run: docker compose logs sqlserver
+      - name: Stop SQL Server
+        if: always()
+        run: docker compose down -v

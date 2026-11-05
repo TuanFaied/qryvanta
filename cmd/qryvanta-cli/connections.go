@@ -205,7 +205,9 @@ func readPassword(r io.Reader) (string, error) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return "", fmt.Errorf("read password from stdin: %w", err)
 	}
-	pw := strings.TrimRight(line, "\r\n")
+	// Windows PowerShell 5.1 prefixes piped text with a UTF-8 byte-order mark when
+	// $OutputEncoding is UTF-8; it is never part of the password.
+	pw := strings.TrimPrefix(strings.TrimRight(line, "\r\n"), "\xef\xbb\xbf")
 	if pw == "" {
 		return "", errors.New("--password-stdin was given but stdin was empty")
 	}

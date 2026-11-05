@@ -36,11 +36,41 @@ if you have go-task installed).
 
 See [the architecture document](../architecture/overview.md#3-repository-layout).
 
+## Fixture database (Docker)
+
+`docker-compose.yml` runs SQL Server 2022 Developer edition on `127.0.0.1:14333` and loads
+`QryvantaSample`, a small database whose data contains the problems Qryvanta diagnoses (see
+[tests/sample_queries](../../tests/sample_queries/README.md)).
+
+```bash
+docker compose run --rm fixtures
+```
+
+That command starts SQL Server, waits until it is healthy, recreates `QryvantaSample` and the
+`qryvanta_reader` login, and exits. SQL Server keeps running in the background. Run it again
+at any time to reset the data. To stop the server and delete its data:
+
+```bash
+docker compose down -v
+```
+
+| Login | Password (default) | Rights |
+|---|---|---|
+| `sa` | `Qryvanta_Dev_2026!` | Administrator (used only by the loader) |
+| `qryvanta_reader` | `Sample_R3adOnly!` | `db_datareader` and `SHOWPLAN` on `QryvantaSample`. Writes fail with error 229. |
+
+These defaults are for a server that listens on localhost only. Override them with
+`QRYVANTA_SA_PASSWORD`, `QRYVANTA_READER_PASSWORD` and `QRYVANTA_SQL_PORT`, for example in a
+`.env` file next to `docker-compose.yml`, which git ignores. The SQL Server image is
+linux/amd64; on Apple silicon it runs under emulation.
+
 ## Integration tests against SQL Server
 
 Integration tests use the `integration` build tag and are skipped unless a server is configured.
-Any SQL Server 2016+ works, including a local SQL Server Express (shared memory and named pipes
-are supported, so TCP does not need to be enabled).
+Use the Docker fixture database above, or any SQL Server 2016+ (including a local SQL Server
+Express: shared memory and named pipes are supported, so TCP does not need to be enabled).
+`tests/integration` needs `QryvantaSample`. The connection tests in `internal/dialect/mssql`
+work against any server.
 
 | Variable | Meaning |
 |---|---|
@@ -49,18 +79,21 @@ are supported, so TCP does not need to be enabled).
 | `QRYVANTA_TEST_MSSQL_USER` / `QRYVANTA_TEST_MSSQL_PASSWORD` | SQL login. If no user is set, Windows authentication is used. |
 | `QRYVANTA_TEST_MSSQL_TRUST` | `true` to accept a self-signed certificate (local development only) |
 
-PowerShell example for a local Express instance:
+PowerShell example for the Docker fixture database (this is what CI runs, on Linux):
 
 ```powershell
-$env:QRYVANTA_TEST_MSSQL_SERVER = 'localhost\SQLEXPRESS'; $env:QRYVANTA_TEST_MSSQL_TRUST = 'true'
+$env:QRYVANTA_TEST_MSSQL_SERVER = 'localhost'; $env:QRYVANTA_TEST_MSSQL_PORT = '14333'; $env:QRYVANTA_TEST_MSSQL_USER = 'qryvanta_reader'; $env:QRYVANTA_TEST_MSSQL_PASSWORD = 'Sample_R3adOnly!'; $env:QRYVANTA_TEST_MSSQL_TRUST = 'true'
 ```
 
 ```bash
-go test -tags integration ./internal/dialect/mssql/
+go test -tags integration ./internal/dialect/mssql/ ./tests/integration/
 ```
 
-The tests only run read-only queries (`SERVERPROPERTY`, `APP_NAME()`, `WAITFOR DELAY`).
-A Docker SQL Server with the fixture database is tracked in #7.
+For a local Express instance with Windows authentication, set only
+`QRYVANTA_TEST_MSSQL_SERVER = 'localhost\SQLEXPRESS'` and `QRYVANTA_TEST_MSSQL_TRUST = 'true'`.
+
+The tests only read data. The one exception is an `UPDATE` sent as `qryvanta_reader`, which
+checks that the server rejects it.
 
 ## Trying connections from the CLI
 

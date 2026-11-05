@@ -1,0 +1,52 @@
+# Local SQL Server for Qryvanta development and integration tests.
+#
+#   docker compose run --rm fixtures   # start SQL Server, wait until healthy, load QryvantaSample
+#   docker compose down -v             # stop and delete the data volume
+#
+# Re-running the first command recreates QryvantaSample from scratch.
+#
+# The passwords below are development defaults for a server bound to 127.0.0.1 only.
+# Override them with QRYVANTA_SA_PASSWORD / QRYVANTA_READER_PASSWORD (for example in .env).
+# See docs/development/setup.md.
+name: qryvanta
+
+x-mssql-image: &mssql-image mcr.microsoft.com/mssql/server:2022-latest
+
+services:
+  sqlserver:
+    image: *mssql-image
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${QRYVANTA_SA_PASSWORD:-Qryvanta_Dev_2026!}
+    ports:
+      # Non-default host port so it does not clash with a local SQL Server on 1433.
+      - "127.0.0.1:${QRYVANTA_SQL_PORT:-14333}:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -b -Q 'SELECT 1' -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # One-shot loader: recreates QryvantaSample and the read-only login, then exits.
+  fixtures:
+    image: *mssql-image
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      MSSQL_HOST: sqlserver
+      MSSQL_SA_PASSWORD: ${QRYVANTA_SA_PASSWORD:-Qryvanta_Dev_2026!}
+      # Must not contain parts of the login name ("qryvanta", "reader"): SQL Server's password
+      # policy rejects that.
+      QRYVANTA_READER_PASSWORD: ${QRYVANTA_READER_PASSWORD:-Sample_R3adOnly!}
+    volumes:
+      - ./tests/fixtures/mssql:/fixtures:ro
+    entrypoint: ["/bin/bash", "/fixtures/load.sh"]
+    restart: "no"
+
+volumes:
+  mssql-data:
