@@ -311,6 +311,15 @@ rotation at startup. A redacting handler masks attributes whose keys look sensit
 `password=...` fragments from string values. SQL text is logged only at debug level.
 There is no telemetry and nothing is sent over the network except to the user's own databases.
 
+Third-party components get their own logger through `logging.Logger.ForComponent` /
+`app.Core.ComponentLogger`, so their routine chatter can't bury Qryvanta's entries:
+
+- Records go to the same file, with redaction, tagged `component=<name>`.
+- Only Warn and above are kept. When Qryvanta's own level is Debug, the floor drops to Info.
+- The desktop app gives Wails such a logger and turns off the asset server's per-request logging
+  (`AssetOptions.DisableLogging`). A normal session's log then contains Qryvanta's entries plus
+  any Wails warnings or errors.
+
 ### D9. Frontend
 
 React 19, TypeScript (strict), Vite, Tailwind CSS v4, shadcn/ui, and Zustand for UI state.

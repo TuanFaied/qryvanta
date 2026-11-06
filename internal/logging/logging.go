@@ -44,6 +44,49 @@ type Logger struct {
 	file  *os.File
 }
 
+// ForComponent returns a logger for a third-party component (for example the Wails runtime)
+// that writes to the same destination with component=<name>, but only records at or above
+// floor. When the application log level is Debug, the floor drops to Info, so the component's
+// routine messages are available exactly when someone is debugging.
+func (l *Logger) ForComponent(name string, floor slog.Level) *slog.Logger {
+	h := &floorHandler{next: l.Logger.Handler(), app: l.Level, floor: floor}
+	return slog.New(h).With("component", name)
+}
+
+// floorHandler drops records below the component floor; the wrapped handler still applies
+// the application level.
+type floorHandler struct {
+	next  slog.Handler
+	app   *slog.LevelVar
+	floor slog.Level
+}
+
+func (h *floorHandler) min() slog.Level {
+	if h.app != nil && h.app.Level() <= slog.LevelDebug && h.floor > slog.LevelInfo {
+		return slog.LevelInfo
+	}
+	return h.floor
+}
+
+func (h *floorHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return level >= h.min() && h.next.Enabled(ctx, level)
+}
+
+func (h *floorHandler) Handle(ctx context.Context, r slog.Record) error {
+	if r.Level < h.min() {
+		return nil
+	}
+	return h.next.Handle(ctx, r)
+}
+
+func (h *floorHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &floorHandler{next: h.next.WithAttrs(attrs), app: h.app, floor: h.floor}
+}
+
+func (h *floorHandler) WithGroup(name string) slog.Handler {
+	return &floorHandler{next: h.next.WithGroup(name), app: h.app, floor: h.floor}
+}
+
 // Close flushes and closes the log file.
 func (l *Logger) Close() error {
 	if l.file == nil {

@@ -36,7 +36,9 @@ func run() error {
 	wailsApp := application.New(application.Options{
 		Name:        "Qryvanta",
 		Description: "Desktop SQL execution debugging platform",
-		Logger:      core.Logger(),
+		// Wails system messages: warnings and errors only (info as well when Qryvanta's log
+		// level is Debug), tagged component=wails.
+		Logger: core.ComponentLogger("wails"),
 		Services: []application.Service{
 			application.NewService(desktop.NewAppService(core)),
 			application.NewService(desktop.NewConnectionService(core)),
@@ -45,6 +47,8 @@ func run() error {
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(frontend.Assets),
 			Middleware: desktop.SecurityHeaders(contentSecurityPolicy()),
+			// The asset server would otherwise log every file request.
+			DisableLogging: true,
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
