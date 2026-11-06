@@ -169,6 +169,13 @@ func (c *Core) StartupWarnings() []string { return slices.Clone(c.warnings) }
 // Logger returns the application logger.
 func (c *Core) Logger() *slog.Logger { return c.log.Logger }
 
+// ComponentLogger returns a logger for a third-party component that only records warnings and
+// errors (and info while Qryvanta's own level is Debug). The desktop app gives it to Wails so
+// routine runtime chatter does not bury Qryvanta's own entries.
+func (c *Core) ComponentLogger(name string) *slog.Logger {
+	return c.log.ForComponent(name, slog.LevelWarn)
+}
+
 // ConfigPath returns the path of the active config file.
 func (c *Core) ConfigPath() string { return c.configPath }
 
