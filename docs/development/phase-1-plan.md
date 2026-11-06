@@ -75,8 +75,7 @@ Implemented and verified:
 Known limitations:
 
 - ~~The app icon is still the Wails default.~~ Resolved in #11: `tools/appicon` generates it.
-- No Content-Security-Policy yet. It needs testing against both the Vite dev server and the Wails
-  runtime, and is planned for the Phase 9 security review.
+- ~~No Content-Security-Policy yet.~~ Resolved in #12: see architecture decision D9a.
 - The Wails asset server logs every asset request at info level. This is harmless, but the logs are noisy.
 - The JS bundle is 513 kB (a single chunk). Code-splitting is planned for Phase 3, when Monaco is added.
 - The module path is `github.com/TuanFaied/qryvanta`, matching the repository URL.

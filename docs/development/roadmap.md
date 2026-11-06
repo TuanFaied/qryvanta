@@ -84,8 +84,9 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 
 ## Phase 9: Security and quality ⬜
 
+- ✅ Content-Security-Policy for the desktop webview (#12)
 - Security review against `docs/security/threat-model.md`
-- Full integration suite in CI with SQL Server in Docker
+- ✅ Full integration suite in CI with SQL Server in Docker (#7)
 - Error handling and resource usage pass
 
 ## Phase 10: Open-source release ⬜

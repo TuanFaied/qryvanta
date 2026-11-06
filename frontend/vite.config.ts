@@ -1,10 +1,11 @@
 /// <reference types="vitest/config" />
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import wails from "@wailsio/runtime/plugins/vite";
 import { defineConfig, type Plugin } from "vite";
+import { injectCspMeta } from "./src/lib/csp";
 
 // Go embeds frontend/dist with //go:embed, which fails when the directory is empty.
 // The repository keeps dist/.gitkeep so a fresh clone compiles; Vite empties dist on build,
@@ -15,6 +16,26 @@ function keepDistPlaceholder(): Plugin {
     apply: "build",
     closeBundle() {
       writeFileSync(fileURLToPath(new URL("./dist/.gitkeep", import.meta.url)), "");
+    },
+  };
+}
+
+// Production builds carry the Content-Security-Policy in index.html as well as in the header
+// the Go asset server sends, so the page is protected even if a webview ignored the header.
+// Development builds (Vite dev server, `--mode development`) skip it: React Refresh needs an
+// inline script there. The Go side applies its relaxed development policy instead.
+function contentSecurityPolicy(): Plugin {
+  let production = false;
+  return {
+    name: "qryvanta:content-security-policy",
+    apply: "build",
+    configResolved(config) {
+      production = config.mode === "production";
+    },
+    transformIndexHtml(html) {
+      if (!production) return html;
+      const policy = readFileSync(fileURLToPath(new URL("./csp-production.txt", import.meta.url)), "utf8").trim();
+      return injectCspMeta(html, policy);
     },
   };
 }
@@ -30,7 +51,7 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
-  plugins: [react(), tailwindcss(), wails("./bindings"), keepDistPlaceholder()],
+  plugins: [react(), tailwindcss(), wails("./bindings"), contentSecurityPolicy(), keepDistPlaceholder()],
   test: {
     environment: "jsdom",
     globals: true,

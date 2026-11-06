@@ -319,6 +319,36 @@ useful. The dark theme is the default, with a light theme available. All backend
 through generated bindings wrapped in `frontend/src/services`, so components never import
 bindings directly.
 
+### D9a. Webview hardening (Content-Security-Policy)
+
+The webview loads only Qryvanta's own bundled assets, and it talks to Go through same-origin
+requests (`/wails/runtime`, `/wails/stream/…`, the events WebSocket). So the production policy
+can be strict:
+
+```
+default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;
+font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none';
+form-action 'none'; frame-ancestors 'none'
+```
+
+- **No inline or external scripts, and no eval.** Neither the app bundle nor `@wailsio/runtime`
+  uses `eval` or `new Function`. Native calls such as `ExecJS` use the webview host API, which a
+  page's CSP doesn't restrict.
+- **No external connections.** Even if markup were injected, it could not send data anywhere,
+  which matters for an app that displays query results.
+- **`style-src 'unsafe-inline'`** is the one relaxation. React and Radix set `style` attributes
+  (positioning, sizes). Inline styles can't execute code.
+- **Single source:** the policy lives in `frontend/csp-production.txt`. The Go asset middleware
+  (`desktop.SecurityHeaders`) sends it as a header on every response, together with
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`. The Vite production build
+  also writes it into `index.html` as a `<meta>` tag, without the header-only `frame-ancestors`,
+  so it applies even if a webview ignored the header. Tests check both and the policy's key
+  directives.
+- **Development builds** (`wails3 dev`, no `production` build tag) use `desktop.DevelopmentCSP`.
+  It adds `'unsafe-inline'` scripts (Vite's React Refresh preamble) and local
+  `ws://`/`http://` connections (hot reload), and still forbids eval, plugins and non-local
+  origins.
+
 ## 6. Main flow: "Execute with debugging" (target design)
 
 ```
