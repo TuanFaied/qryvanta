@@ -64,14 +64,15 @@ cmd/
   qryvanta-cli/        Command-line entry point
 internal/
   app/                 Composition root: wires config, logging and core services
-  desktop/             Wails adapter: bound services, events, DTO mapping
+  desktop/             Wails adapter: App, Connection and Schema services (DTOs only)
   config/              Load, validate, and atomically save user configuration
   logging/             slog setup, file logging, secret redaction
   security/            Redaction helpers, execution policy (Phase 2+)
   version/             Build version information
   fsutil/              Atomic file writes shared by config and connections
   connection/          Connection profiles, keyring credentials; (Phase 2) pooling
-  dialect/mssql/       SQL Server driver: DSN building, server info, error mapping
+  dialect/mssql/       SQL Server driver (DSN, server info, errors) and metadata reader
+  schema/              Product-neutral metadata model and the schema.Reader interface
   executor/            (Phase 3) Query execution, limits, cancellation, result streaming
   parser/              (Phase 4) Parser interface, sidecar client, structured query model
   analyzer/            (Phase 5) Rules that turn query structure + evidence into findings
@@ -242,8 +243,9 @@ documentation states clearly which guarantees are hard and which are best effort
 - `connection.Driver` is a small interface defined by its consumer, `connection.Pool`. It
   has two methods: `Open` and `ServerInfo`. `internal/dialect/mssql` implements it with
   `github.com/microsoft/go-mssqldb`. Later dialects add their own packages under
-  `internal/dialect/`, and the interface grows only when a feature needs it (metadata in #9,
-  plans in Phase 6).
+  `internal/dialect/`, and the interface grows only when a feature needs it. Metadata got its
+  own consumer-side interface instead (`schema.Reader`, see D7b), and plans will do the same
+  in Phase 6.
 - The DSN is built with `net/url`, which escapes every component, and parsed by the driver's
   own `msdsn.Parse`. Values are never concatenated into a connection string. The unit tests
   check what the driver parses, including passwords containing `@:/?#&;=%'"`.
@@ -261,6 +263,30 @@ documentation states clearly which guarantees are hard and which are best effort
 - Errors leaving the pool are sanitized: the password and `key=value` secrets are scrubbed,
   SQL Server errors keep their number, state and class (`connection.ServerError`), and
   `context.Canceled`/`DeadlineExceeded` stay detectable with `errors.Is`.
+
+### D7b. Reading metadata
+
+- `internal/schema` holds a product-neutral model (`Database`, `Object`, `Column`) and the
+  `schema.Reader` interface: `Databases`, `Objects(database)`, `Columns(database, schema, object)`.
+  The explorer, and later the analyzer's metadata rules (Phase 5), depend only on this package.
+  `mssql.Metadata` is the SQL Server implementation, chosen in `internal/app`.
+- Readers work through an already open `*sql.DB` from `connection.Pool`. They never connect
+  on their own, and they read only catalog views, so the results respect the login's metadata
+  visibility. A `db_datareader`-only login, for example, does not see procedures unless it
+  has `VIEW DEFINITION`.
+- Other databases are read through three-part names, so one pooled connection serves the
+  whole server and the session's database context is never changed (`USE` would leak into
+  pooled connections). The database name is first checked against `sys.databases` with
+  `HAS_DBACCESS`, then quoted by `mssql.QuoteIdent`, which follows QUOTENAME's rules: brackets,
+  `]` doubled, at most 128 characters, no NUL. Object names are passed as parameters
+  (`OBJECT_ID(@full)`). Integration tests send hostile names to confirm both.
+- `desktop.SchemaService` gives each request a 30-second timeout and returns failures as data
+  (`not_connected`, `not_found`, `permission`, `timeout`, `cancelled`, `server`), so the
+  explorer can show them on the node that failed.
+- The frontend loads each tree node only when it is expanded and caches it per connection.
+  Refresh, disconnect, delete and switching connections drop that cache. The *current
+  database* is a per-connection UI selection (default: the login's database). Query
+  execution (Phase 3) will run against it.
 
 ### D8. Logging
 
