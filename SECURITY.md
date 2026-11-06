@@ -21,5 +21,7 @@ Qryvanta connects to your databases with your credentials, so it is designed to 
   checks are best effort, and that **a read-only database login is the only reliable guarantee.**
 - Generated query changes are never executed automatically.
 - No telemetry. Nothing is sent anywhere except to the databases you connect to.
+- The desktop webview runs under a strict Content-Security-Policy: no inline or external
+  scripts, no eval, and no network connections other than to the app's own backend.
 
 The full threat model will be published in `docs/security/` before the first release.

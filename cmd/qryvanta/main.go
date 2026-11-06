@@ -43,7 +43,8 @@ func run() error {
 			application.NewService(desktop.NewSchemaService(core)),
 		},
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(frontend.Assets),
+			Handler:    application.AssetFileServerFS(frontend.Assets),
+			Middleware: desktop.SecurityHeaders(contentSecurityPolicy()),
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,

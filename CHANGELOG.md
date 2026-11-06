@@ -46,6 +46,12 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- Content-Security-Policy for the desktop webview:
+  - The policy blocks inline and external scripts, eval, and connections other than the app's
+    own backend.
+  - It is sent as a header with `X-Content-Type-Options` and `Referrer-Policy`, and written into
+    the production `index.html`.
+  - Development builds use a relaxed policy for Vite hot reload.
 - Login write-access check:
   - Qryvanta reports whether the current login could modify data in the current database:
     *read-only login*, *may modify via procedures*, *login can modify data*, or *unknown*.
