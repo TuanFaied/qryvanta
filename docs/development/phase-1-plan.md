@@ -74,7 +74,7 @@ Implemented and verified:
 
 Known limitations:
 
-- The app icon is still the Wails default (`build/appicon.png`). It needs a Qryvanta icon at 1024×1024.
+- ~~The app icon is still the Wails default.~~ Resolved in #11: `tools/appicon` generates it.
 - No Content-Security-Policy yet. It needs testing against both the Vite dev server and the Wails
   runtime, and is planned for the Phase 9 security review.
 - The Wails asset server logs every asset request at info level. This is harmless, but the logs are noisy.

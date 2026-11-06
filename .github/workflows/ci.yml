@@ -24,7 +24,7 @@ jobs:
       - name: gofmt
         shell: bash
         run: |
-          unformatted=$(gofmt -l cmd internal tests frontend/embed.go)
+          unformatted=$(gofmt -l cmd internal tests tools frontend/embed.go)
           if [ -n "$unformatted" ]; then echo "Run gofmt on:"; echo "$unformatted"; exit 1; fi
       - run: go vet ./...
       - run: go test -count=1 ./...
