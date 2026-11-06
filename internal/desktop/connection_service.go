@@ -81,11 +81,12 @@ type SaveConnectionResult struct {
 
 // TestConnectionResult is returned by Test.
 type TestConnectionResult struct {
-	OK          bool                  `json:"ok"`
-	Server      connection.ServerInfo `json:"server"`
-	LatencyMs   int64                 `json:"latencyMs"`
-	Error       *ConnectionError      `json:"error"`
-	FieldErrors map[string]string     `json:"fieldErrors"`
+	OK          bool                    `json:"ok"`
+	Server      connection.ServerInfo   `json:"server"`
+	LatencyMs   int64                   `json:"latencyMs"`
+	Access      *connection.WriteAccess `json:"access"`
+	Error       *ConnectionError        `json:"error"`
+	FieldErrors map[string]string       `json:"fieldErrors"`
 }
 
 // ConnectResult is returned by Connect.
@@ -196,7 +197,19 @@ func (s *ConnectionService) Test(ctx context.Context, in ConnectionInput) (TestC
 	if err != nil {
 		return TestConnectionResult{Error: classify(err), FieldErrors: map[string]string{}}, nil
 	}
-	return TestConnectionResult{OK: true, Server: res.Server, LatencyMs: res.LatencyMs, FieldErrors: map[string]string{}}, nil
+	return TestConnectionResult{OK: true, Server: res.Server, LatencyMs: res.LatencyMs, Access: res.Access, FieldErrors: map[string]string{}}, nil
+}
+
+// CheckWriteAccess reports whether the login of a connected profile could modify data in
+// database. The UI calls it when the connection or the current database changes.
+func (s *ConnectionService) CheckWriteAccess(ctx context.Context, id, database string) (*connection.WriteAccess, error) {
+	ctx, cancel := context.WithTimeout(ctx, metadataTimeout)
+	defer cancel()
+	res, err := s.core.Pool().CheckAccessFor(ctx, id, database)
+	if errors.Is(err, connection.ErrNotConnected) {
+		return &connection.WriteAccess{Database: database, Level: connection.AccessUnknown, Reasons: []connection.AccessReason{}, Error: "not connected"}, nil
+	}
+	return res, err
 }
 
 // Connect opens the pooled connection for a saved profile.

@@ -18,6 +18,7 @@ import { WelcomePage } from "@/features/workspace/WelcomePage";
 import { backend, type AppInfo, type Config, type SaveResult, type Theme } from "@/services/backend";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useSchemaStore } from "@/stores/schema-store";
+import { accessKey, useAccessStore } from "@/stores/access-store";
 import { safeStorage } from "@/utils/safe-storage";
 import type { PanelId } from "./panels";
 
@@ -79,17 +80,31 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
     }
   }, [activeId, serverDatabase, setCurrentDatabase]);
 
-  // Cached metadata belongs to an open connection: drop it when that connection closes.
+  // Cached metadata and permissions belong to an open connection: drop them when it closes.
+  const forgetAccess = useAccessStore((s) => s.forget);
   const previousActive = useRef<string | null>(null);
   useEffect(() => {
     const prev = previousActive.current;
-    if (prev && prev !== activeId) forget(prev);
+    if (prev && prev !== activeId) {
+      forget(prev);
+      forgetAccess(prev);
+    }
     previousActive.current = activeId;
-  }, [activeId, forget]);
+  }, [activeId, forget, forgetAccess]);
+
+  // Check what the login could change whenever the connection or current database changes.
+  const checkAccess = useAccessStore((s) => s.check);
+  const access = useAccessStore((s) => (activeId && currentDatabase ? s.results[accessKey(activeId, currentDatabase)] : undefined));
+  useEffect(() => {
+    if (activeId && currentDatabase) void checkAccess(activeId, currentDatabase);
+  }, [activeId, currentDatabase, checkAccess]);
 
   const disconnect = () => void conn.disconnect();
   const refresh = () => {
-    if (activeId) forget(activeId);
+    if (activeId) {
+      forget(activeId);
+      forgetAccess(activeId);
+    }
     void conn.load();
   };
 
@@ -224,6 +239,8 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
             ? { name: active.profile.name, server: { ...conn.activeServer, database: currentDatabase ?? conn.activeServer.database } }
             : null
         }
+        access={access}
+        onRecheckAccess={() => activeId && currentDatabase && void checkAccess(activeId, currentDatabase, true)}
       />
 
       <ConnectionDialog

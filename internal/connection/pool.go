@@ -50,6 +50,9 @@ type TestResult struct {
 	// LatencyMs is the measured time, in milliseconds, to open the connection and run the
 	// server-info query.
 	LatencyMs int64 `json:"latencyMs"`
+	// Access is the login's write access in the connection's database. It is nil when no
+	// AccessChecker is configured.
+	Access *WriteAccess `json:"access"`
 }
 
 // ErrPasswordRequired is returned when a SQL-authentication profile has no stored password.
@@ -95,6 +98,7 @@ type Pool struct {
 	driver  Driver
 	opts    func() OpenOptions
 	log     *slog.Logger
+	access  AccessChecker
 
 	mu    sync.Mutex
 	conns map[string]*pooled
@@ -113,6 +117,34 @@ func NewPool(manager *Manager, driver Driver, opts func() OpenOptions, log *slog
 		log = slog.New(slog.DiscardHandler)
 	}
 	return &Pool{manager: manager, driver: driver, opts: opts, log: log, conns: map[string]*pooled{}}
+}
+
+// SetAccessChecker makes connection tests report the login's write access. Call it before
+// the pool is used.
+func (p *Pool) SetAccessChecker(c AccessChecker) { p.access = c }
+
+// CheckAccess runs the write-access check on db. A failed check is reported as
+// AccessUnknown with a sanitized message, never as an error, because a connection whose
+// permissions cannot be read is still usable.
+func (p *Pool) CheckAccess(ctx context.Context, db *sql.DB, database string) *WriteAccess {
+	if p.access == nil {
+		return nil
+	}
+	res, err := p.access.WriteAccess(ctx, db, database)
+	if err != nil {
+		p.log.Warn("write-access check failed", "database", database, "err", err)
+		return &WriteAccess{Database: database, Level: AccessUnknown, Reasons: []AccessReason{}, Error: sanitize(err, "").Error()}
+	}
+	return &res
+}
+
+// CheckAccessFor runs the write-access check for a connected profile.
+func (p *Pool) CheckAccessFor(ctx context.Context, id, database string) (*WriteAccess, error) {
+	db, err := p.DB(id)
+	if err != nil {
+		return nil, err
+	}
+	return p.CheckAccess(ctx, db, database), nil
 }
 
 // Test opens a temporary connection to a saved profile, reports the server, and closes it.
@@ -147,10 +179,11 @@ func (p *Pool) test(ctx context.Context, prof Profile, secret string) (TestResul
 		return TestResult{}, err
 	}
 	latency := time.Since(start)
+	access := p.CheckAccess(ctx, db, info.Database)
 	_ = db.Close()
 	p.log.Info("connection test succeeded", "profile_id", prof.ID, "name", prof.Name,
 		"server_version", info.ProductVersion, "latency_ms", latency.Milliseconds())
-	return TestResult{Server: info, LatencyMs: latency.Milliseconds()}, nil
+	return TestResult{Server: info, LatencyMs: latency.Milliseconds(), Access: access}, nil
 }
 
 // Connect opens (or reuses) the pooled connection for a profile.

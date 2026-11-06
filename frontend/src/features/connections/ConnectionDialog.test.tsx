@@ -16,7 +16,7 @@ function setup(opts: { editing?: ReturnType<typeof testConnection> | null; onSav
   return { onSave, onTest, onOpenChange, user: userEvent.setup() };
 }
 
-const okResult = (): TestConnectionResult => ({ ok: true, server: testServer(), latencyMs: 12, error: null, fieldErrors: {} });
+const okResult = (): TestConnectionResult => ({ ok: true, server: testServer(), latencyMs: 12, access: null, error: null, fieldErrors: {} });
 
 describe("ConnectionDialog", () => {
   it("creates a connection with a password", async () => {
@@ -80,6 +80,7 @@ describe("ConnectionDialog", () => {
       ok: false,
       server: testServer(),
       latencyMs: 0,
+      access: null,
       error: { code: ErrorCode.ErrCertificate, serverErrorNumber: 0, message: "x509: certificate signed by unknown authority" },
       fieldErrors: {},
     });
@@ -102,5 +103,19 @@ describe("ConnectionDialog", () => {
     await user.click(await screen.findByRole("button", { name: "Cancel test" }));
     expect(signal?.aborted).toBe(true);
     expect(await screen.findByRole("button", { name: /Test connection/ })).toBeEnabled();
+  });
+});
+
+describe("ConnectionDialog write access", () => {
+  it("shows the login's write access in a successful test", async () => {
+    const onTest = vi.fn<TestFn>().mockResolvedValue({
+      ...okResult(),
+      access: { database: "Sales", level: "can_write" as never, reasons: [{ kind: "direct", text: "member of the db_owner database role" }], error: "" },
+    });
+    const { user } = setup({ editing: testConnection(), onTest });
+    await user.click(screen.getByRole("button", { name: /Test connection/ }));
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("Login can modify data");
+    expect(status).toHaveTextContent("member of the db_owner database role");
   });
 });

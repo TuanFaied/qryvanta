@@ -16,12 +16,12 @@ import type {
 import { ErrorCode, PasswordAction } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop/models";
 import type { Config } from "../../bindings/github.com/TuanFaied/qryvanta/internal/config/models";
 import { LogLevel, Theme } from "../../bindings/github.com/TuanFaied/qryvanta/internal/config/models";
-import type { Profile, ServerInfo } from "../../bindings/github.com/TuanFaied/qryvanta/internal/connection/models";
-import { AuthMethod, EncryptMode } from "../../bindings/github.com/TuanFaied/qryvanta/internal/connection/models";
+import type { Profile, ServerInfo, WriteAccess } from "../../bindings/github.com/TuanFaied/qryvanta/internal/connection/models";
+import { AccessLevel, AuthMethod, EncryptMode } from "../../bindings/github.com/TuanFaied/qryvanta/internal/connection/models";
 
 export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, Profile, SaveConfigResult, ServerInfo };
-export type { Column, Database, MetadataError, SchemaObject };
-export { AuthMethod, EncryptMode, ErrorCode, LogLevel, ObjectKind, PasswordAction, Theme };
+export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
+export { AccessLevel, AuthMethod, EncryptMode, ErrorCode, LogLevel, ObjectKind, PasswordAction, Theme };
 
 /** A metadata call's result: data, or the error to show on the tree node. */
 export interface MetadataResult<T> {
@@ -46,6 +46,7 @@ export interface TestConnectionResult {
   ok: boolean;
   server: ServerInfo;
   latencyMs: number;
+  access: WriteAccess | null;
   error: ConnectionError | null;
   fieldErrors: Record<string, string>;
 }
@@ -139,6 +140,14 @@ export const backend = {
     call("Connect", () => withSignal(ConnectionService.Connect(id), signal)),
 
   disconnect: (id: string): Promise<void> => call("Disconnect", () => ConnectionService.Disconnect(id)),
+
+  checkWriteAccess: (id: string, database: string): Promise<WriteAccess> =>
+    call("Check write access", async () => {
+      const res = await ConnectionService.CheckWriteAccess(id, database);
+      return res
+        ? { ...res, reasons: res.reasons ?? [] }
+        : { database, level: AccessLevel.AccessUnknown, reasons: [], error: "No result" };
+    }),
 
   listDatabases: (connectionId: string): Promise<MetadataResult<Database[]>> =>
     call("Load databases", async () => {

@@ -46,6 +46,8 @@ type Options struct {
 	Driver connection.Driver
 	// Schema overrides the metadata reader (default: SQL Server catalog views).
 	Schema schema.Reader
+	// Access overrides the write-access checker (default: SQL Server permissions).
+	Access connection.AccessChecker
 }
 
 // Core holds the shared application state.
@@ -135,6 +137,11 @@ func New(opts Options) (*Core, error) {
 	}
 	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns, schema: reader}
 	c.pool = connection.NewPool(conns, driver, c.openOptions, log.Logger)
+	access := opts.Access
+	if access == nil {
+		access = mssql.Access{}
+	}
+	c.pool.SetAccessChecker(access)
 	return c, nil
 }
 

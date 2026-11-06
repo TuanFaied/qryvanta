@@ -198,6 +198,45 @@ func TestTestReportsValidationAndClassifiedErrors(t *testing.T) {
 	}
 }
 
+type fixedAccess struct{ level connection.AccessLevel }
+
+func (f fixedAccess) WriteAccess(_ context.Context, _ *sql.DB, database string) (connection.WriteAccess, error) {
+	return connection.WriteAccess{Database: database, Level: f.level, Reasons: []connection.AccessReason{}}, nil
+}
+
+func TestCheckWriteAccess(t *testing.T) {
+	core, err := app.New(app.Options{
+		ConfigPath:     filepath.Join(t.TempDir(), "config.json"),
+		DisableFileLog: true,
+		Credentials:    connection.NewMemoryStore(),
+		Driver:         &fakeDriver{},
+		Access:         fixedAccess{level: connection.AccessReadOnly},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = core.Close() })
+	s := NewConnectionService(core)
+	saved, _ := s.Save(sqlInput())
+	id := saved.Connection.Profile.ID
+
+	res, err := s.CheckWriteAccess(context.Background(), id, "Sales")
+	if err != nil || res.Level != connection.AccessUnknown || res.Error != "not connected" {
+		t.Fatalf("not connected: %+v, %v", res, err)
+	}
+	if r, _ := s.Connect(context.Background(), id); !r.OK {
+		t.Fatal("connect failed")
+	}
+	res, err = s.CheckWriteAccess(context.Background(), id, "Sales")
+	if err != nil || res.Level != connection.AccessReadOnly || res.Database != "Sales" {
+		t.Fatalf("connected: %+v, %v", res, err)
+	}
+	test, _ := s.Test(context.Background(), ConnectionInput{Profile: saved.Connection.Profile, PasswordAction: PasswordKeep})
+	if !test.OK || test.Access == nil || test.Access.Level != connection.AccessReadOnly {
+		t.Fatalf("Test access = %+v", test.Access)
+	}
+}
+
 func TestConnectDisconnectDelete(t *testing.T) {
 	s, _ := newConnService(t)
 	created, _ := s.Save(sqlInput())
