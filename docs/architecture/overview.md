@@ -207,9 +207,24 @@ documentation states clearly which guarantees are hard and which are best effort
 2. **Session guard** (best effort): queries run in an explicit transaction that is always
    rolled back, with `SET XACT_ABORT ON`, `SET IMPLICIT_TRANSACTIONS OFF`, and a lock timeout.
    This does not undo effects outside the transaction (linked servers, `xp_` procedures, CLR).
-3. **Least-privilege guidance** (strongest): the connection dialog recommends, and the
-   permission check (Phase 2) reports, whether the login can write. A read-only login is the only
-   true guarantee, and the documentation says so.
+3. **Least-privilege guidance** (strongest): a read-only login is the only true guarantee, and
+   the documentation says so. Qryvanta reports what the current login could change:
+   - `connection.AccessChecker` (implemented by `mssql.Access`) runs a read-only permission
+     query inside the target database through `EXEC [db].sys.sp_executesql`, so the pooled
+     session's database never changes. It looks at, in order:
+     - server role and permission (`sysadmin`, `CONTROL SERVER`)
+     - the `db_owner`, `db_datawriter` and `db_ddladmin` roles
+     - database permissions (`fn_my_permissions`: INSERT/UPDATE/DELETE/ALTER/CONTROL/CREATE …)
+     - table-level grants (`HAS_PERMS_BY_NAME`)
+     - EXECUTE on the database or on procedures
+   - The result is `can_write` (any direct permission), `may_write` (only the ability to
+     execute code that could write), `read_only`, or `unknown`. A failed check never fails the
+     connection, because a login without permission to read its own permissions is still usable.
+   - The result appears in the connection test (dialog and CLI) and in the status bar for the
+     current database, and is rechecked whenever that database changes. Session reports
+     (Phase 8) will include it.
+   - It is guidance, not a guarantee. Permissions can change, and some paths (ownership
+     chaining, signed modules, linked servers) are not visible to the login.
 4. **Limits**: timeout, maximum rows, maximum result bytes, cancellation through `context.Context`.
 
 ### D6. Execution plans

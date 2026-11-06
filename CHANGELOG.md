@@ -46,6 +46,13 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- Login write-access check:
+  - Qryvanta reports whether the current login could modify data in the current database:
+    *read-only login*, *may modify via procedures*, *login can modify data*, or *unknown*.
+  - Reasons are listed most significant first, for example sysadmin, `db_owner`, or an
+    INSERT grant on a table.
+  - Shown in the status bar (rechecked when the database changes), in the connection
+    dialog's test result, and in `qryvanta-cli connections test`.
 - Architecture document, roadmap, and Phase 1 plan.
 - Wails v3 desktop application and `qryvanta-cli`, sharing one Go core.
 - Configuration with validation and atomic saves. An invalid file is moved aside at desktop startup.
@@ -59,6 +66,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- The status bar's execution-policy label reads "Read-only mode", so it is not confused with the
+  login check's "Read-only login".
 - Profiles with read-only application intent must name a database (a SQL Server requirement).
 - The explorer and analysis panels keep their pixel width when the window is resized, and start
   at 260 px and 300 px, so they no longer collapse on narrow windows.

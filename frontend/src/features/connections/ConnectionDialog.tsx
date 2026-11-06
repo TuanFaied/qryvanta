@@ -21,7 +21,9 @@ import {
   type ConnectionInput,
   type SaveConnectionResult,
   type TestConnectionResult,
+  type WriteAccess,
 } from "@/services/backend";
+import { describeAccess } from "./access";
 import { emptyForm, errorHint, formFromConnection, toInput, type ConnectionForm } from "./connection-form";
 
 export interface ConnectionDialogProps {
@@ -323,6 +325,14 @@ function TestResultPanel({ test, form }: { test: TestState; form: ConnectionForm
           <dd>{s.database}</dd>
           <dt className="text-muted-foreground">Login</dt>
           <dd>{s.login}</dd>
+          {result.access && (
+            <>
+              <dt className="text-muted-foreground">Write access</dt>
+              <dd>
+                <AccessSummary access={result.access} />
+              </dd>
+            </>
+          )}
         </dl>
       </div>
     );
@@ -337,6 +347,32 @@ function TestResultPanel({ test, form }: { test: TestState; form: ConnectionForm
       </p>
       <p className="mt-1.5">{errorHint(err, form)}</p>
       <p className="selectable mt-1.5 font-mono text-[11px] break-words text-muted-foreground">{err.message}</p>
+    </div>
+  );
+}
+
+function AccessSummary({ access }: { access: WriteAccess }) {
+  const d = describeAccess(access);
+  return (
+    <div>
+      <span
+        className={cn(
+          "font-medium",
+          d.tone === "ok" && "text-success",
+          d.tone === "warn" && "text-warning",
+          d.tone === "danger" && "text-destructive",
+        )}
+      >
+        {d.label}
+      </span>
+      <p className="mt-0.5 text-muted-foreground">{d.detail}</p>
+      {(access.reasons ?? []).length > 0 && (
+        <ul className="mt-1 list-disc pl-4 text-muted-foreground">
+          {(access.reasons ?? []).slice(0, 4).map((r) => (
+            <li key={r.text}>{r.text}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

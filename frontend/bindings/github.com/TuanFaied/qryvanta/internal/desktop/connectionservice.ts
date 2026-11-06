@@ -15,7 +15,19 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as connection$0 from "../connection/models.js";
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as $models from "./models.js";
+
+/**
+ * CheckWriteAccess reports whether the login of a connected profile could modify data in
+ * database. The UI calls it when the connection or the current database changes.
+ */
+export function CheckWriteAccess(id: string, database: string): $CancellablePromise<connection$0.WriteAccess | null> {
+    return $Call.ByID(353524865, id, database);
+}
 
 /**
  * Connect opens the pooled connection for a saved profile.

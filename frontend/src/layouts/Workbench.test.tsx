@@ -31,7 +31,7 @@ describe("Workbench", () => {
   it("shows the backend version and execution policy", () => {
     renderWorkbench();
     expect(screen.getByText("v0.1.0-test")).toBeInTheDocument();
-    expect(screen.getByText("Read-only")).toBeInTheDocument();
+    expect(screen.getByText("Read-only mode")).toBeInTheDocument();
     expect(screen.getByText(/Timeout 30s/)).toBeInTheDocument();
   });
 

@@ -171,6 +171,7 @@ export interface TestConnectionResult {
     "ok": boolean;
     "server": connection$0.ServerInfo;
     "latencyMs": number;
+    "access": connection$0.WriteAccess | null;
     "error": ConnectionError | null;
     "fieldErrors": { [_ in string]?: string } | null;
 }

@@ -130,7 +130,32 @@ func cmdConnectionsTest(args []string, opts app.Options, stdout io.Writer) error
 	fmt.Fprintf(tw, "Edition\t%s\n", s.Edition)
 	fmt.Fprintf(tw, "Database\t%s\n", s.Database)
 	fmt.Fprintf(tw, "Login\t%s\n", s.Login)
+	if a := res.Access; a != nil {
+		fmt.Fprintf(tw, "Write access\t%s\n", describeAccess(a))
+		// The first reasons are the most significant; one is enough to make the point.
+		const shown = 3
+		for i, r := range a.Reasons {
+			if i == shown {
+				fmt.Fprintf(tw, "\t  (and %d more; use --json for all)\n", len(a.Reasons)-shown)
+				break
+			}
+			fmt.Fprintf(tw, "\t- %s\n", r.Text)
+		}
+	}
 	return tw.Flush()
+}
+
+func describeAccess(a *connection.WriteAccess) string {
+	switch a.Level {
+	case connection.AccessReadOnly:
+		return "read-only login (no permission to change data found)"
+	case connection.AccessMayWrite:
+		return "may modify data through stored procedures or functions"
+	case connection.AccessCanWrite:
+		return "THIS LOGIN CAN MODIFY DATA. Use a read-only login for debugging."
+	default:
+		return "unknown (" + a.Error + ")"
+	}
 }
 
 func cmdConnectionsRemove(args []string, opts app.Options, stdout io.Writer) error {
