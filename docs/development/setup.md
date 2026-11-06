@@ -53,6 +53,32 @@ $env:QRYVANTA_CONFIG = "$env:TEMP\qryvanta-test\config.json"; $env:WAILS_SERVER_
 Then open `http://localhost:18080`. Server mode is a development aid only: it listens on
 localhost without authentication and must not be shipped.
 
+## App icon
+
+The icon is generated, not drawn by hand. `tools/appicon` renders it from the same geometry as
+the logo mark in the app header (`frontend/src/components/brand/Logo.tsx`), so the two always
+match. It is a separate Go module, so its image library is not a dependency of Qryvanta.
+
+```bash
+cd tools/appicon && go run . -o ../../build/appicon.png -dmg ../../build/darwin -preview "$TMPDIR/icon"
+```
+
+```bash
+wails3 task common:generate:icons
+```
+
+```bash
+wails3 generate icons -input build/darwin/dmg-file-icon.png -macfilename build/darwin/dmg-file-icon.icns -windowsfilename "$TMPDIR/unused.ico"
+```
+
+- The first command writes `build/appicon.png`, the macOS disk-image background and volume icon,
+  and 16–256 px previews for checking legibility at small sizes.
+- The second regenerates `build/windows/icon.ico` and `build/darwin/icons.icns`.
+- The third turns the disk-image volume icon PNG into `.icns`.
+- On macOS, the second command also compiles `build/appicon.icon` (Icon Composer, which uses
+  `Assets/qryvanta_glyph.svg`) into `build/darwin/Assets.car`. That file is not committed, because
+  it can only be built on macOS. Without it, macOS uses `icons.icns`.
+
 ## Project layout
 
 See [the architecture document](../architecture/overview.md#3-repository-layout).
