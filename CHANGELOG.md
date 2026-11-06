@@ -32,6 +32,20 @@ All notable changes to this project are documented here. The format follows
     receives it.
 - `QRYVANTA_CONFIG` points the desktop app at another config (and connections) file for
   development and manual testing.
+- Schema explorer:
+  - A lazily loaded tree of databases (system databases in their own folder), tables, views,
+    stored procedures, functions and columns.
+  - Columns show their T-SQL type, nullability, identity, primary key and foreign-key target.
+  - Search across loaded objects and keyboard expansion.
+  - Context menus to copy a name or a `SELECT TOP (100)` statement, refresh a node, or make a
+    database the current one.
+  - Errors are shown on the node that failed, with a retry.
+- Current-database selection: a header selector lists the databases the login can open. It
+  defaults to the login's database, and the status bar shows it.
+- `internal/schema` (database, object and column model, `Reader` interface) with a SQL Server
+  implementation that reads other databases through safely quoted three-part names.
+- The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
+  `VIEW DEFINITION`, so every object kind appears in the explorer.
 - Architecture document, roadmap, and Phase 1 plan.
 - Wails v3 desktop application and `qryvanta-cli`, sharing one Go core.
 - Configuration with validation and atomic saves. An invalid file is moved aside at desktop startup.
@@ -53,7 +67,6 @@ All notable changes to this project are documented here. The format follows
 
 - The Settings dialog no longer overflows its frame on short windows. It now scrolls inside the
   dialog, with the footer kept visible.
-
 - `--password-stdin` ignores the UTF-8 byte-order mark that Windows PowerShell 5.1 puts in front
   of piped text. Before this fix, passwords piped from PowerShell were stored with three
   invisible extra bytes and the login failed.

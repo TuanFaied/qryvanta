@@ -9,6 +9,9 @@ import * as config$0 from "../config/models.js";
 import * as connection$0 from "../connection/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as schema$0 from "../schema/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as version$0 from "../version/models.js";
 
 /**
@@ -19,6 +22,14 @@ export interface AppInfo {
     "configPath": string;
     "logPath": string;
     "startupWarnings": string[] | null;
+}
+
+/**
+ * ColumnsResult is returned by Columns.
+ */
+export interface ColumnsResult {
+    "columns": schema$0.Column[] | null;
+    "error": MetadataError | null;
 }
 
 /**
@@ -63,6 +74,14 @@ export interface ConnectionInput {
 }
 
 /**
+ * DatabasesResult is returned by Databases.
+ */
+export interface DatabasesResult {
+    "databases": schema$0.Database[] | null;
+    "error": MetadataError | null;
+}
+
+/**
  * ErrorCode classifies connection failures so the UI can show specific guidance.
  */
 export enum ErrorCode {
@@ -80,6 +99,26 @@ export enum ErrorCode {
     ErrNetwork = "network",
     ErrNotFound = "not_found",
 };
+
+/**
+ * MetadataError is a failure the explorer shows on the node that failed to load.
+ */
+export interface MetadataError {
+    /**
+     * Code is "not_connected", "not_found", "permission", "cancelled", "timeout" or "server".
+     */
+    "code": string;
+    "serverErrorNumber": number;
+    "message": string;
+}
+
+/**
+ * ObjectsResult is returned by Objects.
+ */
+export interface ObjectsResult {
+    "objects": schema$0.$Object[] | null;
+    "error": MetadataError | null;
+}
 
 /**
  * PasswordAction says what to do with the stored password when saving or testing.

@@ -1,8 +1,6 @@
 import {
   Bug,
   Check,
-  ChevronDown,
-  Database,
   Monitor,
   Moon,
   PanelBottom,
@@ -46,8 +44,8 @@ interface HeaderProps {
   onTogglePanel: (id: PanelId) => void;
   /** The connection selector, provided by the connections feature. */
   connectionControls: ReactNode;
-  /** Current database of the active connection, if any. */
-  database: string | null;
+  /** The current-database selector, provided by the explorer feature. */
+  databaseControls: ReactNode;
 }
 
 export function Header({
@@ -58,7 +56,7 @@ export function Header({
   panels,
   onTogglePanel,
   connectionControls,
-  database,
+  databaseControls,
 }: HeaderProps) {
   const ThemeIcon = themeOptions.find((t) => t.value === theme)?.icon ?? Moon;
 
@@ -68,20 +66,7 @@ export function Header({
       <Separator orientation="vertical" className="mx-1.5 !h-5" />
 
       {connectionControls}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span tabIndex={0} className="inline-flex">
-            <Button variant="ghost" size="sm" disabled className="h-7 gap-1.5 px-2 text-xs font-normal">
-              <Database className="size-3.5" />
-              {database || "No database"}
-              <ChevronDown className="size-3 opacity-60" />
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {database ? "Switching databases arrives with the schema explorer (#9)" : "Connect to a server first"}
-        </TooltipContent>
-      </Tooltip>
+      {databaseControls}
 
       <Separator orientation="vertical" className="mx-1.5 !h-5" />
 

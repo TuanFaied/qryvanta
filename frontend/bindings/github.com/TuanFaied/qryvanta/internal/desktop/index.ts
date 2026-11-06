@@ -3,9 +3,11 @@
 
 import * as AppService from "./appservice.js";
 import * as ConnectionService from "./connectionservice.js";
+import * as SchemaService from "./schemaservice.js";
 export {
     AppService,
-    ConnectionService
+    ConnectionService,
+    SchemaService
 };
 
 export {
@@ -15,10 +17,14 @@ export {
 
 export type {
     AppInfo,
+    ColumnsResult,
     ConnectResult,
     ConnectionDTO,
     ConnectionError,
     ConnectionInput,
+    DatabasesResult,
+    MetadataError,
+    ObjectsResult,
     SaveConfigResult,
     SaveConnectionResult,
     TestConnectionResult

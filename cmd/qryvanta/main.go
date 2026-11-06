@@ -40,6 +40,7 @@ func run() error {
 		Services: []application.Service{
 			application.NewService(desktop.NewAppService(core)),
 			application.NewService(desktop.NewConnectionService(core)),
+			application.NewService(desktop.NewSchemaService(core)),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(frontend.Assets),

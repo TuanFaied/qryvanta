@@ -1,5 +1,5 @@
 import { FileText } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDefaultLayout, usePanelRef, type PanelImperativeHandle, type PanelSize } from "react-resizable-panels";
 import { Header } from "@/components/shell/Header";
 import { StatusBar } from "@/components/shell/StatusBar";
@@ -9,12 +9,15 @@ import { ConnectionDialog } from "@/features/connections/ConnectionDialog";
 import { useConnectionDialog } from "@/features/connections/connection-dialog-store";
 import { ConnectionSelector } from "@/features/connections/ConnectionSelector";
 import { DeleteConnectionDialog } from "@/features/connections/DeleteConnectionDialog";
+import { DatabaseSelector } from "@/features/explorer/DatabaseSelector";
 import { ExplorerPanel } from "@/features/explorer/ExplorerPanel";
+import { SchemaTree } from "@/features/explorer/SchemaTree";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
 import { BottomPanel } from "@/features/workspace/BottomPanel";
 import { WelcomePage } from "@/features/workspace/WelcomePage";
 import { backend, type AppInfo, type Config, type SaveResult, type Theme } from "@/services/backend";
 import { useConnectionStore } from "@/stores/connection-store";
+import { useSchemaStore } from "@/stores/schema-store";
 import { safeStorage } from "@/utils/safe-storage";
 import type { PanelId } from "./panels";
 
@@ -62,7 +65,33 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
   const dialog = useConnectionDialog();
   const active = conn.connections.find((c) => c.profile.id === conn.activeId) ?? null;
   const connect = (id: string) => void conn.connect(id);
+
+  const schema = useSchemaStore();
+  const activeId = conn.activeId;
+  const currentDatabase = activeId ? (schema.currentDatabase[activeId] ?? null) : null;
+  const { setCurrentDatabase, forget } = useSchemaStore.getState();
+
+  // A new connection starts in the login's default database.
+  const serverDatabase = conn.activeServer?.database;
+  useEffect(() => {
+    if (activeId && serverDatabase && !useSchemaStore.getState().currentDatabase[activeId]) {
+      setCurrentDatabase(activeId, serverDatabase);
+    }
+  }, [activeId, serverDatabase, setCurrentDatabase]);
+
+  // Cached metadata belongs to an open connection: drop it when that connection closes.
+  const previousActive = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = previousActive.current;
+    if (prev && prev !== activeId) forget(prev);
+    previousActive.current = activeId;
+  }, [activeId, forget]);
+
   const disconnect = () => void conn.disconnect();
+  const refresh = () => {
+    if (activeId) forget(activeId);
+    void conn.load();
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -73,7 +102,14 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         onOpenSettings={openSettings}
         panels={visible}
         onTogglePanel={togglePanel}
-        database={conn.activeServer?.database ?? null}
+        databaseControls={
+          <DatabaseSelector
+            databases={activeId ? schema.databases[activeId] : null}
+            current={currentDatabase}
+            onOpen={() => activeId && void schema.loadDatabases(activeId)}
+            onSelect={(db) => activeId && setCurrentDatabase(activeId, db)}
+          />
+        }
         connectionControls={
           <ConnectionSelector
             connections={conn.connections}
@@ -111,12 +147,13 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
             connectingId={conn.connectingId}
             loading={conn.status === "loading"}
             loadError={conn.loadError}
-            onRefresh={() => void conn.load()}
+            onRefresh={refresh}
             onNew={dialog.openNew}
             onEdit={dialog.openEdit}
             onDelete={dialog.confirmDelete}
             onConnect={connect}
             onDisconnect={disconnect}
+            renderSchema={(id, filter) => <SchemaTree connectionId={id} filter={filter} />}
           />
         </ResizablePanel>
         <ResizableHandle />
@@ -182,7 +219,11 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
       <StatusBar
         config={config}
         onOpenSettings={openSettings}
-        connection={active && conn.activeServer ? { name: active.profile.name, server: conn.activeServer } : null}
+        connection={
+          active && conn.activeServer
+            ? { name: active.profile.name, server: { ...conn.activeServer, database: currentDatabase ?? conn.activeServer.database } }
+            : null
+        }
       />
 
       <ConnectionDialog

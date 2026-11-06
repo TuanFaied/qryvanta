@@ -58,8 +58,8 @@ describe("ExplorerPanel", () => {
 
   it("filters connections", async () => {
     const { user } = setup();
-    await user.click(screen.getByRole("button", { name: "Search connections" }));
-    await user.type(screen.getByLabelText("Filter connections"), "express");
+    await user.click(screen.getByRole("button", { name: "Search" }));
+    await user.type(screen.getByLabelText("Filter connections and objects"), "express");
     expect(screen.queryByRole("treeitem", { name: "Sales reporting" })).not.toBeInTheDocument();
     expect(screen.getByRole("treeitem", { name: "Local Express" })).toBeInTheDocument();
   });
