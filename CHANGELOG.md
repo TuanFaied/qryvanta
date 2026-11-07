@@ -46,6 +46,13 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- Schema-aware autocomplete in the editor:
+  - After FROM or JOIN it suggests the current database's tables, views and functions.
+  - After `alias.` it suggests that table's columns, with their type and PK/FK.
+  - Elsewhere it suggests columns of the tables in the statement, keywords and functions.
+  - Names that need it are inserted in brackets.
+  - Metadata comes from the explorer's cache and is loaded on demand. Completion never waits
+    more than 400 ms on the server.
 - Running queries from the editor:
   - Execute (Ctrl+Enter or the header button) runs the selection, or the whole tab, on the
     tab's connection and database. Stop (Esc or the header button) cancels it on the server.

@@ -2,7 +2,10 @@ import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 import type { Formatting } from "@/services/backend";
 import type { ResolvedTheme } from "@/features/theme/theme";
 import { formatSql } from "./format";
+import { registerSqlCompletion } from "./completion/provider";
 import { monaco, SQL_LANGUAGE } from "./monaco";
+
+registerSqlCompletion();
 import type { EditorCommand, SqlEditorHandle } from "./editor-types";
 
 export interface SqlEditorProps {
@@ -109,6 +112,10 @@ export default function SqlEditor(props: SqlEditorProps) {
       insertSpaces: !formatting.useTabs,
       fixedOverflowWidgets: true,
       contextmenu: true,
+      // Suggestions come from the schema-aware provider; words already in the document add noise.
+      wordBasedSuggestions: "off",
+      quickSuggestions: { other: true, comments: false, strings: false },
+      suggest: { showWords: false },
       ariaLabel: "SQL editor",
     });
     editorRef.current = editor;

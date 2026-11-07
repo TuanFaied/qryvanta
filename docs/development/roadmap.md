@@ -40,7 +40,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   timeout; limits) (#28). Layer 1 (statement allowlist) needs the parser and arrives in Phase 4;
   text matching is not used in the meantime (see architecture D5).
 - ✅ TanStack Table result grid (virtualized, copy as TSV), Messages tab with go-to-line (#30)
-- Schema-aware autocomplete (tables, columns)
+- ✅ Schema-aware autocomplete: objects after FROM/JOIN, columns after `alias.`, keywords and
+  functions elsewhere; heuristic until the Phase 4 parser (#31)
 - CLI: `qryvanta-cli run query.sql --conn X --format json`
 
 ## Phase 4: SQL parsing ⬜
