@@ -46,6 +46,18 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- SQL editor (Monaco, bundled locally and loaded with the first tab):
+  - Tabs that can be created, renamed (double-click or F2) and closed (Ctrl+W, middle click).
+    They show unsaved changes, and each tab remembers its connection and database.
+  - T-SQL highlighting, find and replace, folding, bracket matching and multiple cursors. The
+    editor follows the app theme and font size.
+  - Format Document (Shift+Alt+F, or the toolbar) with sql-formatter's T-SQL dialect. It formats
+    the selection or the whole document. New settings choose keyword case, indent size and tabs.
+  - Open and save `.sql` files (Ctrl+O, Ctrl+S, Ctrl+Shift+S) through native dialogs. Files keep
+    their encoding (UTF-8, UTF-8 with BOM, UTF-16, Windows-1252), and new files are UTF-8 with BOM.
+  - Closing a tab or the window with unsaved changes asks first.
+  - Ctrl+Enter, Ctrl+Shift+Enter and Esc are reserved for execution, which arrives with the
+    results grid.
 - Read-only session guard:
   - In read-only mode, every batch runs inside a transaction that is always rolled back (also
     after errors, timeouts and cancellation), with a configurable lock wait limit (default 5 s).

@@ -2,8 +2,22 @@
  * The only module that talks to the Go backend. Components and stores import from here,
  * never from ../bindings directly, so the transport can change without touching the UI.
  */
-import { AppService, ConnectionService, SchemaService } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
-import type { MetadataError } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop/models";
+import { Events } from "@wailsio/runtime";
+import { QryvantaCloseRequested } from "../../bindings/events";
+import {
+  AppService,
+  ConnectionService,
+  FileService,
+  SchemaService,
+  WindowService,
+} from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
+import type {
+  FileDocument,
+  MetadataError,
+  OpenFileResult,
+  SaveFileResult,
+} from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop/models";
+import { Encoding } from "../../bindings/github.com/TuanFaied/qryvanta/internal/sqlfile/models";
 import type { Column, Database, $Object as SchemaObject } from "../../bindings/github.com/TuanFaied/qryvanta/internal/schema/models";
 import { ObjectKind } from "../../bindings/github.com/TuanFaied/qryvanta/internal/schema/models";
 import type {
@@ -15,13 +29,15 @@ import type {
 } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop/models";
 import { ErrorCode, PasswordAction } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop/models";
 import type { Config } from "../../bindings/github.com/TuanFaied/qryvanta/internal/config/models";
-import { LogLevel, Theme } from "../../bindings/github.com/TuanFaied/qryvanta/internal/config/models";
+import { KeywordCase, LogLevel, Theme } from "../../bindings/github.com/TuanFaied/qryvanta/internal/config/models";
+import type { Formatting } from "../../bindings/github.com/TuanFaied/qryvanta/internal/config/models";
 import type { Profile, ServerInfo, WriteAccess } from "../../bindings/github.com/TuanFaied/qryvanta/internal/connection/models";
 import { AccessLevel, AuthMethod, EncryptMode } from "../../bindings/github.com/TuanFaied/qryvanta/internal/connection/models";
 
 export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, Profile, SaveConfigResult, ServerInfo };
 export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
-export { AccessLevel, AuthMethod, EncryptMode, ErrorCode, LogLevel, ObjectKind, PasswordAction, Theme };
+export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
+export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
 
 /** A metadata call's result: data, or the error to show on the tree node. */
 export interface MetadataResult<T> {
@@ -166,6 +182,27 @@ export const backend = {
       const res = await SchemaService.Columns(connectionId, database, schema, object);
       return { data: res.columns ?? [], error: res.error };
     }),
+
+  /** Shows the native open dialog and reads the chosen .sql file. */
+  openFile: (): Promise<OpenFileResult> => call("Open file", () => FileService.Open()),
+
+  /** Saves to a file that was opened or chosen with Save As earlier. An empty encoding means UTF-8 with BOM. */
+  saveFile: (path: string, content: string, encoding: Encoding | ""): Promise<SaveFileResult> =>
+    call("Save file", () => FileService.Save(path, content, encoding as Encoding)),
+
+  /** Shows the native save dialog and writes the file. */
+  saveFileAs: (suggestedName: string, content: string, encoding: Encoding | ""): Promise<SaveFileResult> =>
+    call("Save file", () => FileService.SaveAs(suggestedName, content, encoding as Encoding)),
+
+  /** Tells the backend whether closing the window would lose work. */
+  setUnsavedChanges: (unsaved: boolean): Promise<void> =>
+    call("Track unsaved changes", () => WindowService.SetUnsavedChanges(unsaved)),
+
+  /** Closes the window without asking about unsaved changes again. */
+  closeWindow: (): Promise<void> => call("Close window", () => WindowService.Close()),
+
+  /** Calls handler when the user tries to close the window with unsaved changes. */
+  onCloseRequested: (handler: () => void): (() => void) => Events.On(QryvantaCloseRequested, () => handler()),
 };
 
 export type Backend = typeof backend;

@@ -77,7 +77,8 @@ Known limitations:
 - ~~The app icon is still the Wails default.~~ Resolved in #11: `tools/appicon` generates it.
 - ~~No Content-Security-Policy yet.~~ Resolved in #12: see architecture decision D9a.
 - ~~The Wails asset server logs every asset request at info level.~~ Resolved in #13: see architecture decision D8.
-- The JS bundle is 513 kB (a single chunk). Code-splitting is planned for Phase 3, when Monaco is added.
+- ~~The JS bundle is 513 kB (a single chunk). Code-splitting is planned for Phase 3, when Monaco is added.~~
+  Resolved in #29: Monaco is a separate chunk loaded with the first editor tab (see D9b).
 - The module path is `github.com/TuanFaied/qryvanta`, matching the repository URL.
 
 ## Done when

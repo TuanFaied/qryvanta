@@ -48,6 +48,7 @@ type Config struct {
 	SchemaVersion int        `json:"schemaVersion"`
 	Appearance    Appearance `json:"appearance"`
 	Execution     Execution  `json:"execution"`
+	Formatting    Formatting `json:"formatting"`
 	History       History    `json:"history"`
 	Logging       Logging    `json:"logging"`
 }
@@ -56,6 +57,23 @@ type Config struct {
 type Appearance struct {
 	Theme          Theme `json:"theme"`
 	EditorFontSize int   `json:"editorFontSize"`
+}
+
+// KeywordCase controls how the SQL formatter writes keywords.
+type KeywordCase string
+
+const (
+	KeywordUpper    KeywordCase = "upper"
+	KeywordLower    KeywordCase = "lower"
+	KeywordPreserve KeywordCase = "preserve"
+)
+
+// Formatting holds the options of the editor's Format Document command.
+type Formatting struct {
+	KeywordCase KeywordCase `json:"keywordCase"`
+	// IndentSize is the number of spaces per indentation level, and the tab width.
+	IndentSize int  `json:"indentSize"`
+	UseTabs    bool `json:"useTabs"`
 }
 
 // Execution holds default limits applied to every query execution.
@@ -107,6 +125,8 @@ const (
 	MaxLockTimeout    = 300
 	MinRetentionDays  = 1
 	MaxRetentionDays  = 3650
+	MinIndentSize     = 1
+	MaxIndentSize     = 8
 	MinEditorFontSize = 8
 	MaxEditorFontSize = 32
 )
@@ -128,6 +148,11 @@ func Default() Config {
 			MaxProbesPerRun:    10,
 			ConnectTimeoutSec:  15,
 			LockTimeoutSeconds: 5,
+		},
+		Formatting: Formatting{
+			KeywordCase: KeywordUpper,
+			IndentSize:  4,
+			UseTabs:     false,
 		},
 		History: History{
 			Enabled:            true,
@@ -177,6 +202,13 @@ func (c Config) Validate() error {
 	checkRange("execution.maxProbesPerRun", c.Execution.MaxProbesPerRun, 0, MaxProbesPerRun)
 	checkRange("execution.connectTimeoutSeconds", c.Execution.ConnectTimeoutSec, MinConnectTimeout, MaxConnectTimeout)
 	checkRange("execution.lockTimeoutSeconds", c.Execution.LockTimeoutSeconds, MinLockTimeout, MaxLockTimeout)
+
+	switch c.Formatting.KeywordCase {
+	case KeywordUpper, KeywordLower, KeywordPreserve:
+	default:
+		errs["formatting.keywordCase"] = `must be "upper", "lower" or "preserve"`
+	}
+	checkRange("formatting.indentSize", c.Formatting.IndentSize, MinIndentSize, MaxIndentSize)
 
 	checkRange("history.retentionDays", c.History.RetentionDays, MinRetentionDays, MaxRetentionDays)
 

@@ -3,11 +3,15 @@
 
 import * as AppService from "./appservice.js";
 import * as ConnectionService from "./connectionservice.js";
+import * as FileService from "./fileservice.js";
 import * as SchemaService from "./schemaservice.js";
+import * as WindowService from "./windowservice.js";
 export {
     AppService,
     ConnectionService,
-    SchemaService
+    FileService,
+    SchemaService,
+    WindowService
 };
 
 export {
@@ -23,9 +27,12 @@ export type {
     ConnectionError,
     ConnectionInput,
     DatabasesResult,
+    FileDocument,
     MetadataError,
     ObjectsResult,
+    OpenFileResult,
     SaveConfigResult,
     SaveConnectionResult,
+    SaveFileResult,
     TestConnectionResult
 } from "./models.js";

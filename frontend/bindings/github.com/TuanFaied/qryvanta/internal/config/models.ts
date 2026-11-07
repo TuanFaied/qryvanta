@@ -16,6 +16,7 @@ export interface Config {
     "schemaVersion": number;
     "appearance": Appearance;
     "execution": Execution;
+    "formatting": Formatting;
     "history": History;
     "logging": Logging;
 }
@@ -43,6 +44,19 @@ export interface Execution {
 }
 
 /**
+ * Formatting holds the options of the editor's Format Document command.
+ */
+export interface Formatting {
+    "keywordCase": KeywordCase;
+
+    /**
+     * IndentSize is the number of spaces per indentation level, and the tab width.
+     */
+    "indentSize": number;
+    "useTabs": boolean;
+}
+
+/**
  * History controls local session history retention.
  */
 export interface History {
@@ -55,6 +69,20 @@ export interface History {
      */
     "storeResultSamples": boolean;
 }
+
+/**
+ * KeywordCase controls how the SQL formatter writes keywords.
+ */
+export enum KeywordCase {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    KeywordUpper = "upper",
+    KeywordLower = "lower",
+    KeywordPreserve = "preserve",
+};
 
 /**
  * LogLevel is the minimum level written to the log file.

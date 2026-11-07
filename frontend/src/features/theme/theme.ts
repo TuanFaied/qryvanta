@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Theme } from "@/services/backend";
 
 export type ResolvedTheme = "dark" | "light";
@@ -29,6 +30,17 @@ export function applyTheme(theme: Theme, root: HTMLElement = document.documentEl
   root.classList.toggle("dark", resolved === "dark");
   root.style.colorScheme = resolved;
   return resolved;
+}
+
+/** The theme actually shown, following the OS while the setting is "system". */
+export function useResolvedTheme(theme: Theme): ResolvedTheme {
+  const [prefersDark, setPrefersDark] = useState(systemPrefersDark);
+  useEffect(() => {
+    if (theme !== Theme.ThemeSystem) return;
+    setPrefersDark(systemPrefersDark());
+    return watchSystemTheme(() => setPrefersDark(systemPrefersDark()));
+  }, [theme]);
+  return resolveTheme(theme, prefersDark);
 }
 
 /** Calls onChange when the OS theme changes. Returns an unsubscribe function. */

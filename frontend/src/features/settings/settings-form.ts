@@ -3,6 +3,7 @@ import type { Config } from "@/services/backend";
 /** Numeric settings edited as text, keyed by their JSON path in Config. */
 export const numericFields = [
   { path: "appearance.editorFontSize", label: "Editor font size", unit: "px" },
+  { path: "formatting.indentSize", label: "Indent size", unit: "spaces" },
   { path: "execution.timeoutSeconds", label: "Query timeout", unit: "seconds" },
   { path: "execution.maxRows", label: "Maximum rows", unit: "rows" },
   { path: "execution.maxResultMB", label: "Maximum result size", unit: "MB" },
