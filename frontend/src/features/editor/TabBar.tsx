@@ -1,4 +1,4 @@
-import { FileCode2, Plus, X } from "lucide-react";
+import { FileCode2, Loader2, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "@/components/shell/IconButton";
 import {
@@ -15,13 +15,14 @@ import { isDirty, type EditorTab } from "@/stores/editor-store";
 interface TabBarProps {
   tabs: EditorTab[];
   activeId: string | null;
+  runningTabs?: ReadonlySet<string>;
   onActivate: (id: string) => void;
   onClose: (id: string) => void;
   onRename: (id: string, title: string) => void;
   onNew: () => void;
 }
 
-export function TabBar({ tabs, activeId, onActivate, onClose, onRename, onNew }: TabBarProps) {
+export function TabBar({ tabs, activeId, runningTabs, onActivate, onClose, onRename, onNew }: TabBarProps) {
   const [renaming, setRenaming] = useState<string | null>(null);
 
   return (
@@ -51,7 +52,11 @@ export function TabBar({ tabs, activeId, onActivate, onClose, onRename, onNew }:
                     : "border-t-transparent text-muted-foreground hover:bg-accent/40",
                 )}
               >
-                <FileCode2 className="size-3.5 shrink-0 text-muted-foreground" />
+                {runningTabs?.has(tab.id) ? (
+                  <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" aria-label="Query running" />
+                ) : (
+                  <FileCode2 className="size-3.5 shrink-0 text-muted-foreground" />
+                )}
                 {renaming === tab.id ? (
                   <RenameInput
                     initial={tab.title}

@@ -13,3 +13,8 @@ import "../github.com/wailsapp/wails/v3/internal/eventcreate.js";
  */
 export const QryvantaCloseRequested = "qryvanta:close-requested";
 
+/**
+ * Name of the custom event "qryvanta:execution".
+ */
+export const QryvantaExecution = "qryvanta:execution";
+

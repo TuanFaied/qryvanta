@@ -3,15 +3,19 @@
  * never from ../bindings directly, so the transport can change without touching the UI.
  */
 import { Events } from "@wailsio/runtime";
-import { QryvantaCloseRequested } from "../../bindings/events";
+import { QryvantaCloseRequested, QryvantaExecution } from "../../bindings/events";
 import {
   AppService,
   ConnectionService,
   FileService,
+  QueryService,
   SchemaService,
   WindowService,
 } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
+import type { Column as ResultColumn, Message, Summary, Value } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
+import { Outcome } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type {
+  ExecutionEvent,
   FileDocument,
   MetadataError,
   OpenFileResult,
@@ -37,6 +41,8 @@ import { AccessLevel, AuthMethod, EncryptMode } from "../../bindings/github.com/
 export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, Profile, SaveConfigResult, ServerInfo };
 export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
 export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
+export type { ExecutionEvent, Message, ResultColumn, Summary, Value };
+export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
 
 /** A metadata call's result: data, or the error to show on the tree node. */
@@ -200,6 +206,20 @@ export const backend = {
 
   /** Closes the window without asking about unsaved changes again. */
   closeWindow: (): Promise<void> => call("Close window", () => WindowService.Close()),
+
+  /**
+   * Runs sql on a connection. Results arrive as execution events tagged with runId (see
+   * onExecutionEvent); the promise resolves with the summary when the run has ended.
+   */
+  execute: (runId: string, connectionId: string, database: string, sql: string): Promise<Summary> =>
+    call("Execute", () => QueryService.Execute(runId, connectionId, database, sql)),
+
+  /** Cancels a run on the server. Its summary still arrives, with outcome "cancelled". */
+  cancelRun: (runId: string): Promise<boolean> => call("Cancel execution", () => QueryService.Cancel(runId)),
+
+  /** Subscribes to result streaming. Returns an unsubscribe function. */
+  onExecutionEvent: (handler: (event: ExecutionEvent) => void): (() => void) =>
+    Events.On(QryvantaExecution, (e) => handler(e.data)),
 
   /** Calls handler when the user tries to close the window with unsaved changes. */
   onCloseRequested: (handler: () => void): (() => void) => Events.On(QryvantaCloseRequested, () => handler()),

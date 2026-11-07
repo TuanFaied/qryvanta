@@ -45,6 +45,7 @@ func run() error {
 			application.NewService(desktop.NewConnectionService(core)),
 			application.NewService(desktop.NewSchemaService(core)),
 			application.NewService(desktop.NewFileService(core)),
+			application.NewService(desktop.NewQueryService(core)),
 			application.NewService(windows),
 		},
 		Assets: application.AssetOptions{

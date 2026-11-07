@@ -9,6 +9,9 @@ import * as config$0 from "../config/models.js";
 import * as connection$0 from "../connection/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as executor$0 from "../executor/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as schema$0 from "../schema/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -102,6 +105,29 @@ export enum ErrorCode {
     ErrNetwork = "network",
     ErrNotFound = "not_found",
 };
+
+/**
+ * ExecutionEvent is one piece of a run's output. Events of one run arrive in server order,
+ * and "done" is always last. The frontend drops events whose RunID is not the run it is
+ * showing, so a cancelled or replaced run can never overwrite a newer one.
+ */
+export interface ExecutionEvent {
+    "runId": string;
+
+    /**
+     * Kind is resultSet, rows, message or done.
+     */
+    "kind": string;
+
+    /**
+     * Index is the result set the event belongs to (resultSet and rows).
+     */
+    "index": number;
+    "columns": executor$0.Column[] | null;
+    "rows": (executor$0.Value[] | null)[] | null;
+    "message": executor$0.Message | null;
+    "summary": executor$0.Summary | null;
+}
 
 /**
  * FileDocument is an opened .sql file.

@@ -449,6 +449,38 @@ form-action 'none'; frame-ancestors 'none'
   `qryvanta:close-requested`. The frontend then asks, and calls `WindowService.Close` to close
   anyway.
 
+### D9c. Running queries from the editor
+
+- **Streaming over events, ordered by run ID.** The frontend picks a run ID and calls
+  `desktop.QueryService.Execute(runID, connection, database, sql)`, which runs
+  `app.Core.Execute` (limits and the read-only policy come from the settings, D5).
+  - Result sets, row batches (500 rows) and messages are emitted as `qryvanta:execution`
+    events while they are read. A final `done` event carries the summary.
+  - Wails delivers events in order through one mailbox, so `done` always comes after the run's
+    rows.
+  - The store keeps only each tab's latest run and drops events with any other run ID, so a
+    cancelled or replaced run can never overwrite a newer one.
+- **Stop** calls `QueryService.Cancel(runID)`. This cancels the run's context, and the driver
+  cancels the query on the server. The run still ends with a `done` event (outcome
+  `cancelled`), so the UI always learns how a run ended.
+- **Selection and line numbers.** Execute runs the selection if there is one, otherwise the
+  whole tab. SQL Server reports error lines relative to the batch, so the editor line is
+  `line + selection start − 1`. Errors inside a procedure report the procedure's own lines and
+  are not linked to the editor.
+- **Results stay in memory.** Rows exist only in the frontend store for the tab's latest run.
+  They are never logged (the core logs counts and timings; SQL text only with
+  `logging.logSqlText`), and are never written to history. Result samples are a separate,
+  off-by-default setting for Phase 8.
+- **The grid is virtualized** (TanStack Table v9 for column sizing, TanStack Virtual for
+  rows), so the DOM holds only the visible rows. 10,000 rows from the fixture server render
+  in about a third of a second.
+  - NULL is styled distinctly from the string `'NULL'`.
+  - Copy produces TSV with CRLF lines and Excel-style quoting, and writes NULL as `NULL`.
+- **Writes need a confirmation when read-only mode is off.** The first run on a connection
+  asks first if the login can or may modify data, or its permissions are unknown. The answer
+  holds until the app restarts. With read-only mode on, the session guard (D5) already rolls
+  changes back, so there is no prompt.
+
 ## 6. Main flow: "Execute with debugging" (target design)
 
 ```

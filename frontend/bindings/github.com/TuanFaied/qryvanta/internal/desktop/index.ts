@@ -4,12 +4,14 @@
 import * as AppService from "./appservice.js";
 import * as ConnectionService from "./connectionservice.js";
 import * as FileService from "./fileservice.js";
+import * as QueryService from "./queryservice.js";
 import * as SchemaService from "./schemaservice.js";
 import * as WindowService from "./windowservice.js";
 export {
     AppService,
     ConnectionService,
     FileService,
+    QueryService,
     SchemaService,
     WindowService
 };
@@ -27,6 +29,7 @@ export type {
     ConnectionError,
     ConnectionInput,
     DatabasesResult,
+    ExecutionEvent,
     FileDocument,
     MetadataError,
     ObjectsResult,
