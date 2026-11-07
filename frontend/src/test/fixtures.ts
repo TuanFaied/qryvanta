@@ -1,6 +1,7 @@
 import {
   AuthMethod,
   EncryptMode,
+  KeywordCase,
   LogLevel,
   Theme,
   type AppInfo,
@@ -61,6 +62,7 @@ export function testConfig(): Config {
       connectTimeoutSeconds: 15,
       lockTimeoutSeconds: 5,
     },
+    formatting: { keywordCase: KeywordCase.KeywordUpper, indentSize: 4, useTabs: false },
     history: { enabled: true, retentionDays: 30, storeResultSamples: false },
     logging: { level: LogLevel.LogInfo, logSqlText: false },
   };

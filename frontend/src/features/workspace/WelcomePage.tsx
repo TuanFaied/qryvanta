@@ -12,8 +12,8 @@ const steps = [
   {
     icon: FileCode2,
     title: "Write and run a query",
-    body: "Execute in read-only mode with time, row and size limits you control.",
-    phase: "Phase 3",
+    body: "Open a .sql file or start a new query. Execution in read-only mode, with time, row and size limits you control, comes next.",
+    phase: "",
   },
   {
     icon: Bug,
@@ -24,6 +24,9 @@ const steps = [
 ];
 
 const shortcuts: [string, string][] = [
+  ["New query", "Ctrl+N"],
+  ["Open file", "Ctrl+O"],
+  ["Format document", "Shift+Alt+F"],
   ["Execute", "Ctrl+Enter"],
   ["Execute with debugging", "Ctrl+Shift+Enter"],
   ["Cancel execution", "Esc"],
@@ -35,9 +38,11 @@ interface WelcomePageProps {
   /** Name of the active connection, if any. */
   connectedTo: string | null;
   onNewConnection: () => void;
+  onNewQuery: () => void;
+  onOpenFile: () => void;
 }
 
-export function WelcomePage({ warnings, connectedTo, onNewConnection }: WelcomePageProps) {
+export function WelcomePage({ warnings, connectedTo, onNewConnection, onNewQuery, onOpenFile }: WelcomePageProps) {
   return (
     <div className="h-full overflow-auto bg-editor">
       <div className="mx-auto flex max-w-2xl flex-col gap-8 px-8 py-12">
@@ -87,6 +92,16 @@ export function WelcomePage({ warnings, connectedTo, onNewConnection }: WelcomeP
                     New connection
                   </Button>
                 ))}
+              {i === 1 && (
+                <div className="flex shrink-0 gap-1.5 self-center">
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onOpenFile}>
+                    Open file
+                  </Button>
+                  <Button size="sm" className="h-7 text-xs" onClick={onNewQuery}>
+                    New query
+                  </Button>
+                </div>
+              )}
             </li>
           ))}
         </ol>

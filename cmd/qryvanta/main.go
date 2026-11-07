@@ -33,6 +33,7 @@ func run() error {
 	}
 	defer core.Close()
 
+	windows := desktop.NewWindowService()
 	wailsApp := application.New(application.Options{
 		Name:        "Qryvanta",
 		Description: "Desktop SQL execution debugging platform",
@@ -43,6 +44,8 @@ func run() error {
 			application.NewService(desktop.NewAppService(core)),
 			application.NewService(desktop.NewConnectionService(core)),
 			application.NewService(desktop.NewSchemaService(core)),
+			application.NewService(desktop.NewFileService(core)),
+			application.NewService(windows),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(frontend.Assets),
@@ -55,7 +58,7 @@ func run() error {
 		},
 	})
 
-	wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+	mainWindow := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:     "Qryvanta",
 		Width:     1440,
 		Height:    900,
@@ -65,6 +68,8 @@ func run() error {
 		BackgroundColour: application.NewRGB(14, 15, 19),
 		URL:              "/",
 	})
+	// Closing the window with unsaved editor tabs asks first (see desktop.WindowService).
+	desktop.AttachWindow(windows, wailsApp, mainWindow)
 
 	if err := wailsApp.Run(); err != nil {
 		core.Logger().Error("application exited with error", "err", err)

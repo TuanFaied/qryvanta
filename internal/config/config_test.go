@@ -33,19 +33,23 @@ func TestValidateReportsEveryInvalidField(t *testing.T) {
 	cfg.Execution.TimeoutSeconds = 0
 	cfg.Execution.MaxRows = MaxMaxRows + 1
 	cfg.Logging.Level = "verbose"
+	cfg.Formatting.KeywordCase = "shout"
+	cfg.Formatting.IndentSize = 0
 
 	err := cfg.Validate()
 	var ve *ValidationError
 	if !errors.As(err, &ve) {
 		t.Fatalf("Validate() = %v, want *ValidationError", err)
 	}
-	for _, field := range []string{"appearance.theme", "execution.timeoutSeconds", "execution.maxRows", "logging.level"} {
+	want := []string{"appearance.theme", "execution.timeoutSeconds", "execution.maxRows", "logging.level",
+		"formatting.keywordCase", "formatting.indentSize"}
+	for _, field := range want {
 		if _, ok := ve.Fields[field]; !ok {
 			t.Errorf("missing validation error for %s; got %v", field, ve.Fields)
 		}
 	}
-	if len(ve.Fields) != 4 {
-		t.Errorf("got %d errors, want 4: %v", len(ve.Fields), ve.Fields)
+	if len(ve.Fields) != len(want) {
+		t.Errorf("got %d errors, want %d: %v", len(ve.Fields), len(want), ve.Fields)
 	}
 	// Error text is deterministic (sorted by field).
 	if !strings.HasPrefix(ve.Error(), "invalid configuration: appearance.theme") {

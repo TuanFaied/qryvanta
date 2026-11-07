@@ -1,4 +1,3 @@
-import { FileText } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDefaultLayout, usePanelRef, type PanelImperativeHandle, type PanelSize } from "react-resizable-panels";
 import { Header } from "@/components/shell/Header";
@@ -9,6 +8,7 @@ import { ConnectionDialog } from "@/features/connections/ConnectionDialog";
 import { useConnectionDialog } from "@/features/connections/connection-dialog-store";
 import { ConnectionSelector } from "@/features/connections/ConnectionSelector";
 import { DeleteConnectionDialog } from "@/features/connections/DeleteConnectionDialog";
+import { EditorArea } from "@/features/editor/EditorArea";
 import { DatabaseSelector } from "@/features/explorer/DatabaseSelector";
 import { ExplorerPanel } from "@/features/explorer/ExplorerPanel";
 import { SchemaTree } from "@/features/explorer/SchemaTree";
@@ -17,6 +17,7 @@ import { BottomPanel } from "@/features/workspace/BottomPanel";
 import { WelcomePage } from "@/features/workspace/WelcomePage";
 import { backend, type AppInfo, type Config, type SaveResult, type Theme } from "@/services/backend";
 import { useConnectionStore } from "@/stores/connection-store";
+import { useEditorStore } from "@/stores/editor-store";
 import { useSchemaStore } from "@/stores/schema-store";
 import { accessKey, useAccessStore } from "@/stores/access-store";
 import { safeStorage } from "@/utils/safe-storage";
@@ -99,6 +100,36 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
     if (activeId && currentDatabase) void checkAccess(activeId, currentDatabase);
   }, [activeId, currentDatabase, checkAccess]);
 
+  // Each editor tab remembers its connection and database. Changing them in the header
+  // updates the active tab; switching tabs restores the tab's connection and database.
+  const activeTabId = useEditorStore((s) => s.activeId);
+  const headerBinding = useRef({ activeId, currentDatabase });
+  headerBinding.current = { activeId, currentDatabase };
+  useEffect(() => {
+    const editor = useEditorStore.getState();
+    if (editor.activeId) editor.setBinding(editor.activeId, { connectionId: activeId, database: currentDatabase });
+  }, [activeId, currentDatabase]);
+  useEffect(() => {
+    const tab = useEditorStore.getState().tabs.find((t) => t.id === activeTabId);
+    if (!tab) return;
+    const header = headerBinding.current;
+    const { connectionId, database } = tab;
+    if (!connectionId) {
+      // A tab that never had a connection adopts the current one.
+      useEditorStore.getState().setBinding(tab.id, { connectionId: header.activeId, database: header.currentDatabase });
+      return;
+    }
+    const connections = useConnectionStore.getState();
+    if (connectionId !== header.activeId) {
+      if (!connections.connections.some((c) => c.profile.id === connectionId)) return;
+      void connections.connect(connectionId).then((ok) => {
+        if (ok && database) useSchemaStore.getState().setCurrentDatabase(connectionId, database);
+      });
+    } else if (database && database !== header.currentDatabase) {
+      useSchemaStore.getState().setCurrentDatabase(connectionId, database);
+    }
+  }, [activeTabId]);
+
   const disconnect = () => void conn.disconnect();
   const refresh = () => {
     if (activeId) {
@@ -180,25 +211,22 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
             onLayoutChanged={centerLayout.onLayoutChanged}
           >
             <ResizablePanel id="workspace" minSize={160}>
-              <main className="flex h-full flex-col" aria-label="Workspace">
-                <div className="flex h-8 shrink-0 items-end border-b bg-panel" role="tablist" aria-label="Open documents">
-                  <div
-                    role="tab"
-                    aria-selected="true"
-                    className="flex h-8 items-center gap-1.5 border-r border-t-2 border-t-primary bg-editor px-3 text-xs"
-                  >
-                    <FileText className="size-3.5 text-muted-foreground" />
-                    Welcome
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1">
+              <EditorArea
+                config={config}
+                binding={{ connectionId: activeId, database: currentDatabase }}
+                connectionName={(id) => conn.connections.find((c) => c.profile.id === id)?.profile.name ?? null}
+                // Execution from the editor is wired up with the results grid (issue #30).
+                onCommand={() => {}}
+                renderWelcome={(actions) => (
                   <WelcomePage
                     warnings={info.startupWarnings ?? []}
                     connectedTo={active && conn.activeServer ? active.profile.name : null}
                     onNewConnection={dialog.openNew}
+                    onNewQuery={actions.newQuery}
+                    onOpenFile={actions.openFile}
                   />
-                </div>
-              </main>
+                )}
+              />
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel

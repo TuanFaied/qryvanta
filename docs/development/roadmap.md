@@ -31,8 +31,10 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 
 ## Phase 3: SQL editor and execution ⬜
 
-- Monaco editor: tabs, T-SQL highlighting, formatting (sql-formatter, T-SQL dialect),
-  find/replace, shortcuts (Ctrl+Enter, Ctrl+Shift+Enter, Esc), selection execution
+- ✅ Monaco editor: tabs that remember their connection and database, T-SQL highlighting,
+  formatting (sql-formatter, T-SQL dialect), find/replace, open/save `.sql` files, unsaved-change
+  prompts, execution shortcuts registered (#29)
+- Execute from the editor, including the selection (#30)
 - ✅ Executor: timeout, max rows, max bytes, cancellation, streamed results, messages, errors (#27)
 - ✅ Execution policy layers 2 and 4 (session guard with always-rolled-back transaction and lock
   timeout; limits) (#28). Layer 1 (statement allowlist) needs the parser and arrives in Phase 4;

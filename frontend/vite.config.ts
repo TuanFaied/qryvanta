@@ -49,7 +49,14 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // Monaco's package exports map every path to a .js file, so its stylesheets cannot be
+      // imported by package path. src/features/editor/monaco.ts imports them through this alias.
+      "monaco-esm": fileURLToPath(new URL("./node_modules/monaco-editor/esm", import.meta.url)),
     },
+  },
+  build: {
+    // Monaco is one large chunk (loaded lazily with the first editor tab).
+    chunkSizeWarningLimit: 4096,
   },
   plugins: [react(), tailwindcss(), wails("./bindings"), contentSecurityPolicy(), keepDistPlaceholder()],
   test: {

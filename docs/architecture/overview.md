@@ -412,6 +412,42 @@ form-action 'none'; frame-ancestors 'none'
   It adds `'unsafe-inline'` scripts (Vite's React Refresh preamble) and local
   `ws://`/`http://` connections (hot reload), and still forbids eval, plugins and non-local
   origins.
+- **Monaco fits the policy unchanged** (#29). It is bundled from `monaco-editor`'s ESM build;
+  nothing comes from a CDN. Its one web worker is a separate file Vite emits next to the bundle
+  (`editor.worker-*.js`), started with `new Worker(url)`. With no `worker-src`, the browser falls back to
+  `script-src 'self'`, which allows it. No blob: or data: workers are used. Its codicon font is a
+  bundled `.ttf` (`font-src 'self'`), and the styles Monaco injects at runtime are covered by
+  `style-src 'unsafe-inline'`. A manual check of the production build found no CSP violations
+  in the console.
+
+### D9b. SQL editor
+
+- **Monaco, trimmed and lazy.** `src/features/editor/monaco.ts` imports the editor core, the
+  editing contributions a SQL editor needs (find/replace, folding, multi-cursor, bracket
+  matching, comments, suggestions) and the `sql` grammar, which is based on T-SQL. It does not
+  load the ~90 other languages or the TypeScript/CSS/HTML/JSON language services that the
+  package's main entry registers. `SqlEditor` is loaded with `React.lazy`, so Monaco
+  (~3.7 MB, ~0.96 MB gzipped) downloads with the first editor tab, not on first paint.
+- **One editor, one model per tab.** Undo history, cursor and scroll position survive tab
+  switches. Models of closed tabs are disposed.
+- **Tabs remember their connection and database** (`stores/editor-store.ts`). Changing either
+  in the header updates the active tab. Switching to a tab reconnects to its connection (the
+  workbench has one active connection at a time) and restores its database.
+- **Formatting** uses `sql-formatter` with its `transactsql` dialect and the `formatting.*`
+  settings. It formats the selection, or the whole document. It is applied as an editor edit,
+  so Ctrl+Z undoes it. Text it cannot tokenize is reported, not changed.
+- **Files** go through `desktop.FileService` and `internal/sqlfile`. The frontend never names a
+  path itself. Save only writes to a path that came from the Open or Save As dialog in this
+  run, so a compromised page cannot overwrite arbitrary files.
+  - Encodings are detected (UTF-8, UTF-8 with BOM, UTF-16 LE/BE, and Windows-1252 for legacy
+    files that are not valid UTF-8). Save writes the file back in the same encoding, so
+    sqlcmd and deployment tools read it as before.
+  - New files are UTF-8 with a BOM, which sqlcmd reads correctly without `-f 65001`.
+  - Files over 16 MB are refused.
+- **Unsaved work** is confirmed before a tab closes. The frontend reports unsaved state to
+  `desktop.WindowService`, whose `WindowClosing` hook cancels the close and emits
+  `qryvanta:close-requested`. The frontend then asks, and calls `WindowService.Close` to close
+  anyway.
 
 ## 6. Main flow: "Execute with debugging" (target design)
 

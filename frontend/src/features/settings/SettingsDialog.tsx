@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogLevel, Theme, type AppInfo, type Config, type SaveResult } from "@/services/backend";
+import { KeywordCase, LogLevel, Theme, type AppInfo, type Config, type SaveResult } from "@/services/backend";
 import { applyDraft, numericFields, toDraft, type NumericDraft, type NumericPath } from "./settings-form";
 
 interface SettingsDialogProps {
@@ -143,6 +143,31 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
                 </Select>
               </Row>
               {numberField("appearance.editorFontSize")}
+            </Section>
+
+            <Section title="Formatting" description="Used by Format Document (Shift+Alt+F) in the SQL editor.">
+              <Row label="Keyword case" error={errors["formatting.keywordCase"]}>
+                <Select
+                  value={draft.formatting.keywordCase}
+                  onValueChange={(v) => setSection("formatting", { keywordCase: v as KeywordCase })}
+                >
+                  <SelectTrigger size="sm" className="w-40 text-xs" aria-label="Keyword case">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={KeywordCase.KeywordUpper}>UPPERCASE</SelectItem>
+                    <SelectItem value={KeywordCase.KeywordLower}>lowercase</SelectItem>
+                    <SelectItem value={KeywordCase.KeywordPreserve}>Keep as written</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Row>
+              {numberField("formatting.indentSize")}
+              <SwitchRow
+                label="Indent with tabs"
+                description="Off indents with spaces."
+                checked={draft.formatting.useTabs}
+                onChange={(useTabs) => setSection("formatting", { useTabs })}
+              />
             </Section>
 
             <Section title="Execution" description="Defaults applied to every query. They can be tightened per connection later.">

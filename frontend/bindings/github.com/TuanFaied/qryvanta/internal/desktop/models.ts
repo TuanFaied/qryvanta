@@ -12,6 +12,9 @@ import * as connection$0 from "../connection/models.js";
 import * as schema$0 from "../schema/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as sqlfile$0 from "../sqlfile/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as version$0 from "../version/models.js";
 
 /**
@@ -101,6 +104,16 @@ export enum ErrorCode {
 };
 
 /**
+ * FileDocument is an opened .sql file.
+ */
+export interface FileDocument {
+    "path": string;
+    "name": string;
+    "content": string;
+    "encoding": sqlfile$0.Encoding;
+}
+
+/**
  * MetadataError is a failure the explorer shows on the node that failed to load.
  */
 export interface MetadataError {
@@ -118,6 +131,15 @@ export interface MetadataError {
 export interface ObjectsResult {
     "objects": schema$0.$Object[] | null;
     "error": MetadataError | null;
+}
+
+/**
+ * OpenFileResult is the outcome of Open. Errors are data so the UI can show them inline.
+ */
+export interface OpenFileResult {
+    "cancelled": boolean;
+    "document": FileDocument | null;
+    "error": string;
 }
 
 /**
@@ -162,6 +184,18 @@ export interface SaveConnectionResult {
     "ok": boolean;
     "connection": ConnectionDTO | null;
     "fieldErrors": { [_ in string]?: string } | null;
+}
+
+/**
+ * SaveFileResult is the outcome of Save and SaveAs. Encoding is the encoding actually
+ * written, which SaveAs may change (see SaveAs).
+ */
+export interface SaveFileResult {
+    "cancelled": boolean;
+    "path": string;
+    "name": string;
+    "encoding": sqlfile$0.Encoding;
+    "error": string;
 }
 
 /**
