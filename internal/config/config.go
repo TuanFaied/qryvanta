@@ -68,6 +68,9 @@ type Execution struct {
 	ProbeTimeoutSecs  int  `json:"probeTimeoutSeconds"`
 	MaxProbesPerRun   int  `json:"maxProbesPerRun"`
 	ConnectTimeoutSec int  `json:"connectTimeoutSeconds"`
+	// LockTimeoutSeconds stops a read-only statement that waits this long for a lock, instead
+	// of letting a debugging query block (or be blocked by) production work indefinitely.
+	LockTimeoutSeconds int `json:"lockTimeoutSeconds"`
 }
 
 // History controls local session history retention.
@@ -100,6 +103,8 @@ const (
 	MaxProbesPerRun   = 50
 	MinConnectTimeout = 1
 	MaxConnectTimeout = 300
+	MinLockTimeout    = 1
+	MaxLockTimeout    = 300
 	MinRetentionDays  = 1
 	MaxRetentionDays  = 3650
 	MinEditorFontSize = 8
@@ -115,13 +120,14 @@ func Default() Config {
 			EditorFontSize: 14,
 		},
 		Execution: Execution{
-			ReadOnly:          true,
-			TimeoutSeconds:    30,
-			MaxRows:           10_000,
-			MaxResultMB:       64,
-			ProbeTimeoutSecs:  15,
-			MaxProbesPerRun:   10,
-			ConnectTimeoutSec: 15,
+			ReadOnly:           true,
+			TimeoutSeconds:     30,
+			MaxRows:            10_000,
+			MaxResultMB:        64,
+			ProbeTimeoutSecs:   15,
+			MaxProbesPerRun:    10,
+			ConnectTimeoutSec:  15,
+			LockTimeoutSeconds: 5,
 		},
 		History: History{
 			Enabled:            true,
@@ -170,6 +176,7 @@ func (c Config) Validate() error {
 	checkRange("execution.probeTimeoutSeconds", c.Execution.ProbeTimeoutSecs, MinProbeTimeout, MaxProbeTimeout)
 	checkRange("execution.maxProbesPerRun", c.Execution.MaxProbesPerRun, 0, MaxProbesPerRun)
 	checkRange("execution.connectTimeoutSeconds", c.Execution.ConnectTimeoutSec, MinConnectTimeout, MaxConnectTimeout)
+	checkRange("execution.lockTimeoutSeconds", c.Execution.LockTimeoutSeconds, MinLockTimeout, MaxLockTimeout)
 
 	checkRange("history.retentionDays", c.History.RetentionDays, MinRetentionDays, MaxRetentionDays)
 

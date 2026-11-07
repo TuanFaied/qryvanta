@@ -63,10 +63,33 @@ describe("SettingsDialog", () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it("warns when read-only mode is turned off", async () => {
-    const { user } = setup();
-    expect(screen.queryByText(/modify data will be allowed/)).not.toBeInTheDocument();
+  it("asks for confirmation before turning read-only mode off", async () => {
+    const { user, onSave } = setup(vi.fn().mockImplementation(async (config) => ({ ok: true, config, fieldErrors: {} })));
     await user.click(screen.getByLabelText("Read-only mode"));
+    expect(await screen.findByRole("alertdialog", { name: /Allow queries that modify data/ })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Keep read-only mode" }));
+    expect(screen.getByLabelText("Read-only mode")).toBeChecked();
+    expect(screen.queryByText(/modify data will be allowed/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("Read-only mode"));
+    await user.click(await screen.findByRole("button", { name: "Allow modifications" }));
+    expect(screen.getByLabelText("Read-only mode")).not.toBeChecked();
     expect(screen.getByText(/modify data will be allowed/)).toBeInTheDocument();
+    // The lock wait limit only applies in read-only mode, so it is hidden now.
+    expect(screen.queryByLabelText("Lock wait limit (read-only mode)")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave.mock.calls[0]![0].execution.readOnly).toBe(false);
+  });
+
+  it("turns read-only mode back on without confirmation and shows the lock wait limit", async () => {
+    const { user } = setup();
+    expect(screen.getByLabelText("Lock wait limit (read-only mode)")).toHaveValue("5");
+    await user.click(screen.getByLabelText("Read-only mode"));
+    await user.click(await screen.findByRole("button", { name: "Allow modifications" }));
+    await user.click(screen.getByLabelText("Read-only mode"));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Read-only mode")).toBeChecked();
   });
 });

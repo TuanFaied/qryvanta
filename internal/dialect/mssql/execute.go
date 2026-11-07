@@ -41,7 +41,22 @@ const restoreTimeout = 5 * time.Second
 func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, sink executor.Sink) executor.Summary {
 	start := time.Now()
 	sum := executor.Summary{ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}}
+	var (
+		conn    *sql.Conn
+		rows    *sql.Rows
+		discard bool // the session could not be returned to a clean state
+	)
+	// finish closes the result stream, ends the session guard and records the outcome. It is
+	// used on every return path after the connection is acquired.
 	finish := func(o executor.Outcome) executor.Summary {
+		if rows != nil {
+			_ = rows.Close()
+		}
+		if sum.Guard.Active && conn != nil {
+			if !endGuard(conn, &sum.Guard) {
+				discard = true
+			}
+		}
 		sum.Outcome = o
 		sum.ElapsedMs = time.Since(start).Milliseconds()
 		return sum
@@ -70,7 +85,8 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 		}
 	}
 
-	conn, err := db.Conn(runCtx)
+	var err error
+	conn, err = db.Conn(runCtx)
 	if err != nil {
 		sum.Error = clean(err)
 		return finish(outcomeFor(err))
@@ -78,10 +94,11 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 	original, err := currentDatabase(runCtx, conn)
 	if err != nil {
 		_ = conn.Close()
+		conn = nil
 		sum.Error = clean(err)
 		return finish(outcomeFor(err))
 	}
-	defer releaseConn(conn, original)
+	defer func() { releaseConn(conn, original, discard) }()
 
 	if req.Database != "" && req.Database != original {
 		q, err := requireDatabase(runCtx, db, req.Database)
@@ -94,8 +111,17 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 		}
 	}
 
+	if req.Policy.ReadOnly {
+		if err := beginGuard(runCtx, conn, req.Policy.LockTimeout); err != nil {
+			discard = true
+			sum.Error = "could not start the read-only session guard: " + clean(convertError(err))
+			return finish(outcomeFor(err))
+		}
+		sum.Guard.Active = true
+	}
+
 	retmsg := &sqlexp.ReturnMessage{}
-	rows, err := conn.QueryContext(runCtx, req.SQL, retmsg)
+	rows, err = conn.QueryContext(runCtx, req.SQL, retmsg)
 	if err != nil {
 		if m, ok := toMessage(err, "error", 0); ok {
 			sum.Messages = append(sum.Messages, m)
@@ -103,9 +129,9 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 			_ = sink.Message(m)
 		}
 		sum.Error = clean(convertError(err))
+		rows = nil
 		return finish(outcomeFor(err))
 	}
-	defer rows.Close()
 
 	budget := executor.NewBudget(req.Limits)
 	var sinkErr error
@@ -322,13 +348,56 @@ func currentDatabase(ctx context.Context, conn *sql.Conn) (string, error) {
 	return name, err
 }
 
+// beginGuard starts the read-only session guard: implicit transactions off, an optional lock
+// timeout, and a transaction that endGuard always rolls back. XACT_ABORT is deliberately left
+// at the server default (OFF): turning it on would make any runtime error abort the rest of
+// the batch, so read-only mode would behave differently from SSMS and from writes-allowed
+// mode, and the rollback already undoes everything the batch changed.
+func beginGuard(ctx context.Context, conn *sql.Conn, lockTimeout time.Duration) error {
+	stmt := "SET IMPLICIT_TRANSACTIONS OFF;"
+	if lockTimeout > 0 {
+		stmt += fmt.Sprintf(" SET LOCK_TIMEOUT %d;", lockTimeout.Milliseconds())
+	}
+	stmt += " BEGIN TRANSACTION;"
+	_, err := conn.ExecContext(ctx, stmt)
+	return err
+}
+
+// endGuard rolls back the protective transaction and resets the session's lock timeout. It
+// uses a fresh context because the run's context may already be cancelled. It reports false
+// when the session could not be returned to a clean state.
+func endGuard(conn *sql.Conn, g *executor.Guard) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), restoreTimeout)
+	defer cancel()
+	var trancount int
+	if err := conn.QueryRowContext(ctx, "SELECT @@TRANCOUNT").Scan(&trancount); err != nil {
+		return false
+	}
+	if trancount == 0 {
+		// The batch ran COMMIT or ROLLBACK: the guard ended before the batch did.
+		g.EndedByBatch = true
+	} else {
+		if _, err := conn.ExecContext(ctx, "ROLLBACK TRANSACTION"); err != nil {
+			return false
+		}
+		g.RolledBack = true
+	}
+	_, err := conn.ExecContext(ctx, "SET LOCK_TIMEOUT -1")
+	return err == nil
+}
+
 // releaseConn restores the original database and returns the connection to the pool, or
-// discards it when the session state cannot be restored.
-func releaseConn(conn *sql.Conn, original string) {
+// discards it when the session state cannot be restored (or discard is already set).
+func releaseConn(conn *sql.Conn, original string, discard bool) {
+	if conn == nil {
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), restoreTimeout)
 	defer cancel()
 	ok := false
-	if q, err := QuoteIdent(original); err == nil {
+	if discard {
+		// Skip restoring: the connection is closed below.
+	} else if q, err := QuoteIdent(original); err == nil {
 		if now, err := currentDatabase(ctx, conn); err == nil {
 			if now == original {
 				ok = true

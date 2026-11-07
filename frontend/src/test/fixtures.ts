@@ -59,6 +59,7 @@ export function testConfig(): Config {
       probeTimeoutSeconds: 15,
       maxProbesPerRun: 10,
       connectTimeoutSeconds: 15,
+      lockTimeoutSeconds: 5,
     },
     history: { enabled: true, retentionDays: 30, storeResultSamples: false },
     logging: { level: LogLevel.LogInfo, logSqlText: false },

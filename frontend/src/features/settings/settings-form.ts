@@ -7,6 +7,7 @@ export const numericFields = [
   { path: "execution.maxRows", label: "Maximum rows", unit: "rows" },
   { path: "execution.maxResultMB", label: "Maximum result size", unit: "MB" },
   { path: "execution.connectTimeoutSeconds", label: "Connection timeout", unit: "seconds" },
+  { path: "execution.lockTimeoutSeconds", label: "Lock wait limit (read-only mode)", unit: "seconds" },
   { path: "execution.probeTimeoutSeconds", label: "Probe query timeout", unit: "seconds" },
   { path: "execution.maxProbesPerRun", label: "Maximum probe queries per run", unit: "queries" },
   { path: "history.retentionDays", label: "Keep history for", unit: "days" },

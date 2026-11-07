@@ -46,6 +46,12 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- Read-only session guard:
+  - In read-only mode, every batch runs inside a transaction that is always rolled back (also
+    after errors, timeouts and cancellation), with a configurable lock wait limit (default 5 s).
+  - A `COMMIT` or `ROLLBACK` inside the batch that ends the protection is detected and reported.
+  - Turning read-only mode off in Settings asks for confirmation, and the policy always comes
+    from the settings.
 - Query executor (`internal/executor`, `mssql.Executor`, `app.Core.Execute`), not yet wired
   into the UI or CLI:
   - Streams result sets and messages in server order.

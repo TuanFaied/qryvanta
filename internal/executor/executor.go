@@ -26,6 +26,28 @@ type Request struct {
 	// Database is the database to run in. Empty uses the connection's current database.
 	Database string
 	Limits   Limits
+	Policy   Policy
+}
+
+// Policy controls the session guard (execution policy layer 2, architecture decision D5).
+type Policy struct {
+	// ReadOnly runs the batch inside a transaction that is always rolled back.
+	ReadOnly bool
+	// LockTimeout stops a statement that waits longer than this for a lock (read-only mode
+	// only). Zero leaves the server default (wait indefinitely).
+	LockTimeout time.Duration
+}
+
+// Guard reports what the session guard did.
+type Guard struct {
+	// Active is true when the batch ran inside the protective transaction.
+	Active bool `json:"active"`
+	// RolledBack is true when the protective transaction was rolled back after the batch.
+	RolledBack bool `json:"rolledBack"`
+	// EndedByBatch is true when the batch itself committed or rolled back the protective
+	// transaction (a COMMIT or ROLLBACK in the SQL). Statements after that point ran
+	// unprotected and their changes may have been committed.
+	EndedByBatch bool `json:"endedByBatch"`
 }
 
 // Column describes a result-set column.
@@ -88,6 +110,8 @@ type Summary struct {
 	TotalBytes  int64  `json:"totalBytes"`
 	// ElapsedMs is measured wall-clock time from sending the batch to the end of reading.
 	ElapsedMs int64 `json:"elapsedMs"`
+	// Guard reports the read-only session guard.
+	Guard Guard `json:"guard"`
 	// Error explains OutcomeFailed. Server errors during the batch are in Messages instead.
 	Error string `json:"error"`
 }

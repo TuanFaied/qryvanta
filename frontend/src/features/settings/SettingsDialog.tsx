@@ -1,5 +1,15 @@
 import { AlertTriangle, FolderOpen } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +47,8 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Turning read-only mode off needs an explicit confirmation.
+  const [confirmWrites, setConfirmWrites] = useState(false);
 
   // Start from the saved settings each time the dialog opens.
   useEffect(() => {
@@ -136,9 +148,9 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
             <Section title="Execution" description="Defaults applied to every query. They can be tightened per connection later.">
               <SwitchRow
                 label="Read-only mode"
-                description="Only statements verified as read-only are executed."
+                description="Every query runs inside a transaction that is always rolled back, so changes it makes in the database are undone. Effects outside that transaction (linked servers, e-mail, xp_ procedures) are not."
                 checked={draft.execution.readOnly}
-                onChange={(readOnly) => setSection("execution", { readOnly })}
+                onChange={(readOnly) => (readOnly ? setSection("execution", { readOnly: true }) : setConfirmWrites(true))}
               />
               {!draft.execution.readOnly && (
                 <p role="alert" className="flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-xs">
@@ -146,6 +158,7 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
                   Statements that modify data will be allowed. A read-only database login is the only reliable protection.
                 </p>
               )}
+              {draft.execution.readOnly && numberField("execution.lockTimeoutSeconds")}
               {numberField("execution.timeoutSeconds")}
               {numberField("execution.maxRows")}
               {numberField("execution.maxResultMB")}
@@ -229,6 +242,28 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
           </div>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={confirmWrites} onOpenChange={setConfirmWrites}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Allow queries that modify data?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              With read-only mode off, queries run without the protective transaction: UPDATE, DELETE, DDL and procedure
+              calls take effect immediately on the server. If you only need to debug queries, keep read-only mode on, and
+              use a read-only database login for real protection.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-8 text-xs">Keep read-only mode</AlertDialogCancel>
+            <AlertDialogAction
+              className="h-8 bg-destructive text-xs text-white hover:bg-destructive/90"
+              onClick={() => setSection("execution", { readOnly: false })}
+            >
+              Allow modifications
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
