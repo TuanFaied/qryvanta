@@ -6,6 +6,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/config"
 	"github.com/TuanFaied/qryvanta/internal/connection"
 	"github.com/TuanFaied/qryvanta/internal/dialect/mssql"
+	"github.com/TuanFaied/qryvanta/internal/executor"
 	"github.com/TuanFaied/qryvanta/internal/logging"
 	"github.com/TuanFaied/qryvanta/internal/schema"
 	"github.com/TuanFaied/qryvanta/internal/version"
@@ -48,6 +50,8 @@ type Options struct {
 	Schema schema.Reader
 	// Access overrides the write-access checker (default: SQL Server permissions).
 	Access connection.AccessChecker
+	// Runner overrides the query executor (default: SQL Server).
+	Runner executor.Runner
 }
 
 // Core holds the shared application state.
@@ -57,6 +61,7 @@ type Core struct {
 	warnings    []string
 	connections *connection.Manager
 	schema      schema.Reader
+	runner      executor.Runner
 	pool        *connection.Pool
 
 	mu  sync.RWMutex
@@ -135,7 +140,11 @@ func New(opts Options) (*Core, error) {
 	if reader == nil {
 		reader = mssql.Metadata{}
 	}
-	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns, schema: reader}
+	runner := opts.Runner
+	if runner == nil {
+		runner = mssql.Executor{}
+	}
+	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns, schema: reader, runner: runner}
 	c.pool = connection.NewPool(conns, driver, c.openOptions, log.Logger)
 	access := opts.Access
 	if access == nil {
@@ -153,6 +162,38 @@ func (c *Core) Pool() *connection.Pool { return c.pool }
 
 // Schema returns the metadata reader for the configured dialect.
 func (c *Core) Schema() schema.Reader { return c.schema }
+
+// ExecutionLimits returns the configured limits for user queries.
+func (c *Core) ExecutionLimits() executor.Limits {
+	e := c.Config().Execution
+	return executor.Limits{
+		Timeout:  time.Duration(e.TimeoutSeconds) * time.Second,
+		MaxRows:  e.MaxRows,
+		MaxBytes: int64(e.MaxResultMB) << 20,
+	}
+}
+
+// Execute runs a batch on a connected profile and streams the results to sink. Result rows
+// are never logged; the SQL text is logged only at debug level when logging.logSqlText is on.
+func (c *Core) Execute(ctx context.Context, connectionID string, req executor.Request, sink executor.Sink) executor.Summary {
+	db, err := c.pool.DB(connectionID)
+	if err != nil {
+		return executor.Summary{Outcome: executor.OutcomeFailed, Error: "Connect to a server first.",
+			ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}}
+	}
+	sum := c.runner.Execute(ctx, db, req, sink)
+
+	attrs := []any{"profile_id", connectionID, "database", req.Database, "outcome", sum.Outcome,
+		"elapsed_ms", sum.ElapsedMs, "result_sets", len(sum.ResultSets), "rows", sum.TotalRows, "errors", sum.ErrorCount}
+	if c.Config().Logging.LogSQLText {
+		attrs = append(attrs, "sql", req.SQL)
+	}
+	c.log.Debug("query executed", attrs...)
+	if sum.Outcome == executor.OutcomeFailed {
+		c.log.Info("query failed", "profile_id", connectionID, "error", sum.Error)
+	}
+	return sum
+}
 
 // openOptions reads the current settings each time a connection is opened.
 func (c *Core) openOptions() connection.OpenOptions {

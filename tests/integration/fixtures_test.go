@@ -116,12 +116,19 @@ func TestSampleQueries(t *testing.T) {
 	}
 }
 
-func runExpectation(t *testing.T, db *sql.DB, e expectation) {
+// readSample returns the text of a file in tests/sample_queries.
+func readSample(t *testing.T, name string) string {
 	t.Helper()
-	text, err := os.ReadFile(filepath.Join(sampleDir, e.File))
+	text, err := os.ReadFile(filepath.Join(sampleDir, name))
 	if err != nil {
 		t.Fatal(err)
 	}
+	return string(text)
+}
+
+func runExpectation(t *testing.T, db *sql.DB, e expectation) {
+	t.Helper()
+	text := readSample(t, e.File)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	cols, rows, err := query(ctx, db, string(text))

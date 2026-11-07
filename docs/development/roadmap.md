@@ -33,7 +33,7 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 
 - Monaco editor: tabs, T-SQL highlighting, formatting (sql-formatter, T-SQL dialect),
   find/replace, shortcuts (Ctrl+Enter, Ctrl+Shift+Enter, Esc), selection execution
-- Executor: timeout, max rows, max bytes, cancellation, streamed results, messages, errors
+- ✅ Executor: timeout, max rows, max bytes, cancellation, streamed results, messages, errors (#27)
 - Execution policy layers 2 and 4 (session guard, limits). Layer 1 arrives with the parser in Phase 4,
   and until then read-only mode refuses non-SELECT text that it cannot verify.
 - TanStack Table result grid (virtualized), Messages tab

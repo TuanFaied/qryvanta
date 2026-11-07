@@ -73,7 +73,7 @@ internal/
   connection/          Connection profiles, keyring credentials; (Phase 2) pooling
   dialect/mssql/       SQL Server driver (DSN, server info, errors) and metadata reader
   schema/              Product-neutral metadata model and the schema.Reader interface
-  executor/            (Phase 3) Query execution, limits, cancellation, result streaming
+  executor/            Query execution model: requests, limits, streamed results, messages
   parser/              (Phase 4) Parser interface, sidecar client, structured query model
   analyzer/            (Phase 5) Rules that turn query structure + evidence into findings
   diagnostics/         (Phase 5) Finding, Evidence, Severity, Classification types
@@ -302,6 +302,42 @@ documentation states clearly which guarantees are hard and which are best effort
   Refresh, disconnect, delete and switching connections drop that cache. The *current
   database* is a per-connection UI selection (default: the login's database). Query
   execution (Phase 3) will run against it.
+
+### D7c. Executing queries
+
+- `internal/executor` defines a product-neutral model (`Request`, `Limits`, `Column`,
+  `Message`, `Summary`), a streaming `Sink`, and the `Runner` interface. `mssql.Executor` is the
+  SQL Server runner, chosen in `internal/app`. `app.Core.Execute` runs a request on a connected
+  profile.
+- **Streaming:** results reach the sink as column metadata followed by row batches of 500, so
+  a result is never held in memory twice. Messages (`PRINT`, informational `RAISERROR`) and
+  errors (number, severity, state, line, procedure) arrive in server order through
+  go-mssqldb's `sqlexp.ReturnMessage` stream. Each message records how many result sets
+  preceded it, so the UI can interleave them. Row counts are reported per statement.
+- **Limits:** timeout, maximum rows and maximum bytes (an estimate of the converted values)
+  apply across the whole batch. When a limit is reached, the runner stops reading and cancels
+  the query, which makes the driver send an attention signal so the server stops working. The
+  outcome is `truncated`, with `rows` or `bytes` as the reason. Timeout and caller cancellation
+  are reported as `timed_out` and `cancelled`.
+- **Database context:** the batch runs on one dedicated pooled connection, switched to the
+  requested database with a quoted `USE`. The connection's original database is always
+  restored afterwards, even if the batch ran its own `USE`, so the next user of that pooled
+  connection never inherits a different context. If restoring fails, the connection is
+  discarded instead of returned to the pool.
+- **Values are display-safe:**
+  - Exact numerics (`decimal`, `money`) stay strings.
+  - Integers outside JavaScript's safe range become strings.
+  - Dates and times use ISO 8601, at the type's precision.
+  - GUIDs use SQL Server's byte order.
+  - Binary values become `0x…` hex, capped at 512 bytes.
+  - NULL stays a distinct value.
+- **Privacy:** result rows are never logged. SQL text is logged only at debug level when
+  `logging.logSqlText` is on.
+- **Not yet supported:** `GO` batch separators. They are a client-side `sqlcmd`/SSMS convention,
+  and splitting on them needs a T-SQL-aware lexer. That arrives with the parser (Phase 4). Until
+  then, a script with `GO` lines fails with the server's syntax error.
+- **The session guard comes next:** policy layers 2 and 4 from D5 (an always-rolled-back
+  transaction and a lock timeout) wrap this runner in #28.
 
 ### D8. Logging
 
