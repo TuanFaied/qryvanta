@@ -29,7 +29,7 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 - ✅ Docker Compose with SQL Server 2022, the **fixture database** (10 problem scenarios), a read-only login, and a Linux CI integration job (#7)
 - ✅ CLI: `qryvanta-cli connections list` (#5); `connections add|test|remove` (#6)
 
-## Phase 3: SQL editor and execution ⬜
+## Phase 3: SQL editor and execution ✅
 
 - ✅ Monaco editor: tabs that remember their connection and database, T-SQL highlighting,
   formatting (sql-formatter, T-SQL dialect), find/replace, open/save `.sql` files, unsaved-change
@@ -42,7 +42,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 - ✅ TanStack Table result grid (virtualized, copy as TSV), Messages tab with go-to-line (#30)
 - ✅ Schema-aware autocomplete: objects after FROM/JOIN, columns after `alias.`, keywords and
   functions elsewhere; heuristic until the Phase 4 parser (#31)
-- CLI: `qryvanta-cli run query.sql --conn X --format json`
+- ✅ CLI: `qryvanta-cli run --conn X --file query.sql --format table|json|csv`, with exit codes
+  and Ctrl+C cancellation (#32)
 
 ## Phase 4: SQL parsing ⬜
 

@@ -133,14 +133,16 @@ $env:QRYVANTA_TEST_MSSQL_SERVER = 'localhost'; $env:QRYVANTA_TEST_MSSQL_PORT = '
 ```
 
 ```bash
-go test -tags integration ./internal/dialect/mssql/ ./tests/integration/
+go test -tags integration ./internal/dialect/mssql/ ./tests/integration/ ./cmd/qryvanta-cli/
 ```
 
 For a local Express instance with Windows authentication, set only
 `QRYVANTA_TEST_MSSQL_SERVER = 'localhost\SQLEXPRESS'` and `QRYVANTA_TEST_MSSQL_TRUST = 'true'`.
 
-The tests only read data. The one exception is an `UPDATE` sent as `qryvanta_reader`, which
-checks that the server rejects it.
+The tests do not change data. There are two exceptions:
+- an `UPDATE` sent as `qryvanta_reader`, which checks that the server rejects it
+- the read-only session guard tests, which write as `sa` (`QRYVANTA_TEST_MSSQL_ADMIN_PASSWORD`).
+  Their writes are rolled back, or restored by the test.
 
 ## Trying connections from the CLI
 
@@ -154,6 +156,42 @@ qryvanta-cli connections test "Local Express"
 
 For SQL authentication, pipe the password on stdin so it never appears in shell history:
 `... --auth sql --user reader --password-stdin`.
+
+The CLI always uses your real configuration and Windows Credential Manager. Pass
+`--config <path>` (before the command) to keep test connections in another file;
+`QRYVANTA_CONFIG` only affects the desktop app.
+
+## Running queries from the CLI
+
+`qryvanta-cli run` uses the desktop app's engine: the same limits, the same read-only session
+guard, and the same write-access check.
+
+```bash
+qryvanta-cli run --conn "Local Express" --query "SELECT TOP (5) name FROM sys.objects"
+```
+
+```bash
+qryvanta-cli run --conn fixtures --file tests/sample_queries/01_employees_without_department.correct.sql --format json
+```
+
+```bash
+cat report.sql | qryvanta-cli run --conn fixtures --database QryvantaSample --format csv > report.csv
+```
+
+| Flag | Meaning |
+|---|---|
+| `--conn NAME\|ID` | Saved connection. It can be omitted when only one connection is saved. |
+| `--database DB` | Database to run in. The default is the connection's database. |
+| `--query SQL` / `--file PATH` / stdin | The batch. Files can be UTF-8 (with or without BOM), UTF-16 or Windows-1252. |
+| `--format table\|json\|csv` | `table` (default) caps columns at 40 characters. `json` includes result sets, messages, timings, the guard and truncation. `csv` takes a single result set, and writes NULL as an empty field. |
+| `--max-rows N`, `--timeout S` | Override the configured limits for this run. |
+| `--allow-writes` | Turns read-only mode off for this run, and prints a warning. |
+
+- Results go to stdout. Messages, errors (`Msg 207, Level 16, State 1, Line 3`), row counts and
+  warnings go to stderr, so output can be piped safely.
+- If the login can modify data, a warning saying so is printed to stderr.
+- Exit codes: `0` success, `1` query error or failed batch, `2` usage error, `3` timed out or
+  cancelled. Ctrl+C cancels the query on the server.
 
 ## Notes
 

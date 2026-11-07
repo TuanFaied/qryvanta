@@ -106,6 +106,24 @@ func TestExecuteUsesLimitsAndNeverLogsRows(t *testing.T) {
 	}
 }
 
+func TestAllowWritesOptionTurnsReadOnlyOff(t *testing.T) {
+	for _, allow := range []bool{false, true} {
+		c, err := New(Options{
+			ConfigPath:     filepath.Join(t.TempDir(), "config.json"),
+			DisableFileLog: true,
+			Credentials:    connection.NewMemoryStore(),
+			AllowWrites:    allow,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := c.ExecutionPolicy().ReadOnly; got == allow {
+			t.Errorf("AllowWrites=%v: ReadOnly=%v", allow, got)
+		}
+		_ = c.Close()
+	}
+}
+
 type noAccess struct{}
 
 func (noAccess) WriteAccess(_ context.Context, _ *sql.DB, database string) (connection.WriteAccess, error) {

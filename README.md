@@ -68,6 +68,22 @@ imports Wails, and a test enforces this. Read the full [architecture document](d
 
 There are no releases yet. Build from source as described below.
 
+## Command line
+
+`qryvanta-cli` shares the desktop app's engine and protections, for scripts and CI:
+
+```bash
+qryvanta-cli connections add --name fixtures --server localhost --port 14333 --user qryvanta_reader --password-stdin
+```
+
+```bash
+qryvanta-cli run --conn fixtures --file query.sql --format json
+```
+
+Read-only mode applies unless `--allow-writes` is given. Results go to stdout and messages to
+stderr. Exit codes: 0 success, 1 query error, 2 usage error, 3 timed out or cancelled. See
+[setup.md](docs/development/setup.md#running-queries-from-the-cli) for every flag.
+
 ## Development
 
 Requirements: Go 1.26+, Node.js 22+, pnpm 10+, the Wails v3 CLI, and WebView2 (preinstalled on Windows 11).

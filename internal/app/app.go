@@ -52,6 +52,10 @@ type Options struct {
 	Access connection.AccessChecker
 	// Runner overrides the query executor (default: SQL Server).
 	Runner executor.Runner
+	// AllowWrites turns read-only mode off for this process regardless of the settings. Only
+	// the CLI's explicit --allow-writes flag sets it; it is fixed at startup, so no caller of
+	// Execute can change the policy.
+	AllowWrites bool
 }
 
 // Core holds the shared application state.
@@ -63,6 +67,7 @@ type Core struct {
 	schema      schema.Reader
 	runner      executor.Runner
 	pool        *connection.Pool
+	allowWrites bool
 
 	mu  sync.RWMutex
 	cfg config.Config
@@ -144,7 +149,8 @@ func New(opts Options) (*Core, error) {
 	if runner == nil {
 		runner = mssql.Executor{}
 	}
-	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns, schema: reader, runner: runner}
+	c := &Core{configPath: path, log: log, cfg: cfg, warnings: warnings, connections: conns, schema: reader, runner: runner,
+		allowWrites: opts.AllowWrites}
 	c.pool = connection.NewPool(conns, driver, c.openOptions, log.Logger)
 	access := opts.Access
 	if access == nil {
@@ -173,10 +179,14 @@ func (c *Core) ExecutionLimits() executor.Limits {
 	}
 }
 
-// ExecutionPolicy returns the session-guard policy from the settings.
+// ExecutionPolicy returns the session-guard policy from the settings (read-only mode is off
+// only when the settings turn it off, or the process was started with Options.AllowWrites).
 func (c *Core) ExecutionPolicy() executor.Policy {
 	e := c.Config().Execution
-	return executor.Policy{ReadOnly: e.ReadOnly, LockTimeout: time.Duration(e.LockTimeoutSeconds) * time.Second}
+	return executor.Policy{
+		ReadOnly:    e.ReadOnly && !c.allowWrites,
+		LockTimeout: time.Duration(e.LockTimeoutSeconds) * time.Second,
+	}
 }
 
 // Execute runs a batch on a connected profile and streams the results to sink. Result rows

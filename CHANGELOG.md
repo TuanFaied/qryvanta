@@ -46,6 +46,14 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- `qryvanta-cli run` runs a batch from `--query`, `--file` or stdin with the desktop app's
+  engine, limits and read-only session guard.
+  - Output formats: a readable table, JSON (result sets, messages, timings, guard, truncation)
+    or CSV.
+  - `--max-rows` and `--timeout` override the limits for one run.
+  - `--allow-writes` turns read-only mode off for one run, with a warning.
+  - Messages go to stderr, along with a warning when the login can modify data.
+  - Exit codes: 0, 1 query error, 2 usage, 3 timeout or cancel. Ctrl+C cancels on the server.
 - Schema-aware autocomplete in the editor:
   - After FROM or JOIN it suggests the current database's tables, views and functions.
   - After `alias.` it suggests that table's columns, with their type and PK/FK.
