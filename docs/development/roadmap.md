@@ -34,8 +34,9 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 - Monaco editor: tabs, T-SQL highlighting, formatting (sql-formatter, T-SQL dialect),
   find/replace, shortcuts (Ctrl+Enter, Ctrl+Shift+Enter, Esc), selection execution
 - ✅ Executor: timeout, max rows, max bytes, cancellation, streamed results, messages, errors (#27)
-- Execution policy layers 2 and 4 (session guard, limits). Layer 1 arrives with the parser in Phase 4,
-  and until then read-only mode refuses non-SELECT text that it cannot verify.
+- ✅ Execution policy layers 2 and 4 (session guard with always-rolled-back transaction and lock
+  timeout; limits) (#28). Layer 1 (statement allowlist) needs the parser and arrives in Phase 4;
+  text matching is not used in the meantime (see architecture D5).
 - TanStack Table result grid (virtualized), Messages tab
 - Schema-aware autocomplete (tables, columns)
 - CLI: `qryvanta-cli run query.sql --conn X --format json`

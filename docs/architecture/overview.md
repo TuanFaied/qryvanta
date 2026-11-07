@@ -200,13 +200,32 @@ Checking only the statement type is not enough: functions, `EXEC`, linked server
 and `SELECT ... INTO` can all have side effects. The policy has several layers, and the
 documentation states clearly which guarantees are hard and which are best effort.
 
-1. **Statement allowlist** (hard): from the parsed batch, only `SELECT`, CTE-led `SELECT`, and set
-   operations are allowed. `INTO`, DML, DDL, `EXEC`, `DECLARE`/`SET` side effects, and
-   multi-statement batches are rejected in read-only mode. If the parser is unavailable,
-   read-only mode refuses to execute instead of guessing.
-2. **Session guard** (best effort): queries run in an explicit transaction that is always
-   rolled back, with `SET XACT_ABORT ON`, `SET IMPLICIT_TRANSACTIONS OFF`, and a lock timeout.
-   This does not undo effects outside the transaction (linked servers, `xp_` procedures, CLR).
+1. **Statement allowlist** (hard, Phase 4): from the parsed batch, only `SELECT`, CTE-led
+   `SELECT`, and set operations are allowed. `INTO`, DML, DDL, `EXEC`, `DECLARE`/`SET` side
+   effects, and multi-statement batches are rejected in read-only mode.
+   - This layer needs the parser. Matching keywords in SQL text instead would be wrong and
+     falsely reassuring (comments, strings, dynamic SQL), so until Phase 4 read-only mode relies
+     on layers 2–4.
+   - Once the parser exists, read-only mode refuses to execute a batch it cannot parse instead
+     of guessing.
+2. **Session guard** (implemented, best effort): `mssql.Executor` runs each read-only batch on a
+   dedicated connection with `SET IMPLICIT_TRANSACTIONS OFF`, `SET LOCK_TIMEOUT`
+   (`execution.lockTimeoutSeconds`, default 5 s), and `BEGIN TRANSACTION`. After the batch,
+   including after errors, timeouts, cancellation and truncation, the transaction is rolled back
+   and the lock timeout reset. If that fails, the connection is discarded instead of being
+   returned to the pool.
+   - **`XACT_ABORT` stays at the server default (OFF) on purpose.** With it ON, any runtime
+     error would abort the rest of the batch, so read-only mode would behave differently from
+     SSMS and from writes-allowed mode. The rollback already undoes everything.
+   - **What it cannot prevent:** a `COMMIT` or `ROLLBACK` inside the batch ends the protective
+     transaction early, and later statements run unprotected. After the batch the executor
+     checks `@@TRANCOUNT` and reports this as `Summary.Guard.EndedByBatch`, and the app logs a
+     warning. The parser (layer 1) will reject such batches.
+   - **What it does not undo:** effects outside the transaction, such as linked servers, `xp_`
+     procedures, CLR, Database Mail, consumed identity and sequence values, and statements that
+     refuse to run in a user transaction (which fail instead).
+   - **Not a caller choice:** `app.Core.Execute` always takes the policy from the settings.
+     Turning read-only mode off in Settings requires a confirmation.
 3. **Least-privilege guidance** (strongest): a read-only login is the only true guarantee, and
    the documentation says so. Qryvanta reports what the current login could change:
    - `connection.AccessChecker` (implemented by `mssql.Access`) runs a read-only permission
@@ -336,8 +355,8 @@ documentation states clearly which guarantees are hard and which are best effort
 - **Not yet supported:** `GO` batch separators. They are a client-side `sqlcmd`/SSMS convention,
   and splitting on them needs a T-SQL-aware lexer. That arrives with the parser (Phase 4). Until
   then, a script with `GO` lines fails with the server's syntax error.
-- **The session guard comes next:** policy layers 2 and 4 from D5 (an always-rolled-back
-  transaction and a lock timeout) wrap this runner in #28.
+- **Session guard:** in read-only mode the runner wraps the batch in the D5 session guard
+  (`Request.Policy`, reported in `Summary.Guard`).
 
 ### D8. Logging
 

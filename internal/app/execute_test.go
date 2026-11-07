@@ -76,6 +76,25 @@ func TestExecuteUsesLimitsAndNeverLogsRows(t *testing.T) {
 	if sum.Outcome != executor.OutcomeSucceeded || runner.got.Limits.MaxRows != 10_000 || runner.got.Limits.MaxBytes != 64<<20 {
 		t.Fatalf("summary %+v, limits %+v", sum, runner.got.Limits)
 	}
+	if !runner.got.Policy.ReadOnly || runner.got.Policy.LockTimeout.Seconds() != 5 {
+		t.Errorf("policy = %+v, want read-only with a 5 s lock timeout from the defaults", runner.got.Policy)
+	}
+
+	// A caller cannot bypass the configured policy by passing its own.
+	req.Policy = executor.Policy{ReadOnly: false}
+	_ = c.Execute(context.Background(), p.ID, req, &executor.Collector{})
+	if !runner.got.Policy.ReadOnly {
+		t.Error("caller-supplied policy overrode read-only mode")
+	}
+	cfg = c.Config()
+	cfg.Execution.ReadOnly = false
+	if err := c.UpdateConfig(cfg); err != nil {
+		t.Fatal(err)
+	}
+	_ = c.Execute(context.Background(), p.ID, req, &executor.Collector{})
+	if runner.got.Policy.ReadOnly {
+		t.Error("turning read-only mode off in settings had no effect")
+	}
 	out := logs.String()
 	if !strings.Contains(out, "query executed") {
 		t.Fatalf("expected a debug log entry:\n%s", out)

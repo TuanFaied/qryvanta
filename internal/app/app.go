@@ -173,6 +173,12 @@ func (c *Core) ExecutionLimits() executor.Limits {
 	}
 }
 
+// ExecutionPolicy returns the session-guard policy from the settings.
+func (c *Core) ExecutionPolicy() executor.Policy {
+	e := c.Config().Execution
+	return executor.Policy{ReadOnly: e.ReadOnly, LockTimeout: time.Duration(e.LockTimeoutSeconds) * time.Second}
+}
+
 // Execute runs a batch on a connected profile and streams the results to sink. Result rows
 // are never logged; the SQL text is logged only at debug level when logging.logSqlText is on.
 func (c *Core) Execute(ctx context.Context, connectionID string, req executor.Request, sink executor.Sink) executor.Summary {
@@ -181,16 +187,24 @@ func (c *Core) Execute(ctx context.Context, connectionID string, req executor.Re
 		return executor.Summary{Outcome: executor.OutcomeFailed, Error: "Connect to a server first.",
 			ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}}
 	}
+	// The policy always comes from the settings, never from the caller: a caller that forgot
+	// to set it would otherwise get the zero value, which allows writes.
+	req.Policy = c.ExecutionPolicy()
 	sum := c.runner.Execute(ctx, db, req, sink)
 
 	attrs := []any{"profile_id", connectionID, "database", req.Database, "outcome", sum.Outcome,
-		"elapsed_ms", sum.ElapsedMs, "result_sets", len(sum.ResultSets), "rows", sum.TotalRows, "errors", sum.ErrorCount}
+		"elapsed_ms", sum.ElapsedMs, "result_sets", len(sum.ResultSets), "rows", sum.TotalRows, "errors", sum.ErrorCount,
+		"guarded", sum.Guard.Active}
 	if c.Config().Logging.LogSQLText {
 		attrs = append(attrs, "sql", req.SQL)
 	}
 	c.log.Debug("query executed", attrs...)
 	if sum.Outcome == executor.OutcomeFailed {
 		c.log.Info("query failed", "profile_id", connectionID, "error", sum.Error)
+	}
+	if sum.Guard.EndedByBatch {
+		c.log.Warn("the batch ended the read-only guard with its own COMMIT or ROLLBACK; later statements were not protected",
+			"profile_id", connectionID, "database", req.Database)
 	}
 	return sum
 }

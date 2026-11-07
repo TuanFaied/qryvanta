@@ -17,8 +17,14 @@ Qryvanta connects to your databases with your credentials, so it is designed to 
 - Passwords are stored in the operating system's credential store (Windows Credential Manager),
   never in configuration files, and are never sent to the UI layer.
 - Logs mask password-like fields and scrub secrets from connection strings and driver errors.
-- Read-only execution is on by default. The documentation is explicit that application-level
-  checks are best effort, and that **a read-only database login is the only reliable guarantee.**
+- Read-only mode is on by default:
+  - Every query runs inside a transaction that is always rolled back, with a lock wait limit.
+    Turning read-only mode off requires a confirmation.
+  - This is best effort. A `COMMIT` or `ROLLBACK` inside your own SQL ends the protection early
+    (Qryvanta detects and reports this), and effects outside the transaction (linked servers,
+    `xp_` procedures, e-mail) are not undone.
+  - Qryvanta also tells you whether your login could modify data. **A read-only database login
+    is the only reliable guarantee.**
 - Generated query changes are never executed automatically.
 - No telemetry. Nothing is sent anywhere except to the databases you connect to.
 - The desktop webview runs under a strict Content-Security-Policy: no inline or external

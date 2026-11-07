@@ -34,6 +34,12 @@ export interface Execution {
     "probeTimeoutSeconds": number;
     "maxProbesPerRun": number;
     "connectTimeoutSeconds": number;
+
+    /**
+     * LockTimeoutSeconds stops a read-only statement that waits this long for a lock, instead
+     * of letting a debugging query block (or be blocked by) production work indefinitely.
+     */
+    "lockTimeoutSeconds": number;
 }
 
 /**
