@@ -9,11 +9,14 @@ import { useConnectionDialog } from "@/features/connections/connection-dialog-st
 import { ConnectionSelector } from "@/features/connections/ConnectionSelector";
 import { DeleteConnectionDialog } from "@/features/connections/DeleteConnectionDialog";
 import { EditorArea } from "@/features/editor/EditorArea";
+import type { EditorCommand, SqlEditorHandle } from "@/features/editor/editor-types";
+import { ConfirmWritesDialog } from "@/features/execution/ConfirmWritesDialog";
+import { useExecution } from "@/features/execution/useExecution";
 import { DatabaseSelector } from "@/features/explorer/DatabaseSelector";
 import { ExplorerPanel } from "@/features/explorer/ExplorerPanel";
 import { SchemaTree } from "@/features/explorer/SchemaTree";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
-import { BottomPanel } from "@/features/workspace/BottomPanel";
+import { BottomPanel, type OutputTab } from "@/features/workspace/BottomPanel";
 import { WelcomePage } from "@/features/workspace/WelcomePage";
 import { backend, type AppInfo, type Config, type SaveResult, type Theme } from "@/services/backend";
 import { useConnectionStore } from "@/stores/connection-store";
@@ -130,6 +133,29 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
     }
   }, [activeTabId]);
 
+  // Execution of the active tab, and where its output is shown.
+  const editorRef = useRef<SqlEditorHandle>(null);
+  const [outputTab, setOutputTab] = useState<OutputTab>("results");
+  const showOutput = useCallback(() => {
+    setOutputTab("results");
+    if (refs.bottom.current?.isCollapsed()) refs.bottom.current.expand();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const exec = useExecution({
+    config,
+    activeConnectionId: activeId,
+    editorRef,
+    onStarted: showOutput,
+    // A batch that returned no rows has only messages to show.
+    onFinished: (run) => {
+      if (run.resultSets.length === 0) setOutputTab("messages");
+    },
+  });
+  const onEditorCommand = (command: EditorCommand) => {
+    if (command === "execute") exec.execute();
+    else if (command === "cancel") exec.stop();
+  };
+
   const disconnect = () => void conn.disconnect();
   const refresh = () => {
     if (activeId) {
@@ -148,6 +174,7 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         onOpenSettings={openSettings}
         panels={visible}
         onTogglePanel={togglePanel}
+        execution={{ blockedReason: exec.blockedReason, running: exec.running, onExecute: exec.execute, onStop: exec.stop }}
         databaseControls={
           <DatabaseSelector
             databases={activeId ? schema.databases[activeId] : null}
@@ -215,8 +242,10 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
                 config={config}
                 binding={{ connectionId: activeId, database: currentDatabase }}
                 connectionName={(id) => conn.connections.find((c) => c.profile.id === id)?.profile.name ?? null}
-                // Execution from the editor is wired up with the results grid (issue #30).
-                onCommand={() => {}}
+                onCommand={onEditorCommand}
+                executing={exec.running}
+                runningTabs={exec.runningTabs}
+                editorRef={editorRef}
                 renderWelcome={(actions) => (
                   <WelcomePage
                     warnings={info.startupWarnings ?? []}
@@ -238,7 +267,14 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
               collapsedSize={0}
               onResize={trackVisibility("bottom")}
             >
-              <BottomPanel />
+              <BottomPanel
+                run={exec.run}
+                tab={outputTab}
+                onTabChange={setOutputTab}
+                maxRows={config.execution.maxRows}
+                timeoutSeconds={config.execution.timeoutSeconds}
+                onRevealLine={(line) => editorRef.current?.revealLine(line)}
+              />
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
@@ -282,6 +318,15 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         target={dialog.deleteTarget}
         onCancel={() => dialog.confirmDelete(null)}
         onConfirm={conn.remove}
+      />
+
+      <ConfirmWritesDialog
+        pending={exec.pending}
+        connectionName={
+          conn.connections.find((c) => c.profile.id === exec.pending?.request.connectionId)?.profile.name ?? "this connection"
+        }
+        onConfirm={exec.confirmPending}
+        onCancel={exec.cancelPending}
       />
 
       <SettingsDialog

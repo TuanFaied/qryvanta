@@ -27,8 +27,6 @@ import { IconButton } from "@/components/shell/IconButton";
 import { Theme } from "@/services/backend";
 import type { PanelId } from "@/layouts/panels";
 
-const notYet = "Available once the SQL editor lands (Phase 3)";
-
 const themeOptions = [
   { value: Theme.ThemeDark, label: "Dark", icon: Moon },
   { value: Theme.ThemeLight, label: "Light", icon: Sun },
@@ -46,6 +44,15 @@ interface HeaderProps {
   connectionControls: ReactNode;
   /** The current-database selector, provided by the explorer feature. */
   databaseControls: ReactNode;
+  execution: ExecutionControls;
+}
+
+export interface ExecutionControls {
+  /** Why Execute is unavailable (no tab, no connection, already running), or null. */
+  blockedReason: string | null;
+  running: boolean;
+  onExecute: () => void;
+  onStop: () => void;
 }
 
 export function Header({
@@ -57,6 +64,7 @@ export function Header({
   onTogglePanel,
   connectionControls,
   databaseControls,
+  execution,
 }: HeaderProps) {
   const ThemeIcon = themeOptions.find((t) => t.value === theme)?.icon ?? Moon;
 
@@ -71,9 +79,22 @@ export function Header({
       <Separator orientation="vertical" className="mx-1.5 !h-5" />
 
       <div className="flex items-center gap-0.5" role="toolbar" aria-label="Execution">
-        <IconButton icon={Play} label="Execute" hint={`Ctrl+Enter · ${notYet}`} disabled className="text-success" />
-        <IconButton icon={Bug} label="Execute with debugging" hint={`Ctrl+Shift+Enter · ${notYet}`} disabled />
-        <IconButton icon={Square} label="Stop execution" hint="Esc" disabled />
+        <IconButton
+          icon={Play}
+          label="Execute"
+          hint={execution.blockedReason ? `Ctrl+Enter · ${execution.blockedReason}` : "Ctrl+Enter · runs the selection, or the whole tab"}
+          disabled={!!execution.blockedReason}
+          onClick={execution.onExecute}
+          className="text-success"
+        />
+        <IconButton icon={Bug} label="Execute with debugging" hint="Ctrl+Shift+Enter · arrives with the diagnostic engine (Phase 5)" disabled />
+        <IconButton
+          icon={Square}
+          label="Stop execution"
+          hint={execution.running ? "Esc · cancels the query on the server" : "Esc · no query is running"}
+          disabled={!execution.running}
+          onClick={execution.onStop}
+        />
       </div>
 
       <div className="flex-1" />

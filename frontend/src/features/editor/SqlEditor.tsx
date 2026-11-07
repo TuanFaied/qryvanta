@@ -66,6 +66,26 @@ export default function SqlEditor(props: SqlEditorProps) {
   useImperativeHandle(handleRef, () => ({
     format,
     focus: () => editorRef.current?.focus(),
+    getRunTarget: () => {
+      const editor = editorRef.current;
+      const model = editor?.getModel();
+      if (!editor || !model) return null;
+      const selection = editor.getSelection();
+      if (selection && !selection.isEmpty()) {
+        return { sql: model.getValueInRange(selection), startLine: selection.startLineNumber, fromSelection: true };
+      }
+      return { sql: model.getValue(), startLine: 1, fromSelection: false };
+    },
+    revealLine: (line: number) => {
+      const editor = editorRef.current;
+      const model = editor?.getModel();
+      if (!editor || !model) return;
+      const target = Math.min(Math.max(line, 1), model.getLineCount());
+      const column = model.getLineFirstNonWhitespaceColumn(target) || 1;
+      editor.setPosition({ lineNumber: target, column });
+      editor.revealLineInCenterIfOutsideViewport(target);
+      editor.focus();
+    },
   }));
 
   // Create the editor once.

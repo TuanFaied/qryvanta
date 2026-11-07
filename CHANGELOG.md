@@ -46,6 +46,22 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- Running queries from the editor:
+  - Execute (Ctrl+Enter or the header button) runs the selection, or the whole tab, on the
+    tab's connection and database. Stop (Esc or the header button) cancels it on the server.
+  - Results stream in while the query runs, into a virtualized grid per result set.
+    - Column types show on hover, and NULL is shown distinctly.
+    - Columns can be resized.
+    - Cells, rows, ranges or everything can be copied as TSV, with or without headers.
+    - A banner explains when a row or size limit stopped reading.
+  - The Messages tab lists messages and errors in order (`Msg 207, Level 16, State 1, Line 3`).
+    Clicking an error moves the editor to its line, even when only a selection was run.
+  - Row counts, timeouts, cancellation, the read-only rollback, and a batch's own COMMIT
+    ending protection are reported.
+  - Status shows a running indicator, elapsed time and row counts, and running tabs are marked.
+  - With read-only mode off, the first run on a connection whose login may modify data asks for
+    confirmation.
+  - Result rows are kept in memory only, and never logged or stored.
 - SQL editor (Monaco, bundled locally and loaded with the first tab):
   - Tabs that can be created, renamed (double-click or F2) and closed (Ctrl+W, middle click).
     They show unsaved changes, and each tab remembers its connection and database.
@@ -56,8 +72,6 @@ All notable changes to this project are documented here. The format follows
   - Open and save `.sql` files (Ctrl+O, Ctrl+S, Ctrl+Shift+S) through native dialogs. Files keep
     their encoding (UTF-8, UTF-8 with BOM, UTF-16, Windows-1252), and new files are UTF-8 with BOM.
   - Closing a tab or the window with unsaved changes asks first.
-  - Ctrl+Enter, Ctrl+Shift+Enter and Esc are reserved for execution, which arrives with the
-    results grid.
 - Read-only session guard:
   - In read-only mode, every batch runs inside a transaction that is always rolled back (also
     after errors, timeouts and cancellation), with a configurable lock wait limit (default 5 s).

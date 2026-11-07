@@ -1,5 +1,5 @@
 import { AlertTriangle, Database, FolderOpen, Loader2, Save, Wand2, X } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { IconButton } from "@/components/shell/IconButton";
 import {
   AlertDialog,
@@ -34,16 +34,31 @@ interface EditorAreaProps {
   binding: Binding;
   connectionName: (id: string) => string | null;
   onCommand: (command: EditorCommand, tab: EditorTab) => void;
+  /** True while the active tab's query runs (enables Esc as cancel). */
   executing?: boolean;
+  /** Tabs with a query in progress, marked on the tab bar. */
+  runningTabs?: ReadonlySet<string>;
+  /** Lets the workbench read the selection and move the cursor. */
+  editorRef?: RefObject<SqlEditorHandle | null>;
   renderWelcome: (actions: EditorActions) => ReactNode;
 }
 
-export function EditorArea({ config, binding, connectionName, onCommand, executing, renderWelcome }: EditorAreaProps) {
+export function EditorArea({
+  config,
+  binding,
+  connectionName,
+  onCommand,
+  executing,
+  runningTabs,
+  editorRef,
+  renderWelcome,
+}: EditorAreaProps) {
   const { tabs, activeId } = useEditorStore();
   const store = useEditorStore.getState;
   const active = tabs.find((t) => t.id === activeId) ?? null;
   const theme = useResolvedTheme(config.appearance.theme);
-  const editor = useRef<SqlEditorHandle>(null);
+  const ownRef = useRef<SqlEditorHandle>(null);
+  const editor = editorRef ?? ownRef;
   const [notice, setNotice] = useState<string | null>(null);
   const [closing, setClosing] = useState<string | null>(null);
   const [closeWindow, setCloseWindow] = useState(false);
@@ -119,6 +134,7 @@ export function EditorArea({ config, binding, connectionName, onCommand, executi
         <TabBar
           tabs={tabs}
           activeId={activeId}
+          runningTabs={runningTabs}
           onActivate={(id) => store().activate(id)}
           onClose={requestClose}
           onRename={(id, title) => store().rename(id, title)}

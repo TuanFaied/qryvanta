@@ -5,10 +5,15 @@
 // @ts-ignore: Unused imports
 import type { Events } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import type * as desktop$0 from "../../../../TuanFaied/qryvanta/internal/desktop/models.js";
+
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "qryvanta:close-requested": void;
+            "qryvanta:execution": desktop$0.ExecutionEvent;
         }
     }
 }
