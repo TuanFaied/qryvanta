@@ -46,6 +46,12 @@ All notable changes to this project are documented here. The format follows
   implementation that reads other databases through safely quoted three-part names.
 - The fixture database gains a view, a procedure and a function, and `qryvanta_reader` gets
   `VIEW DEFINITION`, so every object kind appears in the explorer.
+- Query executor (`internal/executor`, `mssql.Executor`, `app.Core.Execute`), not yet wired
+  into the UI or CLI:
+  - Streams result sets and messages in server order.
+  - Enforces the timeout, row and size limits, with server-side cancellation.
+  - Runs in the chosen database without leaking that context to other pooled sessions.
+  - Converts values without losing precision.
 - Content-Security-Policy for the desktop webview:
   - The policy blocks inline and external scripts, eval, and connections other than the app's
     own backend.
