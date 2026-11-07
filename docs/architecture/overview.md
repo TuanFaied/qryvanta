@@ -481,6 +481,33 @@ form-action 'none'; frame-ancestors 'none'
   holds until the app restarts. With read-only mode on, the session guard (D5) already rolls
   changes back, so there is no prompt.
 
+### D9d. Autocomplete (heuristic until Phase 4)
+
+- **Context comes from a small tokenizer, not a parser** (`features/editor/completion/context.ts`).
+  It skips strings and comments, reads bracketed and quoted identifiers, and answers three
+  questions:
+  - Is the cursor after a qualifier (`o.`, `dbo.`, `Sales.dbo.`)?
+  - Is it where a table goes (after FROM, JOIN, UPDATE, INTO or APPLY, or after a comma in a
+    FROM list)?
+  - Otherwise, it is a general position.
+  
+  It also finds the tables the statement around the cursor references, with their aliases. A
+  wrong guess only means a less useful list. The Phase 4 query model replaces it.
+- **Suggestions** (`suggestions.ts`):
+  - After FROM/JOIN: the current database's tables, views and functions, schema-qualified,
+    with `dbo` first.
+  - After `alias.` or `table.`: that table's columns, with type and PK/FK details as in the
+    explorer.
+  - After `schema.`: that schema's objects.
+  - Elsewhere: the referenced tables' columns and aliases, then keywords and functions.
+  - Identifiers that are not regular identifiers (spaces, a leading digit, reserved words) are
+    inserted in brackets, with `]` escaped as in `QUOTENAME`.
+- **Metadata comes from the schema store**, the same cache the explorer fills. Missing objects
+  or columns are requested, and completion waits at most 400 ms for them. After that it returns
+  what it has, marked incomplete so Monaco asks again on the next keystroke. A slow server
+  never freezes typing.
+- Monaco's word-based suggestions are off, so the list contains only SQL-aware items.
+
 ## 6. Main flow: "Execute with debugging" (target design)
 
 ```
