@@ -5,12 +5,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/version"
@@ -37,6 +39,13 @@ Commands:
                  Connect, report the server version and login, and disconnect
   connections remove NAME|ID
                  Delete a profile and its stored password
+  run [--conn NAME|ID] [--database DB] [--file query.sql | --query SQL]
+      [--format table|json|csv] [--max-rows N] [--timeout SECONDS] [--allow-writes]
+                 Run a batch with the desktop app's engine and protections. SQL comes
+                 from --query, --file or stdin. Read-only mode follows the settings;
+                 --allow-writes turns it off for this run. Results go to stdout,
+                 messages to stderr. Exit codes: 0 success, 1 query error, 2 usage
+                 error, 3 timed out or cancelled (Ctrl+C cancels on the server).
 
 Global flags:
   --config PATH  Use this configuration file instead of the default
@@ -51,7 +60,15 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) int {
-	err := dispatch(args, stdout)
+	// Ctrl+C cancels the context; a running query is then cancelled on the server.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	return report(dispatch(ctx, args, stdout, stderr), stdout, stderr)
+}
+
+// report prints err as appropriate and returns the process exit code.
+func report(err error, stdout, stderr io.Writer) int {
+	var ee *exitError
 	switch {
 	case err == nil:
 		return 0
@@ -61,13 +78,18 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case errors.Is(err, errUsage):
 		fmt.Fprintf(stderr, "qryvanta-cli: %v\n\n%s", err, usage)
 		return 2
+	case errors.As(err, &ee):
+		if !ee.silent {
+			fmt.Fprintf(stderr, "qryvanta-cli: %v\n", err)
+		}
+		return ee.code
 	default:
 		fmt.Fprintf(stderr, "qryvanta-cli: %v\n", err)
 		return 1
 	}
 }
 
-func dispatch(args []string, stdout io.Writer) error {
+func dispatch(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	fs := flag.NewFlagSet("qryvanta-cli", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	configPath := fs.String("config", "", "configuration file path")
@@ -89,6 +111,8 @@ func dispatch(args []string, stdout io.Writer) error {
 		return cmdConfig(rest[1:], *configPath, stdout)
 	case "connections":
 		return cmdConnections(rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout)
+	case "run":
+		return cmdRun(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
 	case "help":
 		return flag.ErrHelp
 	default:

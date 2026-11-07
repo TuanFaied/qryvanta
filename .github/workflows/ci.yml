@@ -99,7 +99,7 @@ jobs:
           # Used only by the write-access test that checks sysadmin is reported as can_write.
           QRYVANTA_TEST_MSSQL_ADMIN_PASSWORD: Qryvanta_Dev_2026!
           QRYVANTA_TEST_MSSQL_TRUST: "true"
-        run: go test -tags integration -count=1 -v ./internal/dialect/mssql/ ./tests/integration/
+        run: go test -tags integration -count=1 -v ./internal/dialect/mssql/ ./tests/integration/ ./cmd/qryvanta-cli/
       - name: SQL Server logs
         if: failure()
         run: docker compose logs sqlserver
