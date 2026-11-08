@@ -1,7 +1,7 @@
 import { AlertTriangle, CircleHelp, Loader2, ShieldAlert, ShieldCheck, UserCheck, UserCog } from "lucide-react";
 import { describeAccess } from "@/features/connections/access";
 import { cn } from "@/lib/utils";
-import type { Config, ServerInfo, WriteAccess } from "@/services/backend";
+import type { Config, ParserStatus, ServerInfo, WriteAccess } from "@/services/backend";
 
 interface StatusBarProps {
   config: Config;
@@ -11,6 +11,9 @@ interface StatusBarProps {
   /** Write access of the active login in the current database; undefined while checking. */
   access?: WriteAccess | undefined;
   onRecheckAccess?: () => void;
+  /** The T-SQL parser; a warning is shown only when it is unavailable. */
+  parser?: ParserStatus | null;
+  onRecheckParser?: () => void;
 }
 
 function shortVersion(s: ServerInfo): string {
@@ -22,7 +25,7 @@ function shortVersion(s: ServerInfo): string {
 
 const fmt = new Intl.NumberFormat();
 
-export function StatusBar({ config, onOpenSettings, connection, access, onRecheckAccess }: StatusBarProps) {
+export function StatusBar({ config, onOpenSettings, connection, access, onRecheckAccess, parser, onRecheckParser }: StatusBarProps) {
   const { readOnly, timeoutSeconds, maxRows } = config.execution;
   return (
     <footer className="flex h-6 shrink-0 items-center gap-3 border-t bg-chrome px-2 text-[11px] text-muted-foreground">
@@ -53,6 +56,16 @@ export function StatusBar({ config, onOpenSettings, connection, access, onRechec
         <span>No connection</span>
       )}
       <div className="flex-1" />
+      {parser && !parser.available && (
+        <button
+          type="button"
+          onClick={onRecheckParser}
+          className="flex shrink-0 items-center gap-1 rounded-sm px-1 text-warning hover:bg-accent"
+          title={`The T-SQL parser is not available: ${parser.reason}\n\nQueries still run; syntax checks and analysis need the parser. Click to try again.`}
+        >
+          <AlertTriangle className="size-3.5" /> Parser unavailable
+        </button>
+      )}
       <button
         type="button"
         onClick={onOpenSettings}

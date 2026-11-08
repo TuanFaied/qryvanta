@@ -14,7 +14,17 @@ All notable changes to this project are documented here. The format follows
     and comments), and reports syntax errors with their script line and column.
   - It is published as a self-contained single file (about 13 MB) next to `qryvanta.exe` by
     `wails3 build`, so users don't need .NET installed.
-  - It is not used by the app yet; the Go client comes next (#40).
+- Go client for the parser (`internal/parser`):
+  - One long-lived sidecar process, started on first use, with one request at a time.
+  - A timeout or crash restarts it. A cancelled request does not, so typing never restarts the
+    parser.
+  - After repeated start failures it reports "unavailable" for 30 s instead of retrying on
+    every request.
+  - Results carry byte offsets as well as editor (UTF-16) offsets.
+- The status bar warns "Parser unavailable", with the reason, when the parser cannot run.
+  Queries still run without it.
+- `qryvanta-cli parse` prints a script's `GO` batches and syntax errors (with `--json` and
+  `--compat`), and exits 1 when there are errors.
 - Connection profiles (`internal/connection`): validation, `connections.json` store, passwords in
   Windows Credential Manager, and a manager that keeps profiles and credentials consistent.
 - `qryvanta-cli connections list [--json]`.

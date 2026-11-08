@@ -13,6 +13,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as config$0 from "../config/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as parser$0 from "../parser/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -44,6 +47,14 @@ export function Info(): $CancellablePromise<$models.AppInfo> {
  */
 export function OpenLogFolder(): $CancellablePromise<void> {
     return $Call.ByID(3585916253);
+}
+
+/**
+ * ParserStatus starts the T-SQL parser if needed and reports whether it works, for the status
+ * bar. Queries still run when it is unavailable.
+ */
+export function ParserStatus(): $CancellablePromise<parser$0.Status> {
+    return $Call.ByID(3555606580);
 }
 
 /**

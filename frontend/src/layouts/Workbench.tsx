@@ -18,7 +18,7 @@ import { SchemaTree } from "@/features/explorer/SchemaTree";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
 import { BottomPanel, type OutputTab } from "@/features/workspace/BottomPanel";
 import { WelcomePage } from "@/features/workspace/WelcomePage";
-import { backend, type AppInfo, type Config, type SaveResult, type Theme } from "@/services/backend";
+import { backend, type AppInfo, type Config, type ParserStatus, type SaveResult, type Theme } from "@/services/backend";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useEditorStore } from "@/stores/editor-store";
 import { useSchemaStore } from "@/stores/schema-store";
@@ -155,6 +155,18 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
     if (command === "execute") exec.execute();
     else if (command === "cancel") exec.stop();
   };
+
+  // Start the parser in the background and show a warning if it cannot run.
+  const [parserStatus, setParserStatus] = useState<ParserStatus | null>(null);
+  const checkParser = useCallback(() => {
+    backend
+      .parserStatus()
+      .then(setParserStatus)
+      .catch((err: unknown) =>
+        setParserStatus({ available: false, reason: err instanceof Error ? err.message : String(err), version: "", scriptDom: "", protocol: 0, path: "" }),
+      );
+  }, []);
+  useEffect(checkParser, [checkParser]);
 
   const disconnect = () => void conn.disconnect();
   const refresh = () => {
@@ -305,6 +317,8 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         }
         access={access}
         onRecheckAccess={() => activeId && currentDatabase && void checkAccess(activeId, currentDatabase, true)}
+        parser={parserStatus}
+        onRecheckParser={checkParser}
       />
 
       <ConnectionDialog

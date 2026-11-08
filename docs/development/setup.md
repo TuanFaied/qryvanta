@@ -108,6 +108,30 @@ request. The protocol is documented in `sidecar/tsqlparser/Protocol.cs`.
   changing a package reference, run `dotnet restore sidecar/Sidecar.slnx --force-evaluate`.
 - Tests: `dotnet test sidecar/Sidecar.slnx` (or `wails3 task common:test:sidecar`).
 
+The app and CLI look for the sidecar next to their own executable, so `bin/` builds work as
+they are. When running from source (`go run`, `wails3 dev`, tests), point
+`QRYVANTA_PARSER_PATH` at a built sidecar. Without one, the status bar shows "Parser
+unavailable" and queries still run.
+
+```bash
+qryvanta-cli parse --file tests/sample_queries/02_one_to_many_fanout.correct.sql
+```
+
+`parse` prints each `GO` batch and every syntax error with its line and column. It exits with
+code 1 when there are errors, so it can serve as a syntax check in scripts (`--json` gives the
+full result).
+
+The Go client's tests use a fake sidecar (the test binary itself), so they need nothing
+installed. The tests against the real sidecar use the `parser` build tag:
+
+```powershell
+$env:QRYVANTA_PARSER_PATH = "$PWD\bin\qryvanta-tsqlparser.exe"
+```
+
+```bash
+go test -tags parser ./internal/parser/...
+```
+
 ## Fixture database (Docker)
 
 `docker-compose.yml` runs SQL Server 2022 Developer edition on `127.0.0.1:14333` and loads
