@@ -22,6 +22,7 @@ import type {
   SaveFileResult,
 } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop/models";
 import { Encoding } from "../../bindings/github.com/TuanFaied/qryvanta/internal/sqlfile/models";
+import type { Status as ParserStatus } from "../../bindings/github.com/TuanFaied/qryvanta/internal/parser/models";
 import type { Column, Database, $Object as SchemaObject } from "../../bindings/github.com/TuanFaied/qryvanta/internal/schema/models";
 import { ObjectKind } from "../../bindings/github.com/TuanFaied/qryvanta/internal/schema/models";
 import type {
@@ -42,6 +43,7 @@ export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, 
 export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
 export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
 export type { ExecutionEvent, Message, ResultColumn, Summary, Value };
+export type { ParserStatus };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
 
@@ -140,6 +142,9 @@ export const backend = {
     }),
 
   openLogFolder: (): Promise<void> => call("Open log folder", () => AppService.OpenLogFolder()),
+
+  /** Starts the T-SQL parser if needed and reports whether it works. */
+  parserStatus: (): Promise<ParserStatus> => call("Check the parser", () => AppService.ParserStatus()),
 
   listConnections: (): Promise<ConnectionDTO[]> =>
     call("Load connections", async () => (await ConnectionService.List()) ?? []),
