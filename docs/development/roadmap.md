@@ -49,7 +49,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 
 - ✅ `sidecar/tsqlparser` (.NET 10, ScriptDom 180), published as a self-contained single file:
   protocol, `GO` batches and syntax diagnostics (#39)
-- JSON protocol, Go client with restart, timeout, and request IDs
+- ✅ Go client (`internal/parser`): one process, request IDs, timeout restart, crash restart,
+  cool-down when unavailable, status bar warning, `qryvanta-cli parse` (#40)
 - `QueryModel`: statements, sources, joins and predicates, WHERE/HAVING expression trees, GROUP BY,
   ORDER BY, CTEs, subqueries, set operations, aggregates, window functions, source positions
 - Parser diagnostics are shown as editor markers

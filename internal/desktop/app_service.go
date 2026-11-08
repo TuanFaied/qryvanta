@@ -5,6 +5,7 @@
 package desktop
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/config"
+	"github.com/TuanFaied/qryvanta/internal/parser"
 	"github.com/TuanFaied/qryvanta/internal/version"
 )
 
@@ -79,6 +81,12 @@ func (s *AppService) UpdateConfig(cfg config.Config) (SaveConfigResult, error) {
 		s.core.Logger().Error("save configuration failed", "err", err)
 		return SaveConfigResult{}, fmt.Errorf("could not save settings: %w", err)
 	}
+}
+
+// ParserStatus starts the T-SQL parser if needed and reports whether it works, for the status
+// bar. Queries still run when it is unavailable.
+func (s *AppService) ParserStatus(ctx context.Context) parser.Status {
+	return s.core.Parser().Check(ctx)
 }
 
 // OpenLogFolder opens the folder that contains the log file in the OS file manager.

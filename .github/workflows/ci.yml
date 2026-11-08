@@ -67,6 +67,12 @@ jobs:
           ./publish/qryvanta-tsqlparser.exe --version
           printf '%s\n' '{"id":"1","op":"parse","sql":"SELECT 1\nGO\nSELECT FROM"}' | ./publish/qryvanta-tsqlparser.exe | tee out.jsonl
           grep -q '"line":3' out.jsonl
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Go client against the published sidecar
+        shell: bash
+        run: QRYVANTA_PARSER_PATH="$PWD/publish/qryvanta-tsqlparser.exe" go test -tags parser -count=1 -v ./internal/parser/...
 
   desktop:
     name: Desktop build (Wails)
@@ -111,6 +117,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      # Linux has a C compiler for the race detector; the parser client is concurrency-heavy.
+      - name: Parser client under the race detector
+        run: go test -race -count=3 ./internal/parser/...
       - name: Start SQL Server and load the fixture database
         run: docker compose run --rm fixtures
       - name: Integration tests (read-only login)
