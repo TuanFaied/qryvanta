@@ -156,6 +156,36 @@ Server tooling itself uses.
 
 Regular expressions are never used as the parser.
 
+**The sidecar (#39).** `sidecar/tsqlparser`:
+- **Build:** .NET 10 (LTS until November 2028) and ScriptDom 180.x, published as a
+  self-contained, trimmed single file of about 13 MB. Users need no .NET installation.
+  - ScriptDom is kept whole during trimming, because its ANTLR token factory finds token
+    classes by name.
+  - The trimmed build gave identical output to the untrimmed one on the sample queries and
+    other statement kinds. CI smoke-tests the published file.
+- **Protocol 1:** UTF-8, one JSON object per line.
+  - The sidecar first writes `hello` (protocol version, sidecar and ScriptDom versions,
+    supported compatibility levels, size limit).
+  - For each request `{id, op, sql?, compatLevel?}` it writes exactly one response, in order:
+    `{id, ok, compatLevel, batches, diagnostics}` or `{id, ok: false, error: {code, message}}`.
+  - Ops are `parse` and `ping`. Error codes are `bad_request`, `unknown_op`, `too_large`,
+    `unsupported_compat_level` and `internal`. A request the sidecar cannot read is answered
+    with `id: null`, and it keeps serving.
+  - Offsets and lengths are UTF-16 code units, as in .NET and JavaScript strings (the Go client
+    converts them). Lines and columns are 1-based.
+  - Only protocol messages go to stdout; logs go to stderr.
+- **Limits:** SQL up to 16 Mi characters; request lines up to 2 × that. Clients must not escape
+  non-ASCII or HTML characters.
+- **Compatibility levels:** 80–180, default 170 (SQL Server 2025).
+- **Batches:** split on `GO` lines using ScriptDom's token stream, so a `GO` inside a string or
+  comment is not a separator, and splitting works even when the script has syntax errors.
+  - `GO n` is reported as `repeat: n`.
+  - Empty batches (whitespace or comments only) are skipped.
+- **Per-batch parsing:** each batch is parsed on its own, as SQL Server receives it. Diagnostic
+  positions are mapped back to the whole script. Parsing per batch matters:
+  - `GO n` is not T-SQL, and would otherwise be reported as a syntax error.
+  - A procedure call without `EXEC` is valid only as the first statement of a batch.
+
 ### D3. Evidence model
 
 A **finding** has: rule ID, title, explanation, severity

@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>qryvanta-tsqlparser</AssemblyName>
+    <RootNamespace>Qryvanta.TsqlParser</RootNamespace>
+    <Version>0.1.0</Version>
+    <Product>Qryvanta T-SQL parser</Product>
+    <Copyright>Qryvanta contributors</Copyright>
+    <!-- Platforms the sidecar is published for; listed so packages.lock.json covers them. -->
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;osx-arm64</RuntimeIdentifiers>
+
+    <!-- The protocol is English-only and culture-independent. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- JSON goes through the source-generated context in Protocol.cs, so reflection is not needed. -->
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Unconditional so restore (and packages.lock.json) is the same with or without -r. -->
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <!-- dotnet publish -r <rid>: one self-contained, trimmed executable; no .NET install needed. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!--
+      IL2104: ScriptDom is not annotated for trimming. Its only reflection is ANTLR's token
+      factory, which looks up and instantiates token classes inside ScriptDom by name
+      (antlr.CharScanner.ReflectionBasedTokenCreator: IL2026, IL2077). ScriptDom is kept whole
+      below (TrimmerRootAssembly), so those types always exist. This suppresses only the
+      per-assembly summary; warnings in this project's own code are still errors.
+    -->
+    <NoWarn>$(NoWarn);IL2104</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="180.140.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ScriptDom is not annotated for trimming; keep it whole and trim only the runtime. -->
+    <TrimmerRootAssembly Include="Microsoft.SqlServer.TransactSql.ScriptDom" />
+    <InternalsVisibleTo Include="TsqlParser.Tests" />
+  </ItemGroup>
+
+</Project>

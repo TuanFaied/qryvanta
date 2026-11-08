@@ -1,6 +1,25 @@
 version: '3'
 
 tasks:
+  build:sidecar:
+    summary: Builds the T-SQL parser sidecar (self-contained single file) into the bin directory
+    # Needs the .NET 10 SDK. The output runs without a .NET installation.
+    sources:
+      - sidecar/tsqlparser/**/*.cs
+      - sidecar/tsqlparser/*.csproj
+    generates:
+      - '{{.BIN_DIR}}/qryvanta-tsqlparser{{exeExt}}'
+    vars:
+      SIDECAR_RID: '{{if eq OS "windows"}}win{{else if eq OS "darwin"}}osx{{else}}linux{{end}}-{{if eq ARCH "amd64"}}x64{{else}}{{ARCH}}{{end}}'
+    cmds:
+      - dotnet publish sidecar/tsqlparser -c Release -r {{.SIDECAR_RID}} -o "{{.BIN_DIR}}" -p:Version={{.VERSION | replace "-dev" ""}}
+
+  test:sidecar:
+    summary: Runs the parser sidecar's unit tests
+    cmds:
+      - dotnet test sidecar/Sidecar.slnx
+
+
   go:mod:tidy:
     summary: Runs `go mod tidy`
     internal: true

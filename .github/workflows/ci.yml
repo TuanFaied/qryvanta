@@ -50,6 +50,24 @@ jobs:
       - run: pnpm test
       - run: pnpm exec vite build
 
+  sidecar:
+    name: Parser sidecar (.NET)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test sidecar/Sidecar.slnx
+      - name: Publish the single-file build and smoke-test it
+        shell: bash
+        run: |
+          dotnet publish sidecar/tsqlparser -c Release -r win-x64 -o publish
+          ls -l publish
+          ./publish/qryvanta-tsqlparser.exe --version
+          printf '%s\n' '{"id":"1","op":"parse","sql":"SELECT 1\nGO\nSELECT FROM"}' | ./publish/qryvanta-tsqlparser.exe | tee out.jsonl
+          grep -q '"line":3' out.jsonl
+
   desktop:
     name: Desktop build (Wails)
     runs-on: windows-latest
@@ -59,6 +77,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      # wails3 build also builds the parser sidecar.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: frontend/package.json
@@ -75,6 +97,7 @@ jobs:
           wails3 build
           wails3 task build:cli
           ./bin/qryvanta-cli.exe version
+          ./bin/qryvanta-tsqlparser.exe --version
       - name: Bindings are up to date
         shell: bash
         run: git diff --exit-code -- frontend/bindings

@@ -10,7 +10,7 @@
 | Wails CLI | v3.1.0 | `go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0` |
 | WebView2 | any current | Preinstalled on Windows 11 |
 | Docker | optional | Needed from Phase 2 for the SQL Server integration database |
-| .NET SDK | 8+ | Needed from Phase 4 for the parser sidecar |
+| .NET SDK | 10.0 | For the parser sidecar; `wails3 build` builds it. `winget install Microsoft.DotNet.SDK.10`. Users of the app do not need .NET. |
 
 Check your environment with:
 
@@ -26,9 +26,11 @@ if you have go-task installed).
 | Command | What it does |
 |---|---|
 | `wails3 dev` | Runs the desktop app with hot reload (Vite on port 9245) |
-| `wails3 build` | Production desktop build → `bin/qryvanta.exe` |
+| `wails3 build` | Production desktop build → `bin/qryvanta.exe`, plus the parser sidecar |
 | `wails3 task build:cli` | CLI build → `bin/qryvanta-cli.exe` |
+| `wails3 task common:build:sidecar` | Parser sidecar only → `bin/qryvanta-tsqlparser.exe` |
 | `wails3 task test` | `go vet`, Go tests, and frontend tests |
+| `wails3 task common:test:sidecar` | The sidecar's .NET unit tests |
 | `wails3 task common:generate:bindings` | Regenerates TypeScript bindings after changing a bound Go service |
 | `wails3 package` | NSIS installer (requires NSIS, Phase 10) |
 
@@ -82,6 +84,29 @@ wails3 generate icons -input build/darwin/dmg-file-icon.png -macfilename build/d
 ## Project layout
 
 See [the architecture document](../architecture/overview.md#3-repository-layout).
+
+## T-SQL parser sidecar
+
+`sidecar/tsqlparser` is a .NET 10 program that parses T-SQL with Microsoft's ScriptDom
+(architecture decision D2). The Go side talks to it over stdin and stdout; you rarely run it
+by hand, but it is useful for checking what the parser sees:
+
+```bash
+wails3 task common:build:sidecar
+```
+
+```bash
+printf '%s\n' '{"id":"1","op":"parse","sql":"SELECT 1\nGO\nSELECT FROM"}' | bin/qryvanta-tsqlparser.exe
+```
+
+The first line of output is a `hello` message (protocol and versions); then one response per
+request. The protocol is documented in `sidecar/tsqlparser/Protocol.cs`.
+
+- `dotnet publish -r <rid>` makes a self-contained, trimmed single file (about 13 MB), so users
+  do not need .NET installed.
+- Package versions are pinned in `packages.lock.json`; CI restores in locked mode. After
+  changing a package reference, run `dotnet restore sidecar/Sidecar.slnx --force-evaluate`.
+- Tests: `dotnet test sidecar/Sidecar.slnx` (or `wails3 task common:test:sidecar`).
 
 ## Fixture database (Docker)
 

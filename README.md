@@ -86,7 +86,8 @@ stderr. Exit codes: 0 success, 1 query error, 2 usage error, 3 timed out or canc
 
 ## Development
 
-Requirements: Go 1.26+, Node.js 22+, pnpm 10+, the Wails v3 CLI, and WebView2 (preinstalled on Windows 11).
+Requirements: Go 1.26+, Node.js 22+, pnpm 10+, the Wails v3 CLI, the .NET 10 SDK (for the T-SQL
+parser sidecar), and WebView2 (preinstalled on Windows 11).
 
 ```bash
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0

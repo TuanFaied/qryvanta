@@ -19,6 +19,14 @@ updates:
       frontend-minor:
         update-types: ["minor", "patch"]
 
+  - package-ecosystem: nuget
+    directory: /sidecar
+    schedule:
+      interval: weekly
+    labels: ["type: chore", "area: deps"]
+    commit-message:
+      prefix: "chore(deps)"
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
