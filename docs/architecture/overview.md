@@ -74,7 +74,8 @@ internal/
   dialect/mssql/       SQL Server driver (DSN, server info, errors) and metadata reader
   schema/              Product-neutral metadata model and the schema.Reader interface
   executor/            Query execution model: requests, limits, streamed results, messages
-  parser/              (Phase 4) Parser interface, sidecar client, structured query model
+  parser/              Parser interface and results; parser/sidecar is the ScriptDom client
+                       (Phase 4: structured query model next)
   analyzer/            (Phase 5) Rules that turn query structure + evidence into findings
   diagnostics/         (Phase 5) Finding, Evidence, Severity, Classification types
   instrumentation/     (Phase 5/7) Probe query generation and approval workflow
@@ -185,6 +186,33 @@ Regular expressions are never used as the parser.
   positions are mapped back to the whole script. Parsing per batch matters:
   - `GO n` is not T-SQL, and would otherwise be reported as a syntax error.
   - A procedure call without `EXEC` is valid only as the first statement of a batch.
+
+**The Go client (#40).** `internal/parser` defines `Parser` (`Parse`, `Check`, `Close`) and the
+result types. `internal/parser/sidecar` implements it:
+- **Lifecycle:** one long-lived process, started on first use, and closed by `app.Core.Close`.
+  If the app is killed, the sidecar sees end of input and exits too.
+- **Location:** next to the executable (`wails3 build` puts it there), or at
+  `QRYVANTA_PARSER_PATH` for development. On Windows it runs with `CREATE_NO_WINDOW`, so the GUI
+  app never flashes a console.
+- **Ordering:** requests are serialized through a semaphore that respects the caller's context.
+  Responses must carry the request's ID.
+- **Failure handling:**
+  - **Timeout (5 s) or misbehaviour** (wrong ID, invalid JSON, a crash): the process is killed
+    and the next request starts a new one.
+  - **The caller gives up** (context cancelled): the process is kept. Its response is read and
+    discarded in the background before the next request goes through, because the editor
+    cancels parses constantly and a restart costs about 0.5 s.
+  - **Error responses** (`too_large`, `unsupported_compat_level`, …) are returned as
+    `ProtocolError` and do not restart anything.
+  - **Repeated start failures** (missing file, no hello, wrong protocol): after three in a row,
+    `Parse` fails fast with `parser.ErrUnavailable` for 30 s, then tries again.
+- **Positions:** the client adds byte offsets (`ByteOffset`, `ByteLength`) next to the
+  sidecar's UTF-16 offsets, so Go code can slice the script and the editor can use the UTF-16
+  ones.
+- **Logging:** the client logs lifecycle events, and the sidecar's stderr at debug level, never
+  SQL text.
+- **Visible state:** the desktop status bar shows "Parser unavailable", with the reason, when
+  `Check` fails, and `qryvanta-cli parse` prints batches and syntax errors.
 
 ### D3. Evidence model
 

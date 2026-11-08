@@ -22,6 +22,8 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/dialect/mssql"
 	"github.com/TuanFaied/qryvanta/internal/executor"
 	"github.com/TuanFaied/qryvanta/internal/logging"
+	"github.com/TuanFaied/qryvanta/internal/parser"
+	"github.com/TuanFaied/qryvanta/internal/parser/sidecar"
 	"github.com/TuanFaied/qryvanta/internal/schema"
 	"github.com/TuanFaied/qryvanta/internal/version"
 )
@@ -52,6 +54,9 @@ type Options struct {
 	Access connection.AccessChecker
 	// Runner overrides the query executor (default: SQL Server).
 	Runner executor.Runner
+	// Parser overrides the T-SQL parser (default: the ScriptDom sidecar next to the executable,
+	// or at QRYVANTA_PARSER_PATH). It is closed by Core.Close.
+	Parser parser.Parser
 	// AllowWrites turns read-only mode off for this process regardless of the settings. Only
 	// the CLI's explicit --allow-writes flag sets it; it is fixed at startup, so no caller of
 	// Execute can change the policy.
@@ -67,6 +72,7 @@ type Core struct {
 	schema      schema.Reader
 	runner      executor.Runner
 	pool        *connection.Pool
+	parser      parser.Parser
 	allowWrites bool
 
 	mu  sync.RWMutex
@@ -157,6 +163,12 @@ func New(opts Options) (*Core, error) {
 		access = mssql.Access{}
 	}
 	c.pool.SetAccessChecker(access)
+
+	c.parser = opts.Parser
+	if c.parser == nil {
+		// The process starts on first use, so short CLI commands that never parse pay nothing.
+		c.parser = sidecar.New(sidecar.Options{Log: log.ForComponent("parser", slog.LevelDebug)})
+	}
 	return c, nil
 }
 
@@ -165,6 +177,9 @@ func (c *Core) Connections() *connection.Manager { return c.connections }
 
 // Pool returns the open-connection pool.
 func (c *Core) Pool() *connection.Pool { return c.pool }
+
+// Parser returns the T-SQL parser. Parse returns parser.ErrUnavailable when it cannot run.
+func (c *Core) Parser() parser.Parser { return c.parser }
 
 // Schema returns the metadata reader for the configured dialect.
 func (c *Core) Schema() schema.Reader { return c.schema }
@@ -278,6 +293,9 @@ func (c *Core) Close() error {
 	var errs []error
 	if err := c.pool.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close connections: %w", err))
+	}
+	if err := c.parser.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("close parser: %w", err))
 	}
 	if err := c.log.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close log: %w", err))

@@ -46,6 +46,11 @@ Commands:
                  --allow-writes turns it off for this run. Results go to stdout,
                  messages to stderr. Exit codes: 0 success, 1 query error, 2 usage
                  error, 3 timed out or cancelled (Ctrl+C cancels on the server).
+  parse [--file query.sql | --query SQL] [--compat LEVEL] [--json]
+                 Split a script into GO batches and report syntax errors with the
+                 T-SQL parser (qryvanta-tsqlparser next to this program, or at
+                 QRYVANTA_PARSER_PATH). Exit codes: 0 no errors, 1 syntax errors or
+                 parser unavailable, 2 usage error.
 
 Global flags:
   --config PATH  Use this configuration file instead of the default
@@ -113,6 +118,8 @@ func dispatch(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 		return cmdConnections(rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout)
 	case "run":
 		return cmdRun(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
+	case "parse":
+		return cmdParse(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
 	case "help":
 		return flag.ErrHelp
 	default:
