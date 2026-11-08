@@ -1,0 +1,8 @@
+<Project>
+  <!-- Shared by the sidecar and its tests. -->
+  <PropertyGroup>
+    <!-- packages.lock.json pins every package, including transitive ones; CI restores with locked mode. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+  </PropertyGroup>
+</Project>

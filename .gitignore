@@ -4,6 +4,10 @@ bin/
 .wails/
 *.syso
 
+# .NET (parser sidecar); bin/ is covered above
+obj/
+TestResults/
+
 # Frontend
 frontend/node_modules/
 frontend/dist/*

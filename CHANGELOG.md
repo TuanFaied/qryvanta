@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- T-SQL parser sidecar (`sidecar/tsqlparser`, .NET 10 with Microsoft ScriptDom):
+  - It reads requests as newline-delimited JSON on stdin and writes responses to stdout.
+  - It splits scripts into batches on `GO` (including `GO n`, and ignoring `GO` inside strings
+    and comments), and reports syntax errors with their script line and column.
+  - It is published as a self-contained single file (about 13 MB) next to `qryvanta.exe` by
+    `wails3 build`, so users don't need .NET installed.
+  - It is not used by the app yet; the Go client comes next (#40).
 - Connection profiles (`internal/connection`): validation, `connections.json` store, passwords in
   Windows Credential Manager, and a manager that keeps profiles and credentials consistent.
 - `qryvanta-cli connections list [--json]`.
