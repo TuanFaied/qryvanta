@@ -55,7 +55,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
       - run: dotnet test sidecar/Sidecar.slnx
@@ -84,7 +84,7 @@ jobs:
         with:
           go-version-file: go.mod
       # wails3 build also builds the parser sidecar.
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
       - uses: pnpm/action-setup@v4
