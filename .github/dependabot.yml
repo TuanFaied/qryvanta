@@ -18,6 +18,11 @@ updates:
     groups:
       frontend-minor:
         update-types: ["minor", "patch"]
+    ignore:
+      # @types/node must match the Node.js major that runs the build (CI: Node 22). A newer
+      # major types APIs that do not exist at runtime; move both together, deliberately.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: nuget
     directory: /sidecar
