@@ -17,8 +17,8 @@ jobs:
     name: Go (vet, test)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: gofmt
@@ -36,11 +36,11 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: frontend/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -54,7 +54,7 @@ jobs:
     name: Parser sidecar (.NET)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
@@ -67,7 +67,7 @@ jobs:
           ./publish/qryvanta-tsqlparser.exe --version
           printf '%s\n' '{"id":"1","op":"parse","sql":"SELECT 1\nGO\nSELECT FROM"}' | ./publish/qryvanta-tsqlparser.exe | tee out.jsonl
           grep -q '"line":3' out.jsonl
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Go client against the published sidecar
@@ -79,18 +79,18 @@ jobs:
     runs-on: windows-latest
     needs: [go, frontend]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       # wails3 build also builds the parser sidecar.
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: frontend/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -113,8 +113,8 @@ jobs:
     # Linux runners can run the SQL Server container; the Windows runners cannot.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       # Linux has a C compiler for the race detector; the parser client is concurrency-heavy.
