@@ -18,7 +18,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: gofmt
@@ -67,7 +67,7 @@ jobs:
           ./publish/qryvanta-tsqlparser.exe --version
           printf '%s\n' '{"id":"1","op":"parse","sql":"SELECT 1\nGO\nSELECT FROM"}' | ./publish/qryvanta-tsqlparser.exe | tee out.jsonl
           grep -q '"line":3' out.jsonl
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Go client against the published sidecar
@@ -80,7 +80,7 @@ jobs:
     needs: [go, frontend]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       # wails3 build also builds the parser sidecar.
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       # Linux has a C compiler for the race detector; the parser client is concurrency-heavy.
