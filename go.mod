@@ -7,7 +7,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.11.2
 	github.com/wailsapp/wails/v3 v3.1.0
 	github.com/zalando/go-keyring v0.2.8
-	golang.org/x/text v0.43.0
+	golang.org/x/text v0.44.0
 )
 
 require (
