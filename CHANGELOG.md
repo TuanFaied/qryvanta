@@ -150,6 +150,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- The .NET SDK used to build the parser sidecar is pinned in `global.json`, and CI installs
+  exactly that version. A newer SDK patch on the CI runners had changed the trimming package's
+  version and broken the locked restore.
+
 - Quieter logs:
   - Wails runtime messages are recorded only at Warn and above (Info as well while Qryvanta's
     log level is Debug), tagged `component=wails`.

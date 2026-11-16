@@ -10,7 +10,7 @@
 | Wails CLI | v3.1.0 | `go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0` |
 | WebView2 | any current | Preinstalled on Windows 11 |
 | Docker | optional | Needed from Phase 2 for the SQL Server integration database |
-| .NET SDK | 10.0 | For the parser sidecar; `wails3 build` builds it. `winget install Microsoft.DotNet.SDK.10`. Users of the app do not need .NET. |
+| .NET SDK | 10.0.403 (`global.json`) | For the parser sidecar; `wails3 build` builds it. `winget install Microsoft.DotNet.SDK.10`. Users of the app do not need .NET. |
 
 Check your environment with:
 
@@ -106,6 +106,12 @@ request. The protocol is documented in `sidecar/tsqlparser/Protocol.cs`.
   do not need .NET installed.
 - Package versions are pinned in `packages.lock.json`; CI restores in locked mode. After
   changing a package reference, run `dotnet restore sidecar/Sidecar.slnx --force-evaluate`.
+- **The .NET SDK is pinned in `global.json`**, and CI installs exactly that version. The
+  trimming package (`Microsoft.NET.ILLink.Tasks`) comes with the SDK, and its version follows
+  the SDK's, so a different SDK patch would no longer match the lock file. Use the SDK in
+  `global.json`; a newer patch also works locally, but restore then rewrites the lock file.
+  To move to a newer SDK, change `global.json`, then run
+  `dotnet restore sidecar/Sidecar.slnx --force-evaluate`, and commit both files together.
 - Tests: `dotnet test sidecar/Sidecar.slnx` (or `wails3 task common:test:sidecar`).
 
 The app and CLI look for the sidecar next to their own executable, so `bin/` builds work as
