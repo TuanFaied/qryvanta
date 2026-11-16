@@ -106,12 +106,13 @@ internal sealed class Server(TextReader input, TextWriter output, TextWriter log
             return Fail(request.Id, ErrorCodes.UnsupportedCompatLevel,
                 $"compatibility level {level} is not supported (use one of {string.Join(", ", ScriptParser.CompatLevels)})");
         }
-        var result = ScriptParser.Parse(request.Sql, level);
+        var result = ScriptParser.Parse(request.Sql, level, request.Model);
         return new Response
         {
             Id = request.Id,
             Ok = true,
             CompatLevel = level,
+            ModelVersion = request.Model ? ModelInfo.Version : 0,
             Batches = result.Batches,
             Diagnostics = result.Diagnostics,
         };

@@ -19,6 +19,17 @@ func TestByteOffsets(t *testing.T) {
 	}
 }
 
+func TestSpanText(t *testing.T) {
+	sql := "SELECT N'🐘', é FROM t"
+	// "é" starts at UTF-16 offset 14 (the elephant is two code units).
+	if got := SpanText(sql, Span{Offset: 14, Length: 1}); got != "é" {
+		t.Fatalf("SpanText = %q", got)
+	}
+	if got := SpanText(sql, Span{Offset: 7, Length: 5}); got != "N'🐘'" {
+		t.Fatalf("SpanText = %q", got)
+	}
+}
+
 func TestDefaultPathHonoursOverride(t *testing.T) {
 	t.Setenv("QRYVANTA_PARSER_PATH", filepath.Join("x", "parser"))
 	if got := DefaultPath(); got != filepath.Join("x", "parser") {

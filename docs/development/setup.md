@@ -119,7 +119,12 @@ qryvanta-cli parse --file tests/sample_queries/02_one_to_many_fanout.correct.sql
 
 `parse` prints each `GO` batch and every syntax error with its line and column. It exits with
 code 1 when there are errors, so it can serve as a syntax check in scripts (`--json` gives the
-full result).
+full result). `--model` adds the QueryModel, which is the quickest way to see what the parser
+understood:
+
+```bash
+qryvanta-cli parse --file tests/sample_queries/10_missing_join_predicate.buggy.sql --model
+```
 
 The Go client's tests use a fake sidecar (the test binary itself), so they need nothing
 installed. The tests against the real sidecar use the `parser` build tag:

@@ -46,11 +46,12 @@ Commands:
                  --allow-writes turns it off for this run. Results go to stdout,
                  messages to stderr. Exit codes: 0 success, 1 query error, 2 usage
                  error, 3 timed out or cancelled (Ctrl+C cancels on the server).
-  parse [--file query.sql | --query SQL] [--compat LEVEL] [--json]
+  parse [--file query.sql | --query SQL] [--compat LEVEL] [--json] [--model]
                  Split a script into GO batches and report syntax errors with the
                  T-SQL parser (qryvanta-tsqlparser next to this program, or at
-                 QRYVANTA_PARSER_PATH). Exit codes: 0 no errors, 1 syntax errors or
-                 parser unavailable, 2 usage error.
+                 QRYVANTA_PARSER_PATH). --model prints the query model as JSON.
+                 Exit codes: 0 no errors, 1 syntax errors or parser unavailable,
+                 2 usage error.
 
 Global flags:
   --config PATH  Use this configuration file instead of the default

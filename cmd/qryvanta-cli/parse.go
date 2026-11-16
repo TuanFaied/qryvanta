@@ -19,6 +19,7 @@ func cmdParse(ctx context.Context, args []string, opts app.Options, stdout, stde
 	fs.StringVar(&o.file, "file", "", "read the script from a .sql file")
 	fs.StringVar(&o.query, "query", "", "the script to parse")
 	asJSON := fs.Bool("json", false, "print JSON")
+	withModel := fs.Bool("model", false, "include the query model (implies --json)")
 	compat := fs.Int("compat", 0, "SQL Server compatibility level (80-180; default: the parser's default)")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("%w: %v", errUsage, err)
@@ -40,7 +41,10 @@ func cmdParse(ctx context.Context, args []string, opts app.Options, stdout, stde
 	}
 	defer core.Close()
 
-	res, err := core.Parser().Parse(ctx, sql, parser.Options{CompatLevel: *compat})
+	if *withModel {
+		*asJSON = true
+	}
+	res, err := core.Parser().Parse(ctx, sql, parser.Options{CompatLevel: *compat, Model: *withModel})
 	if err != nil {
 		return err
 	}

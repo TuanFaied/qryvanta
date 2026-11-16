@@ -24,6 +24,8 @@ internal sealed class Request
     [JsonPropertyName("sql")] public string? Sql { get; set; }
     /// <summary>SQL Server compatibility level (80–180). Missing means the default.</summary>
     [JsonPropertyName("compatLevel")] public int? CompatLevel { get; set; }
+    /// <summary>Include the QueryModel (statements of each batch). Off by default: editor syntax checks do not need it.</summary>
+    [JsonPropertyName("model")] public bool Model { get; set; }
 }
 
 internal sealed class Hello
@@ -41,11 +43,18 @@ internal sealed class Hello
 internal sealed class Response
 {
     [JsonPropertyName("type")] public string Type => "response";
-    [JsonPropertyName("id")] public string? Id { get; init; }
+    // Always written, also as null for a request that could not be read.
+    [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+    public string? Id { get; init; }
     [JsonPropertyName("ok")] public bool Ok { get; init; }
     [JsonPropertyName("compatLevel")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int CompatLevel { get; init; }
+    /// <summary>Set when the request asked for the model.</summary>
+    [JsonPropertyName("modelVersion")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int ModelVersion { get; init; }
     [JsonPropertyName("batches")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<Batch>? Batches { get; init; }
@@ -66,7 +75,11 @@ internal sealed record Batch(
     [property: JsonPropertyName("line")] int Line,
     [property: JsonPropertyName("column")] int Column,
     /// <summary>GO n runs the batch n times; 1 for a plain GO or the last batch.</summary>
-    [property: JsonPropertyName("repeat")] int Repeat);
+    [property: JsonPropertyName("repeat")] int Repeat)
+{
+    /// <summary>The batch's statements (QueryModel), when requested and the batch has no syntax errors.</summary>
+    [JsonPropertyName("statements")] public List<Statement>? Statements { get; init; }
+}
 
 /// <summary>A syntax error reported by ScriptDom.</summary>
 internal sealed record Diagnostic(
@@ -90,7 +103,9 @@ internal static class ErrorCodes
     public const string Internal = "internal";
 }
 
-[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
+// Absent values are omitted (the model has many optional fields); fields that must always be
+// present, like a response's id, say so explicitly.
+[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(Request))]
 [JsonSerializable(typeof(Hello))]
 [JsonSerializable(typeof(Response))]
@@ -103,5 +118,7 @@ internal sealed partial class ProtocolJson : JsonSerializerContext
     public static ProtocolJson Wire { get; } = new(new JsonSerializerOptions
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        // These options replace the attribute's, so repeat the null handling here.
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     });
 }

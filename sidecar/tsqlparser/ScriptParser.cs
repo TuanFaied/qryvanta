@@ -37,7 +37,7 @@ internal static class ScriptParser
     /// receives it; GO itself (and GO n, which ScriptDom does not accept) never reaches the
     /// parser. Diagnostic positions are mapped back to the whole script.
     /// </summary>
-    public static ParseResult Parse(string sql, int compatLevel)
+    public static ParseResult Parse(string sql, int compatLevel, bool model = false)
     {
         var parser = Create(compatLevel);
         var lines = new LineIndex(sql);
@@ -46,14 +46,20 @@ internal static class ScriptParser
         var batches = SplitBatches(sql, tokens, lines);
 
         var diagnostics = new List<Diagnostic>();
-        foreach (var batch in batches)
+        for (var i = 0; i < batches.Count; i++)
         {
-            parser.Parse(new StringReader(batch.Text), out var errors);
+            var batch = batches[i];
+            var fragment = parser.Parse(new StringReader(batch.Text), out var errors);
             foreach (var e in errors)
             {
                 var offset = batch.Offset + e.Offset;
                 var (line, column) = lines.Position(offset);
                 diagnostics.Add(new Diagnostic(e.Number, e.Message, offset, line, column));
+            }
+            // A batch with syntax errors has no reliable tree; its statements stay absent rather than guessed.
+            if (model && errors.Count == 0 && fragment is TSqlScript script)
+            {
+                batches[i] = batch with { Statements = new ModelBuilder(batch.Text, batch.Offset, lines).Statements(script) };
             }
         }
         return new ParseResult(batches, diagnostics);
