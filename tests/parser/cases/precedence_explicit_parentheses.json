@@ -1,0 +1,181 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- explicit parentheses change the tree and are recorded on the grouped node\nSELECT * FROM t WHERE (a = 1 OR b = 2) AND (c = 3);\n",
+      "offset": 0,
+      "length": 129,
+      "byteOffset": 0,
+      "byteLength": 129,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 77,
+            "length": 51,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 77,
+              "length": 50,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 84,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 91,
+                "length": 1,
+                "line": 2,
+                "column": 15
+              },
+              "name": {
+                "name": "t"
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 99,
+                "length": 28,
+                "line": 2,
+                "column": 23
+              },
+              "left": {
+                "kind": "or",
+                "span": {
+                  "offset": 100,
+                  "length": 14,
+                  "line": 2,
+                  "column": 24
+                },
+                "parenthesized": true,
+                "left": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 100,
+                    "length": 5,
+                    "line": 2,
+                    "column": 24
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 100,
+                      "length": 1,
+                      "line": 2,
+                      "column": 24
+                    },
+                    "parts": [
+                      "a"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 104,
+                      "length": 1,
+                      "line": 2,
+                      "column": 28
+                    },
+                    "literalType": "integer",
+                    "value": "1"
+                  }
+                },
+                "right": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 109,
+                    "length": 5,
+                    "line": 2,
+                    "column": 33
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 109,
+                      "length": 1,
+                      "line": 2,
+                      "column": 33
+                    },
+                    "parts": [
+                      "b"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 113,
+                      "length": 1,
+                      "line": 2,
+                      "column": 37
+                    },
+                    "literalType": "integer",
+                    "value": "2"
+                  }
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 121,
+                  "length": 5,
+                  "line": 2,
+                  "column": 45
+                },
+                "parenthesized": true,
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 121,
+                    "length": 1,
+                    "line": 2,
+                    "column": 45
+                  },
+                  "parts": [
+                    "c"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 125,
+                    "length": 1,
+                    "line": 2,
+                    "column": 49
+                  },
+                  "literalType": "integer",
+                  "value": "3"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

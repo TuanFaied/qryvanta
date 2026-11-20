@@ -1,0 +1,201 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- LAG and LEAD with offsets and a default\nSELECT OrderDate,\n       LAG(Amount, 1, 0) OVER (ORDER BY OrderDate) AS PrevAmount,\n       LEAD(Amount) OVER (ORDER BY OrderDate) AS NextAmount\nFROM dbo.Payments;\n",
+      "offset": 0,
+      "length": 206,
+      "byteOffset": 0,
+      "byteLength": 206,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 43,
+            "length": 162,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 43,
+              "length": 161,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 50,
+                    "length": 9,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "OrderDate"
+                  ]
+                },
+                "span": {
+                  "offset": 50,
+                  "length": 9,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 68,
+                    "length": 43,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "name": "LAG",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 72,
+                        "length": 6,
+                        "line": 3,
+                        "column": 12
+                      },
+                      "parts": [
+                        "Amount"
+                      ]
+                    },
+                    {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 80,
+                        "length": 1,
+                        "line": 3,
+                        "column": 20
+                      },
+                      "literalType": "integer",
+                      "value": "1"
+                    },
+                    {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 83,
+                        "length": 1,
+                        "line": 3,
+                        "column": 23
+                      },
+                      "literalType": "integer",
+                      "value": "0"
+                    }
+                  ],
+                  "over": {
+                    "orderBy": [
+                      {
+                        "expr": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 101,
+                            "length": 9,
+                            "line": 3,
+                            "column": 41
+                          },
+                          "parts": [
+                            "OrderDate"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                "alias": "PrevAmount",
+                "span": {
+                  "offset": 68,
+                  "length": 57,
+                  "line": 3,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 134,
+                    "length": 38,
+                    "line": 4,
+                    "column": 8
+                  },
+                  "name": "LEAD",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 139,
+                        "length": 6,
+                        "line": 4,
+                        "column": 13
+                      },
+                      "parts": [
+                        "Amount"
+                      ]
+                    }
+                  ],
+                  "over": {
+                    "orderBy": [
+                      {
+                        "expr": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 162,
+                            "length": 9,
+                            "line": 4,
+                            "column": 36
+                          },
+                          "parts": [
+                            "OrderDate"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                "alias": "NextAmount",
+                "span": {
+                  "offset": 134,
+                  "length": 52,
+                  "line": 4,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 192,
+                "length": 12,
+                "line": 5,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Payments"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

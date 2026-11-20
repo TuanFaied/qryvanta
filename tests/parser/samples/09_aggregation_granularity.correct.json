@@ -1,0 +1,214 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: total each order first, then average the order totals.\nSELECT CAST(AVG(t.OrderTotal) AS decimal(10,2)) AS AvgOrderValue\nFROM (\n    SELECT OrderID, SUM(Quantity * UnitPrice) AS OrderTotal\n    FROM dbo.OrderItems\n    GROUP BY OrderID\n) AS t;\n",
+      "offset": 0,
+      "length": 248,
+      "byteOffset": 0,
+      "byteLength": 248,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 63,
+            "length": 184,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 63,
+              "length": 183,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "cast",
+                  "span": {
+                    "offset": 70,
+                    "length": 40,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "operand": {
+                    "kind": "function",
+                    "span": {
+                      "offset": 75,
+                      "length": 17,
+                      "line": 2,
+                      "column": 13
+                    },
+                    "name": "AVG",
+                    "args": [
+                      {
+                        "kind": "column",
+                        "span": {
+                          "offset": 79,
+                          "length": 12,
+                          "line": 2,
+                          "column": 17
+                        },
+                        "parts": [
+                          "t",
+                          "OrderTotal"
+                        ]
+                      }
+                    ],
+                    "aggregate": true
+                  },
+                  "name": "CAST",
+                  "dataType": "decimal(10,2)"
+                },
+                "alias": "AvgOrderValue",
+                "span": {
+                  "offset": 70,
+                  "length": 57,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "derived",
+              "span": {
+                "offset": 133,
+                "length": 113,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "t",
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 139,
+                  "length": 100,
+                  "line": 4,
+                  "column": 5
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 146,
+                        "length": 7,
+                        "line": 4,
+                        "column": 12
+                      },
+                      "parts": [
+                        "OrderID"
+                      ]
+                    },
+                    "span": {
+                      "offset": 146,
+                      "length": 7,
+                      "line": 4,
+                      "column": 12
+                    }
+                  },
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "function",
+                      "span": {
+                        "offset": 155,
+                        "length": 25,
+                        "line": 4,
+                        "column": 21
+                      },
+                      "name": "SUM",
+                      "args": [
+                        {
+                          "kind": "arithmetic",
+                          "span": {
+                            "offset": 159,
+                            "length": 20,
+                            "line": 4,
+                            "column": 25
+                          },
+                          "op": "*",
+                          "left": {
+                            "kind": "column",
+                            "span": {
+                              "offset": 159,
+                              "length": 8,
+                              "line": 4,
+                              "column": 25
+                            },
+                            "parts": [
+                              "Quantity"
+                            ]
+                          },
+                          "right": {
+                            "kind": "column",
+                            "span": {
+                              "offset": 170,
+                              "length": 9,
+                              "line": 4,
+                              "column": 36
+                            },
+                            "parts": [
+                              "UnitPrice"
+                            ]
+                          }
+                        }
+                      ],
+                      "aggregate": true
+                    },
+                    "alias": "OrderTotal",
+                    "span": {
+                      "offset": 155,
+                      "length": 39,
+                      "line": 4,
+                      "column": 21
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 204,
+                    "length": 14,
+                    "line": 5,
+                    "column": 10
+                  },
+                  "name": {
+                    "schema": "dbo",
+                    "name": "OrderItems"
+                  }
+                },
+                "groupBy": [
+                  {
+                    "kind": "column",
+                    "span": {
+                      "offset": 232,
+                      "length": 7,
+                      "line": 6,
+                      "column": 14
+                    },
+                    "parts": [
+                      "OrderID"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

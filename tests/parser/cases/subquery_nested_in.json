@@ -1,0 +1,249 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- IN with a subquery that itself filters with IN\nSELECT p.Name\nFROM dbo.Products p\nWHERE p.ProductID IN (SELECT l.ProductID FROM dbo.OrderLines l\n                      WHERE l.OrderID IN (SELECT o.OrderID FROM dbo.Orders o WHERE o.Status = 'Open'));\n",
+      "offset": 0,
+      "length": 251,
+      "byteOffset": 0,
+      "byteLength": 251,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 50,
+            "length": 200,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 50,
+              "length": 199,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 57,
+                    "length": 6,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "p",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 57,
+                  "length": 6,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 69,
+                "length": 14,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "p",
+              "name": {
+                "schema": "dbo",
+                "name": "Products"
+              }
+            },
+            "where": {
+              "kind": "in",
+              "span": {
+                "offset": 90,
+                "length": 159,
+                "line": 4,
+                "column": 7
+              },
+              "operand": {
+                "kind": "column",
+                "span": {
+                  "offset": 90,
+                  "length": 11,
+                  "line": 4,
+                  "column": 7
+                },
+                "parts": [
+                  "p",
+                  "ProductID"
+                ]
+              },
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 106,
+                  "length": 142,
+                  "line": 4,
+                  "column": 23
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 113,
+                        "length": 11,
+                        "line": 4,
+                        "column": 30
+                      },
+                      "parts": [
+                        "l",
+                        "ProductID"
+                      ]
+                    },
+                    "span": {
+                      "offset": 113,
+                      "length": 11,
+                      "line": 4,
+                      "column": 30
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 130,
+                    "length": 16,
+                    "line": 4,
+                    "column": 47
+                  },
+                  "alias": "l",
+                  "name": {
+                    "schema": "dbo",
+                    "name": "OrderLines"
+                  }
+                },
+                "where": {
+                  "kind": "in",
+                  "span": {
+                    "offset": 175,
+                    "length": 73,
+                    "line": 5,
+                    "column": 29
+                  },
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 175,
+                      "length": 9,
+                      "line": 5,
+                      "column": 29
+                    },
+                    "parts": [
+                      "l",
+                      "OrderID"
+                    ]
+                  },
+                  "query": {
+                    "kind": "select",
+                    "span": {
+                      "offset": 189,
+                      "length": 58,
+                      "line": 5,
+                      "column": 43
+                    },
+                    "select": [
+                      {
+                        "kind": "expr",
+                        "expr": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 196,
+                            "length": 9,
+                            "line": 5,
+                            "column": 50
+                          },
+                          "parts": [
+                            "o",
+                            "OrderID"
+                          ]
+                        },
+                        "span": {
+                          "offset": 196,
+                          "length": 9,
+                          "line": 5,
+                          "column": 50
+                        }
+                      }
+                    ],
+                    "from": {
+                      "kind": "table",
+                      "span": {
+                        "offset": 211,
+                        "length": 12,
+                        "line": 5,
+                        "column": 65
+                      },
+                      "alias": "o",
+                      "name": {
+                        "schema": "dbo",
+                        "name": "Orders"
+                      }
+                    },
+                    "where": {
+                      "kind": "compare",
+                      "span": {
+                        "offset": 230,
+                        "length": 17,
+                        "line": 5,
+                        "column": 84
+                      },
+                      "op": "=",
+                      "left": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 230,
+                          "length": 8,
+                          "line": 5,
+                          "column": 84
+                        },
+                        "parts": [
+                          "o",
+                          "Status"
+                        ]
+                      },
+                      "right": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 241,
+                          "length": 6,
+                          "line": 5,
+                          "column": 95
+                        },
+                        "literalType": "string",
+                        "value": "Open"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

@@ -1,0 +1,226 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a derived table with a column alias list, grouped inside\nSELECT t.CustomerID, t.Total\nFROM (SELECT CustomerID, SUM(Amount) FROM dbo.Payments GROUP BY CustomerID) AS t (CustomerID, Total)\nWHERE t.Total > 100;\n",
+      "offset": 0,
+      "length": 211,
+      "byteOffset": 0,
+      "byteLength": 211,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 60,
+            "length": 150,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 60,
+              "length": 149,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 67,
+                    "length": 12,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "t",
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 67,
+                  "length": 12,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 81,
+                    "length": 7,
+                    "line": 2,
+                    "column": 22
+                  },
+                  "parts": [
+                    "t",
+                    "Total"
+                  ]
+                },
+                "span": {
+                  "offset": 81,
+                  "length": 7,
+                  "line": 2,
+                  "column": 22
+                }
+              }
+            ],
+            "from": {
+              "kind": "derived",
+              "span": {
+                "offset": 94,
+                "length": 95,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "t",
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 95,
+                  "length": 68,
+                  "line": 3,
+                  "column": 7
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 102,
+                        "length": 10,
+                        "line": 3,
+                        "column": 14
+                      },
+                      "parts": [
+                        "CustomerID"
+                      ]
+                    },
+                    "span": {
+                      "offset": 102,
+                      "length": 10,
+                      "line": 3,
+                      "column": 14
+                    }
+                  },
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "function",
+                      "span": {
+                        "offset": 114,
+                        "length": 11,
+                        "line": 3,
+                        "column": 26
+                      },
+                      "name": "SUM",
+                      "args": [
+                        {
+                          "kind": "column",
+                          "span": {
+                            "offset": 118,
+                            "length": 6,
+                            "line": 3,
+                            "column": 30
+                          },
+                          "parts": [
+                            "Amount"
+                          ]
+                        }
+                      ],
+                      "aggregate": true
+                    },
+                    "span": {
+                      "offset": 114,
+                      "length": 11,
+                      "line": 3,
+                      "column": 26
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 131,
+                    "length": 12,
+                    "line": 3,
+                    "column": 43
+                  },
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Payments"
+                  }
+                },
+                "groupBy": [
+                  {
+                    "kind": "column",
+                    "span": {
+                      "offset": 153,
+                      "length": 10,
+                      "line": 3,
+                      "column": 65
+                    },
+                    "parts": [
+                      "CustomerID"
+                    ]
+                  }
+                ]
+              },
+              "columns": [
+                "CustomerID",
+                "Total"
+              ]
+            },
+            "where": {
+              "kind": "compare",
+              "span": {
+                "offset": 196,
+                "length": 13,
+                "line": 4,
+                "column": 7
+              },
+              "op": ">",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 196,
+                  "length": 7,
+                  "line": 4,
+                  "column": 7
+                },
+                "parts": [
+                  "t",
+                  "Total"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "span": {
+                  "offset": 206,
+                  "length": 3,
+                  "line": 4,
+                  "column": 17
+                },
+                "literalType": "integer",
+                "value": "100"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

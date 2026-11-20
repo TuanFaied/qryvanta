@@ -1,0 +1,43 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- TRUNCATE TABLE with a schema-qualified target\nTRUNCATE TABLE dbo.Staging;\n",
+      "offset": 0,
+      "length": 77,
+      "byteOffset": 0,
+      "byteLength": 77,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "truncate",
+          "type": "TruncateTableStatement",
+          "span": {
+            "offset": 49,
+            "length": 27,
+            "line": 2,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 64,
+              "length": 11,
+              "line": 2,
+              "column": 16
+            },
+            "name": {
+              "schema": "dbo",
+              "name": "Staging"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

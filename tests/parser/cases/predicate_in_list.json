@@ -1,0 +1,174 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- IN and NOT IN with value lists\nSELECT * FROM dbo.Orders\nWHERE Status IN ('Shipped', 'Delivered') AND ShipCountry NOT IN ('XX', 'YY', 'ZZ');\n",
+      "offset": 0,
+      "length": 143,
+      "byteOffset": 0,
+      "byteLength": 143,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 34,
+            "length": 108,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 34,
+              "length": 107,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 41,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 48,
+                "length": 10,
+                "line": 2,
+                "column": 15
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 65,
+                "length": 76,
+                "line": 3,
+                "column": 7
+              },
+              "left": {
+                "kind": "in",
+                "span": {
+                  "offset": 65,
+                  "length": 34,
+                  "line": 3,
+                  "column": 7
+                },
+                "operand": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 65,
+                    "length": 6,
+                    "line": 3,
+                    "column": 7
+                  },
+                  "parts": [
+                    "Status"
+                  ]
+                },
+                "values": [
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 76,
+                      "length": 9,
+                      "line": 3,
+                      "column": 18
+                    },
+                    "literalType": "string",
+                    "value": "Shipped"
+                  },
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 87,
+                      "length": 11,
+                      "line": 3,
+                      "column": 29
+                    },
+                    "literalType": "string",
+                    "value": "Delivered"
+                  }
+                ]
+              },
+              "right": {
+                "kind": "in",
+                "span": {
+                  "offset": 104,
+                  "length": 37,
+                  "line": 3,
+                  "column": 46
+                },
+                "not": true,
+                "operand": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 104,
+                    "length": 11,
+                    "line": 3,
+                    "column": 46
+                  },
+                  "parts": [
+                    "ShipCountry"
+                  ]
+                },
+                "values": [
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 124,
+                      "length": 4,
+                      "line": 3,
+                      "column": 66
+                    },
+                    "literalType": "string",
+                    "value": "XX"
+                  },
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 130,
+                      "length": 4,
+                      "line": 3,
+                      "column": 72
+                    },
+                    "literalType": "string",
+                    "value": "YY"
+                  },
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 136,
+                      "length": 4,
+                      "line": 3,
+                      "column": 78
+                    },
+                    "literalType": "string",
+                    "value": "ZZ"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

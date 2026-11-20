@@ -1,0 +1,197 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- nested parentheses around scalars and predicates collapse into flags on the inner nodes\nSELECT ((a)) FROM t WHERE (((a = 1)) AND ((b = 2) OR (c = 3)));\n",
+      "offset": 0,
+      "length": 155,
+      "byteOffset": 0,
+      "byteLength": 155,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 91,
+            "length": 63,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 91,
+              "length": 62,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 100,
+                    "length": 1,
+                    "line": 2,
+                    "column": 10
+                  },
+                  "parenthesized": true,
+                  "parts": [
+                    "a"
+                  ]
+                },
+                "span": {
+                  "offset": 98,
+                  "length": 5,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 109,
+                "length": 1,
+                "line": 2,
+                "column": 19
+              },
+              "name": {
+                "name": "t"
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 118,
+                "length": 34,
+                "line": 2,
+                "column": 28
+              },
+              "parenthesized": true,
+              "left": {
+                "kind": "compare",
+                "span": {
+                  "offset": 120,
+                  "length": 5,
+                  "line": 2,
+                  "column": 30
+                },
+                "parenthesized": true,
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 120,
+                    "length": 1,
+                    "line": 2,
+                    "column": 30
+                  },
+                  "parts": [
+                    "a"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 124,
+                    "length": 1,
+                    "line": 2,
+                    "column": 34
+                  },
+                  "literalType": "integer",
+                  "value": "1"
+                }
+              },
+              "right": {
+                "kind": "or",
+                "span": {
+                  "offset": 133,
+                  "length": 18,
+                  "line": 2,
+                  "column": 43
+                },
+                "parenthesized": true,
+                "left": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 134,
+                    "length": 5,
+                    "line": 2,
+                    "column": 44
+                  },
+                  "parenthesized": true,
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 134,
+                      "length": 1,
+                      "line": 2,
+                      "column": 44
+                    },
+                    "parts": [
+                      "b"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 138,
+                      "length": 1,
+                      "line": 2,
+                      "column": 48
+                    },
+                    "literalType": "integer",
+                    "value": "2"
+                  }
+                },
+                "right": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 145,
+                    "length": 5,
+                    "line": 2,
+                    "column": 55
+                  },
+                  "parenthesized": true,
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 145,
+                      "length": 1,
+                      "line": 2,
+                      "column": 55
+                    },
+                    "parts": [
+                      "c"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 149,
+                      "length": 1,
+                      "line": 2,
+                      "column": 59
+                    },
+                    "literalType": "integer",
+                    "value": "3"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

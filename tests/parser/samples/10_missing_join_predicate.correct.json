@@ -1,0 +1,254 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: an explicit JOIN with the join predicate.\nSELECT o.OrderID, c.Name AS Customer\nFROM dbo.Orders AS o\nJOIN dbo.Customers AS c ON c.CustomerID = o.CustomerID\nWHERE o.OrderDate >= '2026-01-01' AND o.OrderDate < '2026-02-01'\nORDER BY o.OrderID;\n",
+      "offset": 0,
+      "length": 248,
+      "byteOffset": 0,
+      "byteLength": 248,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 50,
+            "length": 197,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 50,
+              "length": 196,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 57,
+                    "length": 9,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 57,
+                  "length": 9,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 68,
+                    "length": 6,
+                    "line": 2,
+                    "column": 19
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "alias": "Customer",
+                "span": {
+                  "offset": 68,
+                  "length": 18,
+                  "line": 2,
+                  "column": 19
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 92,
+                "length": 70,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 92,
+                  "length": 15,
+                  "line": 3,
+                  "column": 6
+                },
+                "alias": "o",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 113,
+                  "length": 18,
+                  "line": 4,
+                  "column": 6
+                },
+                "alias": "c",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Customers"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 135,
+                  "length": 27,
+                  "line": 4,
+                  "column": 28
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 135,
+                    "length": 12,
+                    "line": 4,
+                    "column": 28
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 150,
+                    "length": 12,
+                    "line": 4,
+                    "column": 43
+                  },
+                  "parts": [
+                    "o",
+                    "CustomerID"
+                  ]
+                }
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 169,
+                "length": 58,
+                "line": 5,
+                "column": 7
+              },
+              "left": {
+                "kind": "compare",
+                "span": {
+                  "offset": 169,
+                  "length": 27,
+                  "line": 5,
+                  "column": 7
+                },
+                "op": ">=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 169,
+                    "length": 11,
+                    "line": 5,
+                    "column": 7
+                  },
+                  "parts": [
+                    "o",
+                    "OrderDate"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 184,
+                    "length": 12,
+                    "line": 5,
+                    "column": 22
+                  },
+                  "literalType": "string",
+                  "value": "2026-01-01"
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 201,
+                  "length": 26,
+                  "line": 5,
+                  "column": 39
+                },
+                "op": "<",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 201,
+                    "length": 11,
+                    "line": 5,
+                    "column": 39
+                  },
+                  "parts": [
+                    "o",
+                    "OrderDate"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 215,
+                    "length": 12,
+                    "line": 5,
+                    "column": 53
+                  },
+                  "literalType": "string",
+                  "value": "2026-02-01"
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 237,
+                    "length": 9,
+                    "line": 6,
+                    "column": 10
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

@@ -1,0 +1,27 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a syntax error: the batch reports a diagnostic and has no statements\nSELECT x FROM WHERE y = 1;\n",
+      "offset": 0,
+      "length": 99,
+      "byteOffset": 0,
+      "byteLength": 99,
+      "line": 1,
+      "column": 1,
+      "repeat": 1
+    }
+  ],
+  "diagnostics": [
+    {
+      "number": 46010,
+      "message": "Incorrect syntax near 'FROM'.",
+      "offset": 81,
+      "byteOffset": 81,
+      "line": 2,
+      "column": 10
+    }
+  ]
+}

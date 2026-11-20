@@ -1,0 +1,233 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: join on the foreign key column.\nSELECT oi.OrderItemID, p.Name AS Product, oi.Quantity\nFROM dbo.OrderItems AS oi\nJOIN dbo.Products AS p ON p.ProductID = oi.ProductID\nWHERE oi.OrderID = 103\nORDER BY oi.OrderItemID;\n",
+      "offset": 0,
+      "length": 221,
+      "byteOffset": 0,
+      "byteLength": 221,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 40,
+            "length": 180,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 40,
+              "length": 179,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 47,
+                    "length": 14,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "oi",
+                    "OrderItemID"
+                  ]
+                },
+                "span": {
+                  "offset": 47,
+                  "length": 14,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 63,
+                    "length": 6,
+                    "line": 2,
+                    "column": 24
+                  },
+                  "parts": [
+                    "p",
+                    "Name"
+                  ]
+                },
+                "alias": "Product",
+                "span": {
+                  "offset": 63,
+                  "length": 17,
+                  "line": 2,
+                  "column": 24
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 82,
+                    "length": 11,
+                    "line": 2,
+                    "column": 43
+                  },
+                  "parts": [
+                    "oi",
+                    "Quantity"
+                  ]
+                },
+                "span": {
+                  "offset": 82,
+                  "length": 11,
+                  "line": 2,
+                  "column": 43
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 99,
+                "length": 73,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 99,
+                  "length": 20,
+                  "line": 3,
+                  "column": 6
+                },
+                "alias": "oi",
+                "name": {
+                  "schema": "dbo",
+                  "name": "OrderItems"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 125,
+                  "length": 17,
+                  "line": 4,
+                  "column": 6
+                },
+                "alias": "p",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Products"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 146,
+                  "length": 26,
+                  "line": 4,
+                  "column": 27
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 146,
+                    "length": 11,
+                    "line": 4,
+                    "column": 27
+                  },
+                  "parts": [
+                    "p",
+                    "ProductID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 160,
+                    "length": 12,
+                    "line": 4,
+                    "column": 41
+                  },
+                  "parts": [
+                    "oi",
+                    "ProductID"
+                  ]
+                }
+              }
+            },
+            "where": {
+              "kind": "compare",
+              "span": {
+                "offset": 179,
+                "length": 16,
+                "line": 5,
+                "column": 7
+              },
+              "op": "=",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 179,
+                  "length": 10,
+                  "line": 5,
+                  "column": 7
+                },
+                "parts": [
+                  "oi",
+                  "OrderID"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "span": {
+                  "offset": 192,
+                  "length": 3,
+                  "line": 5,
+                  "column": 20
+                },
+                "literalType": "integer",
+                "value": "103"
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 205,
+                    "length": 14,
+                    "line": 6,
+                    "column": 10
+                  },
+                  "parts": [
+                    "oi",
+                    "OrderItemID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

@@ -1,0 +1,99 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a VALUES table constructor as a source with column aliases\nSELECT v.code, v.label FROM (VALUES (1, 'one'), (2, 'two')) AS v (code, label);\n",
+      "offset": 0,
+      "length": 142,
+      "byteOffset": 0,
+      "byteLength": 142,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 62,
+            "length": 79,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 62,
+              "length": 78,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 69,
+                    "length": 6,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "v",
+                    "code"
+                  ]
+                },
+                "span": {
+                  "offset": 69,
+                  "length": 6,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 77,
+                    "length": 7,
+                    "line": 2,
+                    "column": 16
+                  },
+                  "parts": [
+                    "v",
+                    "label"
+                  ]
+                },
+                "span": {
+                  "offset": 77,
+                  "length": 7,
+                  "line": 2,
+                  "column": 16
+                }
+              }
+            ],
+            "from": {
+              "kind": "values",
+              "span": {
+                "offset": 90,
+                "length": 50,
+                "line": 2,
+                "column": 29
+              },
+              "alias": "v",
+              "columns": [
+                "code",
+                "label"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

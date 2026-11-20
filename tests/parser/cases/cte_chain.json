@@ -1,0 +1,328 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a chain of CTEs where each uses the previous one\nWITH paid AS (\n    SELECT CustomerID, SUM(Amount) AS Total FROM dbo.Payments GROUP BY CustomerID\n), big AS (\n    SELECT CustomerID FROM paid WHERE Total > 1000\n)\nSELECT c.Name FROM dbo.Customers c JOIN big ON big.CustomerID = c.CustomerID;\n",
+      "offset": 0,
+      "length": 292,
+      "byteOffset": 0,
+      "byteLength": 292,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 52,
+            "length": 239,
+            "line": 2,
+            "column": 1
+          },
+          "ctes": [
+            {
+              "name": "paid",
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 71,
+                  "length": 77,
+                  "line": 3,
+                  "column": 5
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 78,
+                        "length": 10,
+                        "line": 3,
+                        "column": 12
+                      },
+                      "parts": [
+                        "CustomerID"
+                      ]
+                    },
+                    "span": {
+                      "offset": 78,
+                      "length": 10,
+                      "line": 3,
+                      "column": 12
+                    }
+                  },
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "function",
+                      "span": {
+                        "offset": 90,
+                        "length": 11,
+                        "line": 3,
+                        "column": 24
+                      },
+                      "name": "SUM",
+                      "args": [
+                        {
+                          "kind": "column",
+                          "span": {
+                            "offset": 94,
+                            "length": 6,
+                            "line": 3,
+                            "column": 28
+                          },
+                          "parts": [
+                            "Amount"
+                          ]
+                        }
+                      ],
+                      "aggregate": true
+                    },
+                    "alias": "Total",
+                    "span": {
+                      "offset": 90,
+                      "length": 20,
+                      "line": 3,
+                      "column": 24
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 116,
+                    "length": 12,
+                    "line": 3,
+                    "column": 50
+                  },
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Payments"
+                  }
+                },
+                "groupBy": [
+                  {
+                    "kind": "column",
+                    "span": {
+                      "offset": 138,
+                      "length": 10,
+                      "line": 3,
+                      "column": 72
+                    },
+                    "parts": [
+                      "CustomerID"
+                    ]
+                  }
+                ]
+              },
+              "span": {
+                "offset": 57,
+                "length": 93,
+                "line": 2,
+                "column": 6
+              }
+            },
+            {
+              "name": "big",
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 165,
+                  "length": 46,
+                  "line": 5,
+                  "column": 5
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 172,
+                        "length": 10,
+                        "line": 5,
+                        "column": 12
+                      },
+                      "parts": [
+                        "CustomerID"
+                      ]
+                    },
+                    "span": {
+                      "offset": 172,
+                      "length": 10,
+                      "line": 5,
+                      "column": 12
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 188,
+                    "length": 4,
+                    "line": 5,
+                    "column": 28
+                  },
+                  "name": {
+                    "name": "paid"
+                  },
+                  "cte": true
+                },
+                "where": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 199,
+                    "length": 12,
+                    "line": 5,
+                    "column": 39
+                  },
+                  "op": ">",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 199,
+                      "length": 5,
+                      "line": 5,
+                      "column": 39
+                    },
+                    "parts": [
+                      "Total"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 207,
+                      "length": 4,
+                      "line": 5,
+                      "column": 47
+                    },
+                    "literalType": "integer",
+                    "value": "1000"
+                  }
+                }
+              },
+              "span": {
+                "offset": 152,
+                "length": 61,
+                "line": 4,
+                "column": 4
+              }
+            }
+          ],
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 214,
+              "length": 76,
+              "line": 7,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 221,
+                    "length": 6,
+                    "line": 7,
+                    "column": 8
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 221,
+                  "length": 6,
+                  "line": 7,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 233,
+                "length": 57,
+                "line": 7,
+                "column": 20
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 233,
+                  "length": 15,
+                  "line": 7,
+                  "column": 20
+                },
+                "alias": "c",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Customers"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 254,
+                  "length": 3,
+                  "line": 7,
+                  "column": 41
+                },
+                "name": {
+                  "name": "big"
+                },
+                "cte": true
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 261,
+                  "length": 29,
+                  "line": 7,
+                  "column": 48
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 261,
+                    "length": 14,
+                    "line": 7,
+                    "column": 48
+                  },
+                  "parts": [
+                    "big",
+                    "CustomerID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 278,
+                    "length": 12,
+                    "line": 7,
+                    "column": 65
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

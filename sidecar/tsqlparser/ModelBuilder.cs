@@ -272,19 +272,7 @@ internal sealed class ModelBuilder(string batchText, int batchOffset, LineIndex 
                 };
                 break;
             case BinaryQueryExpression bin:
-                result = new Query
-                {
-                    Kind = "setOp",
-                    Op = bin.BinaryQueryExpressionType switch
-                    {
-                        BinaryQueryExpressionType.Union => bin.All ? "unionAll" : "union",
-                        BinaryQueryExpressionType.Except => "except",
-                        BinaryQueryExpressionType.Intersect => "intersect",
-                        _ => bin.BinaryQueryExpressionType.ToString().ToLowerInvariant(),
-                    },
-                    Left = Query(bin.FirstQueryExpression),
-                    Right = Query(bin.SecondQueryExpression),
-                };
+                result = SetOperation(bin);
                 break;
             default:
                 result = new Query { Kind = "unsupported" };
@@ -295,6 +283,70 @@ internal sealed class ModelBuilder(string batchText, int batchOffset, LineIndex 
         result.OrderBy = OrderBy(q.OrderByClause);
         result.Offset = q.OffsetClause is null ? null : Scalar(q.OffsetClause.OffsetExpression);
         result.Fetch = q.OffsetClause?.FetchExpression is null ? null : Scalar(q.OffsetClause.FetchExpression);
+        return result;
+    }
+
+    /// <summary>
+    /// Rebuilds a chain of set operations with SQL Server's precedence. ScriptDom nests them
+    /// strictly left to right, so "a UNION b INTERSECT c" arrives as (a UNION b) INTERSECT c,
+    /// but SQL Server evaluates INTERSECT first: a UNION (b INTERSECT c). UNION, UNION ALL and
+    /// EXCEPT have equal precedence and associate left to right. A parenthesized operand stays
+    /// one unit.
+    /// </summary>
+    private Query SetOperation(BinaryQueryExpression top)
+    {
+        var operands = new List<Query>();
+        var ops = new List<string>();
+        void Flatten(QueryExpression e)
+        {
+            if (e is BinaryQueryExpression b)
+            {
+                Flatten(b.FirstQueryExpression);
+                ops.Add(b.BinaryQueryExpressionType switch
+                {
+                    BinaryQueryExpressionType.Union => b.All ? "unionAll" : "union",
+                    BinaryQueryExpressionType.Except => "except",
+                    BinaryQueryExpressionType.Intersect => "intersect",
+                    _ => b.BinaryQueryExpressionType.ToString().ToLowerInvariant(),
+                });
+                Flatten(b.SecondQueryExpression);
+            }
+            else
+            {
+                operands.Add(Query(e));
+            }
+        }
+        Flatten(top);
+
+        static Query Node(string op, Query left, Query right) => new()
+        {
+            Kind = "setOp",
+            Op = op,
+            Left = left,
+            Right = right,
+            Span = new Span(left.Span.Offset, right.Span.Offset + right.Span.Length - left.Span.Offset, left.Span.Line, left.Span.Column),
+        };
+
+        // INTERSECT first, then the rest left to right.
+        var terms = new List<Query> { operands[0] };
+        var termOps = new List<string>();
+        for (var i = 0; i < ops.Count; i++)
+        {
+            if (ops[i] == "intersect")
+            {
+                terms[^1] = Node("intersect", terms[^1], operands[i + 1]);
+            }
+            else
+            {
+                termOps.Add(ops[i]);
+                terms.Add(operands[i + 1]);
+            }
+        }
+        var result = terms[0];
+        for (var i = 0; i < termOps.Count; i++)
+        {
+            result = Node(termOps[i], result, terms[i + 1]);
+        }
         return result;
     }
 

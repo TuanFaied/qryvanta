@@ -1,0 +1,250 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Question: shipped or delivered orders going to Sri Lanka (LK).\n-- Bug: AND binds tighter than OR, so this reads as\n--   Status = 'Shipped' OR (Status = 'Delivered' AND ShipCountry = 'LK')\n-- and returns shipped orders to every country.\nSELECT OrderID, Status, ShipCountry\nFROM dbo.Orders\nWHERE Status = 'Shipped' OR Status = 'Delivered' AND ShipCountry = 'LK'\nORDER BY OrderID;\n",
+      "offset": 0,
+      "length": 381,
+      "byteOffset": 0,
+      "byteLength": 381,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 239,
+            "length": 141,
+            "line": 5,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 239,
+              "length": 140,
+              "line": 5,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 246,
+                    "length": 7,
+                    "line": 5,
+                    "column": 8
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 246,
+                  "length": 7,
+                  "line": 5,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 255,
+                    "length": 6,
+                    "line": 5,
+                    "column": 17
+                  },
+                  "parts": [
+                    "Status"
+                  ]
+                },
+                "span": {
+                  "offset": 255,
+                  "length": 6,
+                  "line": 5,
+                  "column": 17
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 263,
+                    "length": 11,
+                    "line": 5,
+                    "column": 25
+                  },
+                  "parts": [
+                    "ShipCountry"
+                  ]
+                },
+                "span": {
+                  "offset": 263,
+                  "length": 11,
+                  "line": 5,
+                  "column": 25
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 280,
+                "length": 10,
+                "line": 6,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "or",
+              "span": {
+                "offset": 297,
+                "length": 65,
+                "line": 7,
+                "column": 7
+              },
+              "left": {
+                "kind": "compare",
+                "span": {
+                  "offset": 297,
+                  "length": 18,
+                  "line": 7,
+                  "column": 7
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 297,
+                    "length": 6,
+                    "line": 7,
+                    "column": 7
+                  },
+                  "parts": [
+                    "Status"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 306,
+                    "length": 9,
+                    "line": 7,
+                    "column": 16
+                  },
+                  "literalType": "string",
+                  "value": "Shipped"
+                }
+              },
+              "right": {
+                "kind": "and",
+                "span": {
+                  "offset": 319,
+                  "length": 43,
+                  "line": 7,
+                  "column": 29
+                },
+                "left": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 319,
+                    "length": 20,
+                    "line": 7,
+                    "column": 29
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 319,
+                      "length": 6,
+                      "line": 7,
+                      "column": 29
+                    },
+                    "parts": [
+                      "Status"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 328,
+                      "length": 11,
+                      "line": 7,
+                      "column": 38
+                    },
+                    "literalType": "string",
+                    "value": "Delivered"
+                  }
+                },
+                "right": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 344,
+                    "length": 18,
+                    "line": 7,
+                    "column": 54
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 344,
+                      "length": 11,
+                      "line": 7,
+                      "column": 54
+                    },
+                    "parts": [
+                      "ShipCountry"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 358,
+                      "length": 4,
+                      "line": 7,
+                      "column": 68
+                    },
+                    "literalType": "string",
+                    "value": "LK"
+                  }
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 372,
+                    "length": 7,
+                    "line": 8,
+                    "column": 10
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

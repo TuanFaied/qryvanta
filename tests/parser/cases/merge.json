@@ -1,0 +1,43 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- MERGE is classified with its target (its WHEN clauses are not modelled yet)\nMERGE dbo.Stock AS t\nUSING dbo.Deliveries AS s ON s.ProductID = t.ProductID\nWHEN MATCHED THEN UPDATE SET t.Qty = t.Qty + s.Qty\nWHEN NOT MATCHED THEN INSERT (ProductID, Qty) VALUES (s.ProductID, s.Qty);\n",
+      "offset": 0,
+      "length": 281,
+      "byteOffset": 0,
+      "byteLength": 281,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "merge",
+          "type": "MergeStatement",
+          "span": {
+            "offset": 79,
+            "length": 201,
+            "line": 2,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 85,
+              "length": 9,
+              "line": 2,
+              "column": 7
+            },
+            "name": {
+              "schema": "dbo",
+              "name": "Stock"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

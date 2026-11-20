@@ -1,0 +1,202 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- old-style join: the join condition sits in WHERE, the comma join itself has none\nSELECT o.OrderID, c.Name\nFROM dbo.Orders o, dbo.Customers c\nWHERE c.CustomerID = o.CustomerID AND o.Status = 'Shipped';\n",
+      "offset": 0,
+      "length": 204,
+      "byteOffset": 0,
+      "byteLength": 204,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 84,
+            "length": 119,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 84,
+              "length": 118,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 91,
+                    "length": 9,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 91,
+                  "length": 9,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 102,
+                    "length": 6,
+                    "line": 2,
+                    "column": 19
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 102,
+                  "length": 6,
+                  "line": 2,
+                  "column": 19
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 114,
+                "length": 29,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "comma",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 114,
+                  "length": 12,
+                  "line": 3,
+                  "column": 6
+                },
+                "alias": "o",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 128,
+                  "length": 15,
+                  "line": 3,
+                  "column": 20
+                },
+                "alias": "c",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Customers"
+                }
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 150,
+                "length": 52,
+                "line": 4,
+                "column": 7
+              },
+              "left": {
+                "kind": "compare",
+                "span": {
+                  "offset": 150,
+                  "length": 27,
+                  "line": 4,
+                  "column": 7
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 150,
+                    "length": 12,
+                    "line": 4,
+                    "column": 7
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 165,
+                    "length": 12,
+                    "line": 4,
+                    "column": 22
+                  },
+                  "parts": [
+                    "o",
+                    "CustomerID"
+                  ]
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 182,
+                  "length": 20,
+                  "line": 4,
+                  "column": 39
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 182,
+                    "length": 8,
+                    "line": 4,
+                    "column": 39
+                  },
+                  "parts": [
+                    "o",
+                    "Status"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 193,
+                    "length": 9,
+                    "line": 4,
+                    "column": 50
+                  },
+                  "literalType": "string",
+                  "value": "Shipped"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

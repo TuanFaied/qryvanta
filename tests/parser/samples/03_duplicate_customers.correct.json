@@ -1,0 +1,171 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: count normalised email addresses. Customers without an email count individually,\n-- because COUNT(DISTINCT ...) ignores NULLs.\nSELECT COUNT(DISTINCT COALESCE(LOWER(TRIM(Email)), N'id:' + CAST(CustomerID AS nvarchar(10)))) AS Customers\nFROM dbo.Customers;\n",
+      "offset": 0,
+      "length": 263,
+      "byteOffset": 0,
+      "byteLength": 263,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 135,
+            "length": 127,
+            "line": 3,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 135,
+              "length": 126,
+              "line": 3,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 142,
+                    "length": 87,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "name": "COUNT",
+                  "args": [
+                    {
+                      "kind": "function",
+                      "span": {
+                        "offset": 157,
+                        "length": 71,
+                        "line": 3,
+                        "column": 23
+                      },
+                      "name": "COALESCE",
+                      "args": [
+                        {
+                          "kind": "function",
+                          "span": {
+                            "offset": 166,
+                            "length": 18,
+                            "line": 3,
+                            "column": 32
+                          },
+                          "name": "LOWER",
+                          "args": [
+                            {
+                              "kind": "function",
+                              "span": {
+                                "offset": 172,
+                                "length": 11,
+                                "line": 3,
+                                "column": 38
+                              },
+                              "name": "TRIM",
+                              "args": [
+                                {
+                                  "kind": "column",
+                                  "span": {
+                                    "offset": 177,
+                                    "length": 5,
+                                    "line": 3,
+                                    "column": 43
+                                  },
+                                  "parts": [
+                                    "Email"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "arithmetic",
+                          "span": {
+                            "offset": 186,
+                            "length": 41,
+                            "line": 3,
+                            "column": 52
+                          },
+                          "op": "+",
+                          "left": {
+                            "kind": "literal",
+                            "span": {
+                              "offset": 186,
+                              "length": 6,
+                              "line": 3,
+                              "column": 52
+                            },
+                            "literalType": "string",
+                            "value": "id:",
+                            "national": true
+                          },
+                          "right": {
+                            "kind": "cast",
+                            "span": {
+                              "offset": 195,
+                              "length": 32,
+                              "line": 3,
+                              "column": 61
+                            },
+                            "operand": {
+                              "kind": "column",
+                              "span": {
+                                "offset": 200,
+                                "length": 10,
+                                "line": 3,
+                                "column": 66
+                              },
+                              "parts": [
+                                "CustomerID"
+                              ]
+                            },
+                            "name": "CAST",
+                            "dataType": "nvarchar(10)"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "distinct": true,
+                  "aggregate": true
+                },
+                "alias": "Customers",
+                "span": {
+                  "offset": 142,
+                  "length": 100,
+                  "line": 3,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 248,
+                "length": 13,
+                "line": 4,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Customers"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

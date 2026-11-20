@@ -1,0 +1,201 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- UNION vs UNION ALL; ORDER BY belongs to the whole set operation\nSELECT Name FROM dbo.Customers\nUNION\nSELECT Name FROM dbo.Suppliers\nUNION ALL\nSELECT Name FROM dbo.Partners\nORDER BY Name;\n",
+      "offset": 0,
+      "length": 190,
+      "byteOffset": 0,
+      "byteLength": 190,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 67,
+            "length": 122,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "setOp",
+            "span": {
+              "offset": 67,
+              "length": 121,
+              "line": 2,
+              "column": 1
+            },
+            "op": "unionAll",
+            "left": {
+              "kind": "setOp",
+              "span": {
+                "offset": 67,
+                "length": 67,
+                "line": 2,
+                "column": 1
+              },
+              "op": "union",
+              "left": {
+                "kind": "select",
+                "span": {
+                  "offset": 67,
+                  "length": 30,
+                  "line": 2,
+                  "column": 1
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 74,
+                        "length": 4,
+                        "line": 2,
+                        "column": 8
+                      },
+                      "parts": [
+                        "Name"
+                      ]
+                    },
+                    "span": {
+                      "offset": 74,
+                      "length": 4,
+                      "line": 2,
+                      "column": 8
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 84,
+                    "length": 13,
+                    "line": 2,
+                    "column": 18
+                  },
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Customers"
+                  }
+                }
+              },
+              "right": {
+                "kind": "select",
+                "span": {
+                  "offset": 104,
+                  "length": 30,
+                  "line": 4,
+                  "column": 1
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 111,
+                        "length": 4,
+                        "line": 4,
+                        "column": 8
+                      },
+                      "parts": [
+                        "Name"
+                      ]
+                    },
+                    "span": {
+                      "offset": 111,
+                      "length": 4,
+                      "line": 4,
+                      "column": 8
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 121,
+                    "length": 13,
+                    "line": 4,
+                    "column": 18
+                  },
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Suppliers"
+                  }
+                }
+              }
+            },
+            "right": {
+              "kind": "select",
+              "span": {
+                "offset": 145,
+                "length": 29,
+                "line": 6,
+                "column": 1
+              },
+              "select": [
+                {
+                  "kind": "expr",
+                  "expr": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 152,
+                      "length": 4,
+                      "line": 6,
+                      "column": 8
+                    },
+                    "parts": [
+                      "Name"
+                    ]
+                  },
+                  "span": {
+                    "offset": 152,
+                    "length": 4,
+                    "line": 6,
+                    "column": 8
+                  }
+                }
+              ],
+              "from": {
+                "kind": "table",
+                "span": {
+                  "offset": 162,
+                  "length": 12,
+                  "line": 6,
+                  "column": 18
+                },
+                "name": {
+                  "schema": "dbo",
+                  "name": "Partners"
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 184,
+                    "length": 4,
+                    "line": 7,
+                    "column": 10
+                  },
+                  "parts": [
+                    "Name"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

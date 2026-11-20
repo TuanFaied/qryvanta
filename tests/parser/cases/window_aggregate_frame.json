@@ -1,0 +1,129 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- an aggregate used as a window function with a ROWS frame\nSELECT OrderID,\n       SUM(Amount) OVER (ORDER BY OrderDate ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS Rolling\nFROM dbo.Payments;\n",
+      "offset": 0,
+      "length": 192,
+      "byteOffset": 0,
+      "byteLength": 192,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 60,
+            "length": 131,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 60,
+              "length": 130,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 67,
+                    "length": 7,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 67,
+                  "length": 7,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 83,
+                    "length": 78,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "name": "SUM",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 87,
+                        "length": 6,
+                        "line": 3,
+                        "column": 12
+                      },
+                      "parts": [
+                        "Amount"
+                      ]
+                    }
+                  ],
+                  "aggregate": true,
+                  "over": {
+                    "orderBy": [
+                      {
+                        "expr": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 110,
+                            "length": 9,
+                            "line": 3,
+                            "column": 35
+                          },
+                          "parts": [
+                            "OrderDate"
+                          ]
+                        }
+                      }
+                    ],
+                    "frame": "ROWS BETWEEN 6 PRECEDING AND CURRENT"
+                  }
+                },
+                "alias": "Rolling",
+                "span": {
+                  "offset": 83,
+                  "length": 89,
+                  "line": 3,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 178,
+                "length": 12,
+                "line": 4,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Payments"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

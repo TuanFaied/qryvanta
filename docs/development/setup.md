@@ -146,6 +146,35 @@ $env:QRYVANTA_PARSER_PATH = "$PWD\bin\qryvanta-tsqlparser.exe"
 go test -tags parser ./internal/parser/...
 ```
 
+### Parser golden tests
+
+`tests/parser` pins the parser's full output (batches, diagnostics and QueryModel) for every
+case. CI runs it against the published sidecar.
+- `cases/<name>.sql`: hand-written cases. Each starts with a one-line `-- ` comment saying what
+  it checks. The expected output is `cases/<name>.json`.
+- `../sample_queries/*.sql`: every sample query, with the expected output in `samples/`.
+
+Run it against your build of the sidecar:
+
+```powershell
+$env:QRYVANTA_PARSER_PATH = "$PWD\bin\qryvanta-tsqlparser.exe"
+```
+
+```bash
+go test -tags parser ./tests/parser/
+```
+
+A failure names the case and the JSON path of the first difference, for example
+`$.batches[0].statements[0].query.left.left.from`.
+- **Adding a case:** create `cases/<name>.sql`, run the suite with `-update`, then read the
+  generated `.json` before committing it. The expected output is only as good as that review.
+- **Changing the parser or the model on purpose:** run with `-update`, and review the `.json`
+  diff in the PR. Only the cases you meant to change should change.
+
+```bash
+go test -tags parser ./tests/parser/ -update
+```
+
 ## Fixture database (Docker)
 
 `docker-compose.yml` runs SQL Server 2022 Developer edition on `127.0.0.1:14333` and loads

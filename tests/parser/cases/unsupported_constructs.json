@@ -1,0 +1,84 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- constructs the model does not describe yet are kept as unsupported, never dropped\nSELECT j.a\nFROM OPENJSON(@json) WITH (a int '$.a') AS j\nWHERE CONTAINS(j.a, 'x');\n",
+      "offset": 0,
+      "length": 167,
+      "byteOffset": 0,
+      "byteLength": 167,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 85,
+            "length": 81,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 85,
+              "length": 80,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 92,
+                    "length": 3,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "j",
+                    "a"
+                  ]
+                },
+                "span": {
+                  "offset": 92,
+                  "length": 3,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "unsupported",
+              "span": {
+                "offset": 101,
+                "length": 39,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "j",
+              "type": "OpenJsonTableReference"
+            },
+            "where": {
+              "kind": "unsupported",
+              "span": {
+                "offset": 147,
+                "length": 18,
+                "line": 4,
+                "column": 7
+              },
+              "type": "FullTextPredicate"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

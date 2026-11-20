@@ -1,0 +1,189 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a local temp table, a global temp table and a table variable as sources\nDECLARE @ids TABLE (id int);\nSELECT * FROM #work w JOIN ##shared s ON s.id = w.id JOIN @ids i ON i.id = w.id;\n",
+      "offset": 0,
+      "length": 185,
+      "byteOffset": 0,
+      "byteLength": 185,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "declare",
+          "type": "DeclareTableVariableStatement",
+          "span": {
+            "offset": 75,
+            "length": 28,
+            "line": 2,
+            "column": 1
+          }
+        },
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 104,
+            "length": 80,
+            "line": 3,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 104,
+              "length": 79,
+              "line": 3,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 111,
+                  "length": 1,
+                  "line": 3,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 118,
+                "length": 65,
+                "line": 3,
+                "column": 15
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "join",
+                "span": {
+                  "offset": 118,
+                  "length": 38,
+                  "line": 3,
+                  "column": 15
+                },
+                "joinType": "inner",
+                "left": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 118,
+                    "length": 7,
+                    "line": 3,
+                    "column": 15
+                  },
+                  "alias": "w",
+                  "name": {
+                    "name": "#work"
+                  }
+                },
+                "right": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 131,
+                    "length": 10,
+                    "line": 3,
+                    "column": 28
+                  },
+                  "alias": "s",
+                  "name": {
+                    "name": "##shared"
+                  }
+                },
+                "on": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 145,
+                    "length": 11,
+                    "line": 3,
+                    "column": 42
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 145,
+                      "length": 4,
+                      "line": 3,
+                      "column": 42
+                    },
+                    "parts": [
+                      "s",
+                      "id"
+                    ]
+                  },
+                  "right": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 152,
+                      "length": 4,
+                      "line": 3,
+                      "column": 49
+                    },
+                    "parts": [
+                      "w",
+                      "id"
+                    ]
+                  }
+                }
+              },
+              "right": {
+                "kind": "variable",
+                "span": {
+                  "offset": 162,
+                  "length": 6,
+                  "line": 3,
+                  "column": 59
+                },
+                "alias": "i",
+                "variable": "@ids"
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 172,
+                  "length": 11,
+                  "line": 3,
+                  "column": 69
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 172,
+                    "length": 4,
+                    "line": 3,
+                    "column": 69
+                  },
+                  "parts": [
+                    "i",
+                    "id"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 179,
+                    "length": 4,
+                    "line": 3,
+                    "column": 76
+                  },
+                  "parts": [
+                    "w",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

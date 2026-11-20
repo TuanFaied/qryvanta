@@ -1,0 +1,125 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Question: what is the average order value?\n-- Bug: AVG runs over order lines, so this is the average line value, not the average order.\nSELECT CAST(AVG(oi.Quantity * oi.UnitPrice) AS decimal(10,2)) AS AvgOrderValue\nFROM dbo.OrderItems AS oi;\n",
+      "offset": 0,
+      "length": 245,
+      "byteOffset": 0,
+      "byteLength": 245,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 139,
+            "length": 105,
+            "line": 3,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 139,
+              "length": 104,
+              "line": 3,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "cast",
+                  "span": {
+                    "offset": 146,
+                    "length": 54,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "operand": {
+                    "kind": "function",
+                    "span": {
+                      "offset": 151,
+                      "length": 31,
+                      "line": 3,
+                      "column": 13
+                    },
+                    "name": "AVG",
+                    "args": [
+                      {
+                        "kind": "arithmetic",
+                        "span": {
+                          "offset": 155,
+                          "length": 26,
+                          "line": 3,
+                          "column": 17
+                        },
+                        "op": "*",
+                        "left": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 155,
+                            "length": 11,
+                            "line": 3,
+                            "column": 17
+                          },
+                          "parts": [
+                            "oi",
+                            "Quantity"
+                          ]
+                        },
+                        "right": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 169,
+                            "length": 12,
+                            "line": 3,
+                            "column": 31
+                          },
+                          "parts": [
+                            "oi",
+                            "UnitPrice"
+                          ]
+                        }
+                      }
+                    ],
+                    "aggregate": true
+                  },
+                  "name": "CAST",
+                  "dataType": "decimal(10,2)"
+                },
+                "alias": "AvgOrderValue",
+                "span": {
+                  "offset": 146,
+                  "length": 71,
+                  "line": 3,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 223,
+                "length": 20,
+                "line": 4,
+                "column": 6
+              },
+              "alias": "oi",
+              "name": {
+                "schema": "dbo",
+                "name": "OrderItems"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

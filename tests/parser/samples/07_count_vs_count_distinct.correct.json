@@ -1,0 +1,265 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: COUNT(DISTINCT o.OrderID) counts each order once. Units are at line grain already.\nSELECT o.CustomerID, COUNT(DISTINCT o.OrderID) AS Orders, SUM(oi.Quantity) AS Units\nFROM dbo.Orders AS o\nJOIN dbo.OrderItems AS oi ON oi.OrderID = o.OrderID\nWHERE o.CustomerID IS NOT NULL\nGROUP BY o.CustomerID\nORDER BY o.CustomerID;\n",
+      "offset": 0,
+      "length": 324,
+      "byteOffset": 0,
+      "byteLength": 324,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 91,
+            "length": 232,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 91,
+              "length": 231,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 98,
+                    "length": 12,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "o",
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 98,
+                  "length": 12,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 112,
+                    "length": 25,
+                    "line": 2,
+                    "column": 22
+                  },
+                  "name": "COUNT",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 127,
+                        "length": 9,
+                        "line": 2,
+                        "column": 37
+                      },
+                      "parts": [
+                        "o",
+                        "OrderID"
+                      ]
+                    }
+                  ],
+                  "distinct": true,
+                  "aggregate": true
+                },
+                "alias": "Orders",
+                "span": {
+                  "offset": 112,
+                  "length": 35,
+                  "line": 2,
+                  "column": 22
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 149,
+                    "length": 16,
+                    "line": 2,
+                    "column": 59
+                  },
+                  "name": "SUM",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 153,
+                        "length": 11,
+                        "line": 2,
+                        "column": 63
+                      },
+                      "parts": [
+                        "oi",
+                        "Quantity"
+                      ]
+                    }
+                  ],
+                  "aggregate": true
+                },
+                "alias": "Units",
+                "span": {
+                  "offset": 149,
+                  "length": 25,
+                  "line": 2,
+                  "column": 59
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 180,
+                "length": 67,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 180,
+                  "length": 15,
+                  "line": 3,
+                  "column": 6
+                },
+                "alias": "o",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 201,
+                  "length": 20,
+                  "line": 4,
+                  "column": 6
+                },
+                "alias": "oi",
+                "name": {
+                  "schema": "dbo",
+                  "name": "OrderItems"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 225,
+                  "length": 22,
+                  "line": 4,
+                  "column": 30
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 225,
+                    "length": 10,
+                    "line": 4,
+                    "column": 30
+                  },
+                  "parts": [
+                    "oi",
+                    "OrderID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 238,
+                    "length": 9,
+                    "line": 4,
+                    "column": 43
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                }
+              }
+            },
+            "where": {
+              "kind": "isNull",
+              "span": {
+                "offset": 254,
+                "length": 24,
+                "line": 5,
+                "column": 7
+              },
+              "not": true,
+              "operand": {
+                "kind": "column",
+                "span": {
+                  "offset": 254,
+                  "length": 12,
+                  "line": 5,
+                  "column": 7
+                },
+                "parts": [
+                  "o",
+                  "CustomerID"
+                ]
+              }
+            },
+            "groupBy": [
+              {
+                "kind": "column",
+                "span": {
+                  "offset": 288,
+                  "length": 12,
+                  "line": 6,
+                  "column": 10
+                },
+                "parts": [
+                  "o",
+                  "CustomerID"
+                ]
+              }
+            ],
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 310,
+                    "length": 12,
+                    "line": 7,
+                    "column": 10
+                  },
+                  "parts": [
+                    "o",
+                    "CustomerID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

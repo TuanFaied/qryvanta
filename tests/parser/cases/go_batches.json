@@ -1,0 +1,172 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- GO separates batches; GO 3 repeats one; a batch of only comments is skipped\nSELECT 1 AS first;\n",
+      "offset": 0,
+      "length": 98,
+      "byteOffset": 0,
+      "byteLength": 98,
+      "line": 1,
+      "column": 1,
+      "repeat": 3,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 79,
+            "length": 18,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 79,
+              "length": 17,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 86,
+                    "length": 1,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "literalType": "integer",
+                  "value": "1"
+                },
+                "alias": "first",
+                "span": {
+                  "offset": 86,
+                  "length": 10,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "text": "select 'GO' AS not_a_separator\n",
+      "offset": 136,
+      "length": 31,
+      "byteOffset": 136,
+      "byteLength": 31,
+      "line": 6,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 136,
+            "length": 30,
+            "line": 6,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 136,
+              "length": 30,
+              "line": 6,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 143,
+                    "length": 4,
+                    "line": 6,
+                    "column": 8
+                  },
+                  "literalType": "string",
+                  "value": "GO"
+                },
+                "alias": "not_a_separator",
+                "span": {
+                  "offset": 143,
+                  "length": 23,
+                  "line": 6,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "text": "SELECT 2 AS last;\n",
+      "offset": 170,
+      "length": 18,
+      "byteOffset": 170,
+      "byteLength": 18,
+      "line": 8,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 170,
+            "length": 17,
+            "line": 8,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 170,
+              "length": 16,
+              "line": 8,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 177,
+                    "length": 1,
+                    "line": 8,
+                    "column": 8
+                  },
+                  "literalType": "integer",
+                  "value": "2"
+                },
+                "alias": "last",
+                "span": {
+                  "offset": 177,
+                  "length": 9,
+                  "line": 8,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

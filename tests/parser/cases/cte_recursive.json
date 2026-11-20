@@ -1,0 +1,369 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a recursive CTE (it references itself) with a column list and MAXRECURSION\nWITH tree (EmployeeID, ManagerID, Depth) AS (\n    SELECT EmployeeID, ManagerID, 0 FROM dbo.Employees WHERE ManagerID IS NULL\n    UNION ALL\n    SELECT e.EmployeeID, e.ManagerID, t.Depth + 1\n    FROM dbo.Employees e JOIN tree t ON t.EmployeeID = e.ManagerID\n)\nSELECT * FROM tree OPTION (MAXRECURSION 50);\n",
+      "offset": 0,
+      "length": 381,
+      "byteOffset": 0,
+      "byteLength": 381,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 78,
+            "length": 302,
+            "line": 2,
+            "column": 1
+          },
+          "ctes": [
+            {
+              "name": "tree",
+              "columns": [
+                "EmployeeID",
+                "ManagerID",
+                "Depth"
+              ],
+              "query": {
+                "kind": "setOp",
+                "span": {
+                  "offset": 128,
+                  "length": 205,
+                  "line": 3,
+                  "column": 5
+                },
+                "op": "unionAll",
+                "left": {
+                  "kind": "select",
+                  "span": {
+                    "offset": 128,
+                    "length": 74,
+                    "line": 3,
+                    "column": 5
+                  },
+                  "select": [
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 135,
+                          "length": 10,
+                          "line": 3,
+                          "column": 12
+                        },
+                        "parts": [
+                          "EmployeeID"
+                        ]
+                      },
+                      "span": {
+                        "offset": 135,
+                        "length": 10,
+                        "line": 3,
+                        "column": 12
+                      }
+                    },
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 147,
+                          "length": 9,
+                          "line": 3,
+                          "column": 24
+                        },
+                        "parts": [
+                          "ManagerID"
+                        ]
+                      },
+                      "span": {
+                        "offset": 147,
+                        "length": 9,
+                        "line": 3,
+                        "column": 24
+                      }
+                    },
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 158,
+                          "length": 1,
+                          "line": 3,
+                          "column": 35
+                        },
+                        "literalType": "integer",
+                        "value": "0"
+                      },
+                      "span": {
+                        "offset": 158,
+                        "length": 1,
+                        "line": 3,
+                        "column": 35
+                      }
+                    }
+                  ],
+                  "from": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 165,
+                      "length": 13,
+                      "line": 3,
+                      "column": 42
+                    },
+                    "name": {
+                      "schema": "dbo",
+                      "name": "Employees"
+                    }
+                  },
+                  "where": {
+                    "kind": "isNull",
+                    "span": {
+                      "offset": 185,
+                      "length": 17,
+                      "line": 3,
+                      "column": 62
+                    },
+                    "operand": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 185,
+                        "length": 9,
+                        "line": 3,
+                        "column": 62
+                      },
+                      "parts": [
+                        "ManagerID"
+                      ]
+                    }
+                  }
+                },
+                "right": {
+                  "kind": "select",
+                  "span": {
+                    "offset": 221,
+                    "length": 112,
+                    "line": 5,
+                    "column": 5
+                  },
+                  "select": [
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 228,
+                          "length": 12,
+                          "line": 5,
+                          "column": 12
+                        },
+                        "parts": [
+                          "e",
+                          "EmployeeID"
+                        ]
+                      },
+                      "span": {
+                        "offset": 228,
+                        "length": 12,
+                        "line": 5,
+                        "column": 12
+                      }
+                    },
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 242,
+                          "length": 11,
+                          "line": 5,
+                          "column": 26
+                        },
+                        "parts": [
+                          "e",
+                          "ManagerID"
+                        ]
+                      },
+                      "span": {
+                        "offset": 242,
+                        "length": 11,
+                        "line": 5,
+                        "column": 26
+                      }
+                    },
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "arithmetic",
+                        "span": {
+                          "offset": 255,
+                          "length": 11,
+                          "line": 5,
+                          "column": 39
+                        },
+                        "op": "+",
+                        "left": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 255,
+                            "length": 7,
+                            "line": 5,
+                            "column": 39
+                          },
+                          "parts": [
+                            "t",
+                            "Depth"
+                          ]
+                        },
+                        "right": {
+                          "kind": "literal",
+                          "span": {
+                            "offset": 265,
+                            "length": 1,
+                            "line": 5,
+                            "column": 49
+                          },
+                          "literalType": "integer",
+                          "value": "1"
+                        }
+                      },
+                      "span": {
+                        "offset": 255,
+                        "length": 11,
+                        "line": 5,
+                        "column": 39
+                      }
+                    }
+                  ],
+                  "from": {
+                    "kind": "join",
+                    "span": {
+                      "offset": 276,
+                      "length": 57,
+                      "line": 6,
+                      "column": 10
+                    },
+                    "joinType": "inner",
+                    "left": {
+                      "kind": "table",
+                      "span": {
+                        "offset": 276,
+                        "length": 15,
+                        "line": 6,
+                        "column": 10
+                      },
+                      "alias": "e",
+                      "name": {
+                        "schema": "dbo",
+                        "name": "Employees"
+                      }
+                    },
+                    "right": {
+                      "kind": "table",
+                      "span": {
+                        "offset": 297,
+                        "length": 6,
+                        "line": 6,
+                        "column": 31
+                      },
+                      "alias": "t",
+                      "name": {
+                        "name": "tree"
+                      },
+                      "cte": true
+                    },
+                    "on": {
+                      "kind": "compare",
+                      "span": {
+                        "offset": 307,
+                        "length": 26,
+                        "line": 6,
+                        "column": 41
+                      },
+                      "op": "=",
+                      "left": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 307,
+                          "length": 12,
+                          "line": 6,
+                          "column": 41
+                        },
+                        "parts": [
+                          "t",
+                          "EmployeeID"
+                        ]
+                      },
+                      "right": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 322,
+                          "length": 11,
+                          "line": 6,
+                          "column": 56
+                        },
+                        "parts": [
+                          "e",
+                          "ManagerID"
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "recursive": true,
+              "span": {
+                "offset": 83,
+                "length": 252,
+                "line": 2,
+                "column": 6
+              }
+            }
+          ],
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 336,
+              "length": 18,
+              "line": 8,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 343,
+                  "length": 1,
+                  "line": 8,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 350,
+                "length": 4,
+                "line": 8,
+                "column": 15
+              },
+              "name": {
+                "name": "tree"
+              },
+              "cte": true
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

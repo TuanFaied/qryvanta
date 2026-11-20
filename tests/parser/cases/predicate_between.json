@@ -1,0 +1,159 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- BETWEEN and NOT BETWEEN with low and high bounds\nSELECT * FROM dbo.Orders\nWHERE OrderDate BETWEEN '2026-01-01' AND '2026-01-31'\n  AND Amount NOT BETWEEN 0 AND 10;\n",
+      "offset": 0,
+      "length": 166,
+      "byteOffset": 0,
+      "byteLength": 166,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 52,
+            "length": 113,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 52,
+              "length": 112,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 59,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 66,
+                "length": 10,
+                "line": 2,
+                "column": 15
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 83,
+                "length": 81,
+                "line": 3,
+                "column": 7
+              },
+              "left": {
+                "kind": "between",
+                "span": {
+                  "offset": 83,
+                  "length": 47,
+                  "line": 3,
+                  "column": 7
+                },
+                "operand": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 83,
+                    "length": 9,
+                    "line": 3,
+                    "column": 7
+                  },
+                  "parts": [
+                    "OrderDate"
+                  ]
+                },
+                "low": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 101,
+                    "length": 12,
+                    "line": 3,
+                    "column": 25
+                  },
+                  "literalType": "string",
+                  "value": "2026-01-01"
+                },
+                "high": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 118,
+                    "length": 12,
+                    "line": 3,
+                    "column": 42
+                  },
+                  "literalType": "string",
+                  "value": "2026-01-31"
+                }
+              },
+              "right": {
+                "kind": "between",
+                "span": {
+                  "offset": 137,
+                  "length": 27,
+                  "line": 4,
+                  "column": 7
+                },
+                "not": true,
+                "operand": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 137,
+                    "length": 6,
+                    "line": 4,
+                    "column": 7
+                  },
+                  "parts": [
+                    "Amount"
+                  ]
+                },
+                "low": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 156,
+                    "length": 1,
+                    "line": 4,
+                    "column": 26
+                  },
+                  "literalType": "integer",
+                  "value": "0"
+                },
+                "high": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 162,
+                    "length": 2,
+                    "line": 4,
+                    "column": 32
+                  },
+                  "literalType": "integer",
+                  "value": "10"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}
