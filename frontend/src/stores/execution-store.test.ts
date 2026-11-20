@@ -20,6 +20,7 @@ function summary(outcome: Outcome, extra: Partial<Summary> = {}): Summary {
     totalBytes: 0,
     elapsedMs: 12,
     guard: { active: true, rolledBack: true, endedByBatch: false },
+    batches: [],
     error: "",
     ...extra,
   };
@@ -35,7 +36,7 @@ describe("execution store", () => {
     s().apply(event("r1", { kind: "resultSet", index: 0, columns: [{ name: "id", type: "INT", nullable: false }] }));
     s().apply(event("r1", { kind: "rows", index: 0, rows: [[1], [2]] }));
     s().apply(event("r1", { kind: "rows", index: 0, rows: [[3]] }));
-    s().apply(event("r1", { kind: "message", message: { kind: "info", number: 0, severity: 0, state: 0, line: 0, procedure: "", text: "hi", afterResultSet: 1 } }));
+    s().apply(event("r1", { kind: "message", message: { kind: "info", number: 0, severity: 0, state: 0, line: 0, procedure: "", text: "hi", afterResultSet: 1, batch: 0, scriptLine: 0 } }));
     s().apply(event("r1", { kind: "resultSet", index: 1, columns: [{ name: "x", type: "NVARCHAR", nullable: true }] }));
     s().apply(event("r1", { kind: "rows", index: 1, rows: [[null]] }));
 
@@ -93,5 +94,16 @@ describe("execution store", () => {
 
     s().clear("t1");
     expect(s().runs.t1).toBeUndefined();
+  });
+
+  it("records batch runs and tags result sets with their batch", () => {
+    start("r1");
+    s().apply(event("r1", { kind: "batch", run: { batch: 0, execution: 0, line: 1, errorCount: 0, elapsedMs: 0 } }));
+    s().apply(event("r1", { kind: "resultSet", index: 0, batch: 0, columns: [] }));
+    s().apply(event("r1", { kind: "batch", run: { batch: 1, execution: 0, line: 3, errorCount: 0, elapsedMs: 0 } }));
+    s().apply(event("r1", { kind: "resultSet", index: 1, batch: 1, columns: [] }));
+    const run = s().runs.t1!;
+    expect(run.batches.map((b) => b.line)).toEqual([1, 3]);
+    expect(run.resultSets.map((rs) => rs.batch)).toEqual([0, 1]);
   });
 });

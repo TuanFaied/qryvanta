@@ -14,6 +14,7 @@ vi.mock("@/utils/clipboard", () => ({
 
 const resultSet: ResultSetData = {
   index: 0,
+  batch: 0,
   columns: [
     { name: "id", type: "INT", nullable: false },
     { name: "city", type: "NVARCHAR", nullable: true },

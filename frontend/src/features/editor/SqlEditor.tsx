@@ -1,5 +1,5 @@
 import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
-import type { Formatting } from "@/services/backend";
+import type { Diagnostic, Formatting } from "@/services/backend";
 import type { ResolvedTheme } from "@/features/theme/theme";
 import { formatSql } from "./format";
 import { registerSqlCompletion } from "./completion/provider";
@@ -20,6 +20,8 @@ export interface SqlEditorProps {
   formatting: Formatting;
   /** True while a query runs; enables Esc as "cancel execution". */
   executing?: boolean;
+  /** Syntax errors of the current text, shown as markers (squiggles with hover text). */
+  diagnostics?: Diagnostic[];
   onChange: (tabId: string, value: string) => void;
   onCommand: (command: EditorCommand) => void;
   /** Reports a formatting failure, or null when formatting succeeded. */
@@ -36,7 +38,7 @@ interface TabModel {
 
 /** The Monaco T-SQL editor. Loaded lazily (see monaco.ts); tests replace it with a mock. */
 export default function SqlEditor(props: SqlEditorProps) {
-  const { tabId, tabIds, value, theme, fontSize, formatting, executing = false, handleRef } = props;
+  const { tabId, tabIds, value, theme, fontSize, formatting, executing = false, diagnostics, handleRef } = props;
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const modelsRef = useRef(new Map<string, TabModel>());
@@ -231,6 +233,29 @@ export default function SqlEditor(props: SqlEditorProps) {
   useEffect(() => {
     executingKey.current?.set(executing);
   }, [executing]);
+
+  // Syntax errors as markers on the active tab's model. Each marker covers the word the parser
+  // pointed at (or one character), since ScriptDom reports a position, not a range.
+  useEffect(() => {
+    const model = modelsRef.current.get(tabId)?.model;
+    if (!model) return;
+    const markers = (diagnostics ?? []).map((d) => {
+      const line = Math.min(Math.max(d.line, 1), model.getLineCount());
+      const column = Math.max(d.column, 1);
+      const word = model.getWordAtPosition({ lineNumber: line, column });
+      return {
+        severity: monaco.MarkerSeverity.Error,
+        message: d.message,
+        code: String(d.number),
+        source: "T-SQL parser",
+        startLineNumber: line,
+        startColumn: word?.startColumn ?? column,
+        endLineNumber: line,
+        endColumn: word?.endColumn ?? column + 1,
+      };
+    });
+    monaco.editor.setModelMarkers(model, "qryvanta-syntax", markers);
+  }, [tabId, diagnostics]);
 
   return <div ref={hostRef} className="h-full w-full" data-testid="sql-editor" />;
 }

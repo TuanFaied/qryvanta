@@ -10,6 +10,7 @@ import { ConnectionSelector } from "@/features/connections/ConnectionSelector";
 import { DeleteConnectionDialog } from "@/features/connections/DeleteConnectionDialog";
 import { EditorArea } from "@/features/editor/EditorArea";
 import type { EditorCommand, SqlEditorHandle } from "@/features/editor/editor-types";
+import { ConfirmSyntaxDialog } from "@/features/execution/ConfirmSyntaxDialog";
 import { ConfirmWritesDialog } from "@/features/execution/ConfirmWritesDialog";
 import { useExecution } from "@/features/execution/useExecution";
 import { DatabaseSelector } from "@/features/explorer/DatabaseSelector";
@@ -21,6 +22,7 @@ import { WelcomePage } from "@/features/workspace/WelcomePage";
 import { backend, type AppInfo, type Config, type ParserStatus, type SaveResult, type Theme } from "@/services/backend";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useEditorStore } from "@/stores/editor-store";
+import { currentDiagnostics, useSyntaxStore } from "@/stores/syntax-store";
 import { useSchemaStore } from "@/stores/schema-store";
 import { accessKey, useAccessStore } from "@/stores/access-store";
 import { safeStorage } from "@/utils/safe-storage";
@@ -167,6 +169,11 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
       );
   }, []);
   useEffect(checkParser, [checkParser]);
+
+  // Syntax errors of the active tab, for the status bar (only when current for its text).
+  const activeTab = useEditorStore((s) => s.tabs.find((t) => t.id === s.activeId) ?? null);
+  const syntaxState = useSyntaxStore((s) => (activeTab ? s.byTab[activeTab.id] : undefined));
+  const problems = activeTab ? currentDiagnostics(syntaxState, activeTab.content) : [];
 
   const disconnect = () => void conn.disconnect();
   const refresh = () => {
@@ -319,6 +326,8 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         onRecheckAccess={() => activeId && currentDatabase && void checkAccess(activeId, currentDatabase, true)}
         parser={parserStatus}
         onRecheckParser={checkParser}
+        problems={problems}
+        onShowProblems={() => problems[0] && editorRef.current?.revealLine(problems[0].line)}
       />
 
       <ConnectionDialog
@@ -333,6 +342,8 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         onCancel={() => dialog.confirmDelete(null)}
         onConfirm={conn.remove}
       />
+
+      <ConfirmSyntaxDialog pending={exec.pendingSyntax} onRunAnyway={exec.confirmSyntax} onCancel={exec.cancelSyntax} />
 
       <ConfirmWritesDialog
         pending={exec.pending}

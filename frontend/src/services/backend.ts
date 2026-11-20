@@ -12,10 +12,12 @@ import {
   SchemaService,
   WindowService,
 } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
-import type { Column as ResultColumn, Message, Summary, Value } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
+import type { BatchRun, Column as ResultColumn, Message, Summary, Value } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
+import type { Diagnostic } from "../../bindings/github.com/TuanFaied/qryvanta/internal/parser/models";
 import { Outcome } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type {
   ExecutionEvent,
+  SyntaxCheck,
   FileDocument,
   MetadataError,
   OpenFileResult,
@@ -42,7 +44,7 @@ import { AccessLevel, AuthMethod, EncryptMode } from "../../bindings/github.com/
 export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, Profile, SaveConfigResult, ServerInfo };
 export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
 export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
-export type { ExecutionEvent, Message, ResultColumn, Summary, Value };
+export type { BatchRun, Diagnostic, ExecutionEvent, Message, ResultColumn, Summary, SyntaxCheck, Value };
 export type { ParserStatus };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
@@ -218,6 +220,13 @@ export const backend = {
    */
   execute: (runId: string, connectionId: string, database: string, sql: string): Promise<Summary> =>
     call("Execute", () => QueryService.Execute(runId, connectionId, database, sql)),
+
+  /** Parses a script for the editor's syntax markers. Aborting the signal abandons the check. */
+  checkSyntax: (sql: string, signal?: AbortSignal): Promise<SyntaxCheck> =>
+    call("Check syntax", async () => {
+      const res = await withSignal(QueryService.CheckSyntax(sql), signal);
+      return { ...res, diagnostics: res.diagnostics ?? [] };
+    }),
 
   /** Cancels a run on the server. Its summary still arrives, with outcome "cancelled". */
   cancelRun: (runId: string): Promise<boolean> => call("Cancel execution", () => QueryService.Cancel(runId)),

@@ -6,6 +6,7 @@ export {
 } from "./models.js";
 
 export type {
+    BatchRun,
     Column,
     Guard,
     Message,

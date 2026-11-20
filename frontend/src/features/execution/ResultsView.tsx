@@ -17,6 +17,7 @@ export function ResultsView({ run, maxRows }: { run: Run | null; maxRows: number
 
   const truncated = run.summary?.outcome === Outcome.OutcomeTruncated;
   const sets = run.resultSets;
+  const multiBatch = new Set(run.batches.map((b) => b.batch)).size > 1;
 
   return (
     <div className="flex h-full flex-col">
@@ -46,7 +47,7 @@ export function ResultsView({ run, maxRows }: { run: Run | null; maxRows: number
           {sets.map((rs, i) => (
             <section key={rs.index} aria-label={`Result ${i + 1}`} className="rounded-sm border">
               <h3 className="border-b bg-panel px-2 py-0.5 text-[11px] text-muted-foreground">
-                Result {i + 1} · {rowCount(rs.rows.length)}
+                {multiBatch && `Batch ${rs.batch + 1} · `}Result {i + 1} · {rowCount(rs.rows.length)}
               </h3>
               <ResultGrid
                 resultSet={rs}

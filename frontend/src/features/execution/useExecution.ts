@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { SqlEditorHandle } from "@/features/editor/editor-types";
-import { AccessLevel, type Config, type WriteAccess } from "@/services/backend";
+import { AccessLevel, type Config, type Diagnostic, type WriteAccess } from "@/services/backend";
 import { accessKey, useAccessStore } from "@/stores/access-store";
 import { useActiveTab } from "@/stores/editor-store";
 import { useExecutionStore, type Run } from "@/stores/execution-store";
+import { currentDiagnostics, diagnosticsInLines, useSyntaxStore } from "@/stores/syntax-store";
 import { cancelRun, executeQuery, subscribeToExecutionEvents, type RunRequest } from "./run-query";
 
 /** A run waiting for the user to confirm that data may be modified. */
 export interface PendingRun {
   request: RunRequest;
   access: WriteAccess | null;
+}
+
+/** A run waiting for the user to confirm running SQL with syntax errors. */
+export interface PendingSyntax {
+  request: RunRequest;
+  database: string | null;
+  diagnostics: Diagnostic[];
 }
 
 interface Options {
@@ -44,6 +52,7 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
     [runs],
   );
   const [pending, setPending] = useState<PendingRun | null>(null);
+  const [pendingSyntax, setPendingSyntax] = useState<PendingSyntax | null>(null);
 
   useEffect(() => subscribeToExecutionEvents(), []);
 
@@ -71,6 +80,21 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
     [onStarted],
   );
 
+  // The write-access confirmation, then the run.
+  const proceed = useCallback(
+    (request: RunRequest, database: string | null) => {
+      if (!config.execution.readOnly && !confirmedWriteConnections.has(request.connectionId)) {
+        const access = database ? (useAccessStore.getState().results[accessKey(request.connectionId, database)] ?? null) : null;
+        if (access?.level !== AccessLevel.AccessReadOnly) {
+          setPending({ request, access });
+          return;
+        }
+      }
+      start(request);
+    },
+    [config.execution.readOnly, start],
+  );
+
   const execute = useCallback(() => {
     if (blockedReason || !tab?.connectionId) return;
     const target = editorRef.current?.getRunTarget();
@@ -82,15 +106,17 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
       sql: target.sql,
       startLine: target.startLine,
     };
-    if (!config.execution.readOnly && !confirmedWriteConnections.has(tab.connectionId)) {
-      const access = tab.database ? (useAccessStore.getState().results[accessKey(tab.connectionId, tab.database)] ?? null) : null;
-      if (access?.level !== AccessLevel.AccessReadOnly) {
-        setPending({ request, access });
-        return;
-      }
+    // Syntax errors found by the editor's check (only when it is current for this text, and
+    // only those inside the selection when a selection runs) are confirmed first.
+    const all = currentDiagnostics(useSyntaxStore.getState().byTab[tab.id], tab.content);
+    const lastLine = target.startLine + target.sql.split("\n").length - 1;
+    const errors = target.fromSelection ? diagnosticsInLines(all, target.startLine, lastLine) : all;
+    if (errors.length > 0) {
+      setPendingSyntax({ request, database: tab.database, diagnostics: errors });
+      return;
     }
-    start(request);
-  }, [blockedReason, tab, editorRef, config.execution.readOnly, start]);
+    proceed(request, tab.database);
+  }, [blockedReason, tab, editorRef, proceed]);
 
   const stop = useCallback(() => {
     if (run?.status === "running") cancelRun(run.runId);
@@ -103,6 +129,12 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
     start(pending.request);
   }, [pending, start]);
 
+  const confirmSyntax = useCallback(() => {
+    if (!pendingSyntax) return;
+    setPendingSyntax(null);
+    proceed(pendingSyntax.request, pendingSyntax.database);
+  }, [pendingSyntax, proceed]);
+
   return {
     run,
     running,
@@ -113,5 +145,8 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
     pending,
     confirmPending,
     cancelPending: () => setPending(null),
+    pendingSyntax,
+    confirmSyntax,
+    cancelSyntax: () => setPendingSyntax(null),
   };
 }

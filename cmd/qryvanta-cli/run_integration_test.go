@@ -107,3 +107,40 @@ func TestRunErrorsAndLimitsAgainstFixture(t *testing.T) {
 		t.Errorf("csv with --max-rows 2: exit %d, output %q", code, out)
 	}
 }
+
+// TestRunGoBatches runs a two-batch script whose second batch reads the first one's temp
+// table, and checks the error line is mapped to the script. It needs the parser sidecar
+// (QRYVANTA_PARSER_PATH) to split the script.
+func TestRunGoBatches(t *testing.T) {
+	if os.Getenv("QRYVANTA_PARSER_PATH") == "" {
+		t.Skip("QRYVANTA_PARSER_PATH not set; build the parser sidecar to split GO batches")
+	}
+	opts := fixtureOptions(t)
+	// The bad column is in a batch of its own: SQL Server compiles a whole batch first, so it
+	// would also stop the valid SELECT beside it.
+	script := "CREATE TABLE #t (n int);\nINSERT #t VALUES (1), (2);\nGO\nSELECT n FROM #t ORDER BY n;\nGO\nSELECT nope FROM #t;"
+	var out, errOut bytes.Buffer
+	err := cmdRun(context.Background(), []string{"--conn", "fixtures", "--query", script, "--format", "json"}, opts, &out, &errOut)
+	if code := report(err, &bytes.Buffer{}, &bytes.Buffer{}); code != exitQueryError {
+		t.Fatalf("exit = %d, want %d (the last batch has an error); stderr %s", code, exitQueryError, errOut.String())
+	}
+	var res runResult
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+		t.Fatalf("%v: %s", err, out.String())
+	}
+	if len(res.Batches) != 3 || res.Batches[1].Line != 4 || res.Batches[2].Line != 6 {
+		t.Fatalf("batches = %+v", res.Batches)
+	}
+	if len(res.ResultSets) != 1 || res.ResultSets[0].Batch != 1 || len(res.ResultSets[0].Rows) != 2 {
+		t.Errorf("result sets = %+v", res.ResultSets)
+	}
+	var lines []int32
+	for _, m := range res.Messages {
+		if m.Kind == "error" {
+			lines = append(lines, m.ScriptLine)
+		}
+	}
+	if len(lines) != 1 || lines[0] != 6 {
+		t.Errorf("error script lines = %v, want [6]; messages %+v", lines, res.Messages)
+	}
+}

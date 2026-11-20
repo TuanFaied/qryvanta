@@ -125,13 +125,16 @@ func TestGuardReportsCommitInsideBatch(t *testing.T) {
 
 func TestGuardLockTimeout(t *testing.T) {
 	admin := openAdminDB(t)
-	// Session A holds an exclusive lock on order 101.
+	// Session A holds an exclusive lock on order 101 with an uncommitted change. The value must
+	// really change: for a no-op update (SET Status = Status) SQL Server lets READ COMMITTED
+	// readers skip the row lock when the page has no uncommitted data, and the test then
+	// depends on page state.
 	conn, err := admin.Conn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer conn.Close()
-	if _, err := conn.ExecContext(context.Background(), "BEGIN TRANSACTION; UPDATE QryvantaSample.dbo.Orders SET Status = Status WHERE OrderID = 101;"); err != nil {
+	if _, err := conn.ExecContext(context.Background(), "BEGIN TRANSACTION; UPDATE QryvantaSample.dbo.Orders SET Status = 'LockTest' WHERE OrderID = 101;"); err != nil {
 		t.Fatal(err)
 	}
 	defer conn.ExecContext(context.Background(), "IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION") //nolint:errcheck
@@ -143,7 +146,7 @@ func TestGuardLockTimeout(t *testing.T) {
 		t.Fatalf("blocked query was not stopped by the lock timeout (%s)", time.Since(start))
 	}
 	if sum.ErrorCount != 1 || sum.Messages[0].Number != 1222 {
-		t.Fatalf("want SQL Server error 1222 (lock request time out), got %+v", sum.Messages)
+		t.Fatalf("want SQL Server error 1222 (lock request time out), got %+v (summary %+v)", sum.Messages, sum)
 	}
 }
 

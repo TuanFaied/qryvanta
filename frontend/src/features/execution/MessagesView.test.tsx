@@ -14,6 +14,8 @@ const msg = (m: Partial<Message>): Message => ({
   procedure: "",
   text: "Invalid column name 'nmae'.",
   afterResultSet: 0,
+  batch: 0,
+  scriptLine: 0,
   ...m,
 });
 
@@ -27,6 +29,7 @@ function run(extra: Partial<Run> = {}): Run {
     startedAt: 0,
     finishedAt: 1000,
     lineOffset: 9,
+    batches: [],
     resultSets: [],
     messages: [],
     summary: {
@@ -40,6 +43,7 @@ function run(extra: Partial<Run> = {}): Run {
       totalBytes: 0,
       elapsedMs: 42,
       guard: { active: true, rolledBack: true, endedByBatch: false },
+      batches: [],
       error: "",
     },
     error: null,
@@ -92,5 +96,39 @@ describe("MessagesView", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("ended read-only protection");
     expect(screen.getByText(/after the 30 s timeout/)).toBeInTheDocument();
     expect(screen.queryByText(/transaction that was rolled back/)).not.toBeInTheDocument();
+  });
+
+  it("groups messages by GO batch and links errors to their script line", async () => {
+    const onRevealLine = vi.fn();
+    render(
+      <MessagesView
+        run={run({
+          lineOffset: 0,
+          batches: [
+            { batch: 0, execution: 0, line: 1, errorCount: 0, elapsedMs: 1 },
+            { batch: 1, execution: 0, line: 4, errorCount: 1, elapsedMs: 1 },
+            { batch: 1, execution: 1, line: 4, errorCount: 1, elapsedMs: 1 },
+          ],
+          messages: [msg({ kind: "info", text: "first", number: 0, line: 0 }), msg({ batch: 1, line: 2, scriptLine: 5 })],
+        })}
+        timeoutSeconds={30}
+        onRevealLine={onRevealLine}
+      />,
+    );
+    expect(screen.getByText("Batch 1 · line 1")).toBeInTheDocument();
+    expect(screen.getByText("Batch 2 · line 4 · ran 2 times")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Msg 207, Level 16, State 1, Line 5" }));
+    expect(onRevealLine).toHaveBeenCalledWith(5);
+  });
+
+  it("shows no batch headers for a single batch", () => {
+    render(
+      <MessagesView
+        run={run({ batches: [{ batch: 0, execution: 0, line: 1, errorCount: 0, elapsedMs: 1 }], messages: [msg({})] })}
+        timeoutSeconds={30}
+        onRevealLine={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/^Batch 1/)).not.toBeInTheDocument();
   });
 });

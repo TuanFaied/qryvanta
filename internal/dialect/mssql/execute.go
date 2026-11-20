@@ -32,26 +32,32 @@ const maxSafeInteger = 1<<53 - 1
 // restoreTimeout bounds restoring the session's database after a run.
 const restoreTimeout = 5 * time.Second
 
-// Execute runs req on a dedicated connection from db and streams results to sink.
+// Execute runs req's batches, one after another, on a dedicated connection from db and streams
+// results to sink.
 //
-// The batch runs in req.Database (via a quoted USE) and the connection's original database is
-// restored afterwards, even if the batch itself changed it, so the next user of the pooled
-// connection never inherits a different context. If restoring fails the connection is
-// discarded instead of being returned to the pool.
+// All batches share the session, as with GO in SSMS: temp tables, variables' absence and SET
+// options carry over. A batch that reports errors does not stop the next one; cancellation,
+// the timeout, a row or size limit, or a lost connection stop the script.
+//
+// The script runs in req.Database (via a quoted USE) and the connection's original database is
+// restored afterwards, even if a batch changed it, so the next user of the pooled connection
+// never inherits a different context. If restoring fails the connection is discarded instead
+// of being returned to the pool.
+//
+// In read-only mode one guard transaction spans the whole script (rolling back after every
+// batch would drop a temp table before the next batch can use it). If a batch's own COMMIT or
+// ROLLBACK ends it, that is reported and a new guard transaction protects the batches after it.
 func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, sink executor.Sink) executor.Summary {
 	start := time.Now()
-	sum := executor.Summary{ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}}
+	sum := executor.Summary{ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{},
+		Batches: []executor.BatchRun{}}
 	var (
 		conn    *sql.Conn
-		rows    *sql.Rows
 		discard bool // the session could not be returned to a clean state
 	)
-	// finish closes the result stream, ends the session guard and records the outcome. It is
-	// used on every return path after the connection is acquired.
+	// finish ends the session guard and records the outcome. It is used on every return path
+	// after the connection is acquired.
 	finish := func(o executor.Outcome) executor.Summary {
-		if rows != nil {
-			_ = rows.Close()
-		}
 		if sum.Guard.Active && conn != nil {
 			if !endGuard(conn, &sum.Guard) {
 				discard = true
@@ -120,22 +126,65 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 		sum.Guard.Active = true
 	}
 
-	retmsg := &sqlexp.ReturnMessage{}
-	rows, err = conn.QueryContext(runCtx, req.SQL, retmsg)
-	if err != nil {
-		if m, ok := toMessage(err, "error", 0); ok {
-			sum.Messages = append(sum.Messages, m)
-			sum.ErrorCount++
-			_ = sink.Message(m)
-		}
-		sum.Error = clean(convertError(err))
-		rows = nil
-		return finish(outcomeFor(err))
-	}
-
 	budget := executor.NewBudget(req.Limits)
+	batchSink, _ := sink.(executor.BatchSink)
+	batches := req.BatchesOf()
+	for bi, b := range batches {
+		executions := max(b.Repeat, 1)
+		for e := 1; e <= executions; e++ {
+			run := executor.BatchRun{Batch: bi, Execution: e, Line: max(b.Line, 1)}
+			if batchSink != nil {
+				if err := batchSink.BatchStart(run); err != nil {
+					sum.Error = clean(err)
+					return finish(executor.OutcomeFailed)
+				}
+			}
+			began, errorsBefore := time.Now(), sum.ErrorCount
+			stopScript, outcome := runBatch(runCtx, ctx, conn, b, bi, &sum, budget, sink, stop)
+			run.ErrorCount = sum.ErrorCount - errorsBefore
+			run.ElapsedMs = time.Since(began).Milliseconds()
+			sum.Batches = append(sum.Batches, run)
+			sum.TotalRows, sum.TotalBytes = budget.Rows, budget.Bytes
+			if stopScript {
+				if outcome == executor.OutcomeTimedOut || outcome == executor.OutcomeCancelled {
+					outcome = outcomeFor(ctx.Err())
+				}
+				return finish(outcome)
+			}
+			last := bi == len(batches)-1 && e == executions
+			if sum.Guard.Active && !last {
+				// A COMMIT or ROLLBACK in the batch ended the protective transaction: record
+				// it and protect the batches that follow with a new one.
+				open, err := transactionOpen(runCtx, conn)
+				if err != nil {
+					discard = true
+					sum.Error = "could not check the read-only session guard: " + clean(convertError(err))
+					return finish(outcomeFor(err))
+				}
+				if !open {
+					sum.Guard.EndedByBatch = true
+					if err := beginGuard(runCtx, conn, req.Policy.LockTimeout); err != nil {
+						discard = true
+						sum.Error = "could not restart the read-only session guard: " + clean(convertError(err))
+						return finish(outcomeFor(err))
+					}
+				}
+			}
+		}
+	}
+	return finish(executor.OutcomeSucceeded)
+}
+
+// runBatch runs one batch execution. It reports whether the script must stop, and how it ended
+// in that case. Server errors are recorded as messages and do not stop the script.
+func runBatch(runCtx, ctx context.Context, conn *sql.Conn, b executor.Batch, batchIndex int, sum *executor.Summary,
+	budget *executor.Budget, sink executor.Sink, stop context.CancelFunc) (bool, executor.Outcome) {
 	var sinkErr error
 	addMessage := func(m executor.Message) {
+		m.Batch = batchIndex
+		if m.Line > 0 && m.Procedure == "" {
+			m.ScriptLine = int32(max(b.Line, 1)-1) + m.Line
+		}
 		sum.Messages = append(sum.Messages, m)
 		if m.Kind == "error" {
 			sum.ErrorCount++
@@ -144,6 +193,24 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 			sinkErr = err
 		}
 	}
+
+	retmsg := &sqlexp.ReturnMessage{}
+	rows, err := conn.QueryContext(runCtx, b.SQL, retmsg)
+	if err != nil {
+		if ctx.Err() != nil {
+			return true, executor.OutcomeCancelled // refined by the caller
+		}
+		if m, ok := toMessage(err, "error", len(sum.ResultSets)); ok {
+			addMessage(m)
+		}
+		var me mssqldb.Error
+		if errors.As(err, &me) && sinkErr == nil {
+			return false, ""
+		}
+		sum.Error = clean(convertError(err))
+		return true, executor.OutcomeFailed
+	}
+	defer rows.Close()
 
 loop:
 	for {
@@ -162,7 +229,7 @@ loop:
 		case sqlexp.MsgRowsAffected:
 			sum.RowsAffected = append(sum.RowsAffected, m.Count)
 		case sqlexp.MsgNext:
-			truncatedBy, err := readResultSet(rows, &sum, budget, sink)
+			truncatedBy, err := readResultSet(rows, sum, budget, sink, batchIndex)
 			if err != nil {
 				sinkErr = err
 				break loop
@@ -180,30 +247,37 @@ loop:
 			break loop
 		}
 	}
-	sum.TotalRows, sum.TotalBytes = budget.Rows, budget.Bytes
 
 	switch {
 	case sum.TruncatedBy != "":
-		return finish(executor.OutcomeTruncated)
+		return true, executor.OutcomeTruncated
 	case ctx.Err() != nil:
-		return finish(outcomeFor(ctx.Err()))
+		return true, executor.OutcomeCancelled // refined by the caller
 	case sinkErr != nil:
 		sum.Error = clean(sinkErr)
-		return finish(executor.OutcomeFailed)
+		return true, executor.OutcomeFailed
 	}
 	if err := rows.Err(); err != nil && !errors.Is(err, context.Canceled) {
-		// Server errors were already reported as messages; anything else is a failure.
+		// Server errors were already reported as messages; anything else (a lost connection)
+		// stops the script.
 		var me mssqldb.Error
 		if !errors.As(err, &me) {
 			sum.Error = clean(err)
-			return finish(executor.OutcomeFailed)
+			return true, executor.OutcomeFailed
 		}
 	}
-	return finish(executor.OutcomeSucceeded)
+	return false, ""
+}
+
+// transactionOpen reports whether the session still has an open transaction.
+func transactionOpen(ctx context.Context, conn *sql.Conn) (bool, error) {
+	var n int
+	err := conn.QueryRowContext(ctx, "SELECT @@TRANCOUNT").Scan(&n)
+	return n > 0, err
 }
 
 // readResultSet streams one result set. It returns the limit that stopped reading, if any.
-func readResultSet(rows *sql.Rows, sum *executor.Summary, budget *executor.Budget, sink executor.Sink) (string, error) {
+func readResultSet(rows *sql.Rows, sum *executor.Summary, budget *executor.Budget, sink executor.Sink, batchIndex int) (string, error) {
 	types, err := rows.ColumnTypes()
 	if err != nil {
 		return "", err
@@ -214,7 +288,7 @@ func readResultSet(rows *sql.Rows, sum *executor.Summary, budget *executor.Budge
 		cols[i] = executor.Column{Name: ct.Name(), Type: ct.DatabaseTypeName(), Nullable: nullable}
 	}
 	index := len(sum.ResultSets)
-	sum.ResultSets = append(sum.ResultSets, executor.ResultSet{Index: index, Columns: cols})
+	sum.ResultSets = append(sum.ResultSets, executor.ResultSet{Index: index, Batch: batchIndex, Columns: cols})
 	if err := sink.ResultSet(index, cols); err != nil {
 		return "", err
 	}

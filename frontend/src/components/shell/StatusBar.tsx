@@ -1,7 +1,7 @@
-import { AlertTriangle, CircleHelp, Loader2, ShieldAlert, ShieldCheck, UserCheck, UserCog } from "lucide-react";
+import { AlertTriangle, CircleHelp, CircleX, Loader2, ShieldAlert, ShieldCheck, UserCheck, UserCog } from "lucide-react";
 import { describeAccess } from "@/features/connections/access";
 import { cn } from "@/lib/utils";
-import type { Config, ParserStatus, ServerInfo, WriteAccess } from "@/services/backend";
+import type { Config, Diagnostic, ParserStatus, ServerInfo, WriteAccess } from "@/services/backend";
 
 interface StatusBarProps {
   config: Config;
@@ -14,6 +14,9 @@ interface StatusBarProps {
   /** The T-SQL parser; a warning is shown only when it is unavailable. */
   parser?: ParserStatus | null;
   onRecheckParser?: () => void;
+  /** Syntax errors in the active editor tab. */
+  problems?: Diagnostic[];
+  onShowProblems?: () => void;
 }
 
 function shortVersion(s: ServerInfo): string {
@@ -25,7 +28,17 @@ function shortVersion(s: ServerInfo): string {
 
 const fmt = new Intl.NumberFormat();
 
-export function StatusBar({ config, onOpenSettings, connection, access, onRecheckAccess, parser, onRecheckParser }: StatusBarProps) {
+export function StatusBar({
+  config,
+  onOpenSettings,
+  connection,
+  access,
+  onRecheckAccess,
+  parser,
+  onRecheckParser,
+  problems = [],
+  onShowProblems,
+}: StatusBarProps) {
   const { readOnly, timeoutSeconds, maxRows } = config.execution;
   return (
     <footer className="flex h-6 shrink-0 items-center gap-3 border-t bg-chrome px-2 text-[11px] text-muted-foreground">
@@ -56,6 +69,19 @@ export function StatusBar({ config, onOpenSettings, connection, access, onRechec
         <span>No connection</span>
       )}
       <div className="flex-1" />
+      {problems.length > 0 && (
+        <button
+          type="button"
+          onClick={onShowProblems}
+          className="flex shrink-0 items-center gap-1 rounded-sm px-1 text-destructive hover:bg-accent"
+          title={`${problems
+            .slice(0, 5)
+            .map((p) => `Line ${p.line}, column ${p.column}: ${p.message}`)
+            .join("\n")}${problems.length > 5 ? `\n…and ${problems.length - 5} more` : ""}\n\nClick to go to the first one.`}
+        >
+          <CircleX className="size-3.5" /> {problems.length === 1 ? "1 problem" : `${problems.length} problems`}
+        </button>
+      )}
       {parser && !parser.available && (
         <button
           type="button"

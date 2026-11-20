@@ -12,11 +12,27 @@ interface MessagesViewProps {
   onRevealLine: (line: number) => void;
 }
 
-/** "Msg 207, Level 16, State 1, Line 3", as SQL Server tools print errors. */
+/** "Batch 2 · line 5 · ran 3 times", above the messages of one GO batch. */
+function BatchHeader({ run, batch }: { run: Run; batch: number }) {
+  const executions = run.batches.filter((b) => b.batch === batch);
+  const line = (executions[0]?.line ?? 1) + run.lineOffset;
+  return (
+    <p className="mt-2 mb-0.5 border-b border-border/60 pb-0.5 font-sans text-[11px] font-medium text-muted-foreground first:mt-0">
+      Batch {batch + 1} · line {line}
+      {executions.length > 1 && ` · ran ${executions.length} times`}
+    </p>
+  );
+}
+
+/**
+ * "Msg 207, Level 16, State 1, Line 3", as SQL Server tools print errors. The line is the line
+ * in the script that ran (the server counts from the start of each GO batch), as the CLI prints it.
+ */
 export function messageHeader(m: Message): string {
   const parts = [`Msg ${m.number}`, `Level ${m.severity}`, `State ${m.state}`];
   if (m.procedure) parts.push(`Procedure ${m.procedure}`);
-  if (m.line > 0) parts.push(`Line ${m.line}`);
+  const line = m.scriptLine > 0 ? m.scriptLine : m.line;
+  if (line > 0) parts.push(`Line ${line}`);
   return parts.join(", ");
 }
 
@@ -30,20 +46,30 @@ export function MessagesView({ run, timeoutSeconds, onRevealLine }: MessagesView
     );
   }
   const s = run.summary;
+  // With GO batches, messages are grouped under the batch that produced them.
+  const multiBatch = new Set(run.batches.map((b) => b.batch)).size > 1;
 
   return (
     <div className="selectable h-full overflow-auto bg-editor px-3 py-2 font-mono text-xs leading-relaxed" role="log" aria-label="Messages">
       {run.messages.map((m, i) => {
+        const header =
+          multiBatch && (i === 0 || run.messages[i - 1]!.batch !== m.batch) ? (
+            <BatchHeader key={`b${i}`} run={run} batch={m.batch} />
+          ) : null;
         if (m.kind !== "error") {
-          return (
+          return [
+            header,
             <p key={i} className="whitespace-pre-wrap">
               {m.text}
-            </p>
-          );
+            </p>,
+          ];
         }
-        // Line numbers inside a procedure refer to the procedure, not to the editor.
-        const editorLine = m.line > 0 && !m.procedure ? m.line + run.lineOffset : 0;
-        return (
+        // The server counts lines from the start of the batch; ScriptLine is the line in the
+        // script that ran. Lines inside a procedure refer to the procedure, not to the editor.
+        const scriptLine = m.scriptLine > 0 ? m.scriptLine : m.line > 0 && !m.procedure ? m.line : 0;
+        const editorLine = scriptLine > 0 ? scriptLine + run.lineOffset : 0;
+        return [
+          header,
           <div key={i} className="my-1 text-destructive">
             {editorLine > 0 ? (
               <button
@@ -58,8 +84,8 @@ export function MessagesView({ run, timeoutSeconds, onRevealLine }: MessagesView
               <p>{messageHeader(m)}</p>
             )}
             <p className="whitespace-pre-wrap">{m.text}</p>
-          </div>
-        );
+          </div>,
+        ];
       })}
 
       {s?.rowsAffected?.map((n, i) => (

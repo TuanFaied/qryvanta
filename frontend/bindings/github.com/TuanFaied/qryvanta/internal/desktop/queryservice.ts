@@ -14,11 +14,23 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // @ts-ignore: Unused imports
 import * as executor$0 from "../executor/models.js";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 /**
  * Cancel stops a run. It reports whether the run was still in progress.
  */
 export function Cancel(runID: string): $CancellablePromise<boolean> {
     return $Call.ByID(1913378700, runID);
+}
+
+/**
+ * CheckSyntax parses sql for the editor's syntax markers. Cancelling the call (the editor does
+ * when the text changes again) abandons the check without restarting the parser.
+ */
+export function CheckSyntax(sql: string): $CancellablePromise<$models.SyntaxCheck> {
+    return $Call.ByID(860610513, sql);
 }
 
 /**

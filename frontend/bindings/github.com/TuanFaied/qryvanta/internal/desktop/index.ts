@@ -37,5 +37,6 @@ export type {
     SaveConfigResult,
     SaveConnectionResult,
     SaveFileResult,
+    SyntaxCheck,
     TestConnectionResult
 } from "./models.js";
