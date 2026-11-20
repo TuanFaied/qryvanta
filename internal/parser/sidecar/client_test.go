@@ -95,6 +95,14 @@ func fakeSidecar(mode string) {
 					"offset": u16len(sql[:i]), "line": 1, "column": u16len(sql[:i]) + 1})
 			}
 			resp["diagnostics"] = diags
+			if req.Model {
+				// Mode "model2" pretends to be a sidecar with an incompatible model version.
+				resp["modelVersion"] = map[bool]int{true: 2, false: 1}[mode == "model2"]
+				resp["batches"].([]map[string]any)[0]["statements"] = []map[string]any{{
+					"kind": "select", "type": "SelectStatement",
+					"span": map[string]int{"offset": 0, "length": u16len(sql), "line": 1, "column": 1},
+				}}
+			}
 		}
 		write(resp)
 	}
@@ -150,6 +158,32 @@ func TestParseRoundTripAndByteOffsets(t *testing.T) {
 	st := c.Check(context.Background())
 	if !st.Available || st.ScriptDom != "fake" || st.Protocol != 1 {
 		t.Errorf("status = %+v", st)
+	}
+}
+
+func TestModelIsRequestedAndVersionChecked(t *testing.T) {
+	c := fakeClient(t, "ok", nil)
+	plain, err := c.Parse(context.Background(), "SELECT 1", parser.Options{})
+	if err != nil || plain.ModelVersion != 0 || plain.Batches[0].Statements != nil {
+		t.Fatalf("without Model: %+v, %v", plain, err)
+	}
+	withModel, err := c.Parse(context.Background(), "SELECT 1", parser.Options{Model: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if withModel.ModelVersion != parser.ModelVersion || len(withModel.Batches[0].Statements) != 1 ||
+		withModel.Batches[0].Statements[0].Kind != parser.StmtSelect {
+		t.Fatalf("with Model: %+v", withModel)
+	}
+
+	newer := fakeClient(t, "model2", nil)
+	if _, err := newer.Parse(context.Background(), "SELECT 1", parser.Options{Model: true}); !errors.Is(err, parser.ErrUnavailable) ||
+		!strings.Contains(err.Error(), "query model 2") {
+		t.Fatalf("incompatible model: %v", err)
+	}
+	// Without the model, the same sidecar is still usable.
+	if _, err := newer.Parse(context.Background(), "SELECT 1", parser.Options{}); err != nil {
+		t.Fatal(err)
 	}
 }
 

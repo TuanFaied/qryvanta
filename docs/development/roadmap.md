@@ -51,8 +51,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   protocol, `GO` batches and syntax diagnostics (#39)
 - ✅ Go client (`internal/parser`): one process, request IDs, timeout restart, crash restart,
   cool-down when unavailable, status bar warning, `qryvanta-cli parse` (#40)
-- `QueryModel`: statements, sources, joins and predicates, WHERE/HAVING expression trees, GROUP BY,
-  ORDER BY, CTEs, subqueries, set operations, aggregates, window functions, source positions
+- ✅ `QueryModel`: statements, sources, joins and predicates, WHERE/HAVING expression trees, GROUP BY,
+  ORDER BY, CTEs, subqueries, set operations, aggregates, window functions, source positions (#41)
 - Parser diagnostics are shown as editor markers
 - Execution policy layer 1 (statement allowlist) on top of the parse tree
 - Golden test suite

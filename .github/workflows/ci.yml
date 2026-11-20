@@ -55,9 +55,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+      # The exact SDK from global.json: the trimming package's version follows the SDK and is
+      # pinned in packages.lock.json, which is restored in locked mode.
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
+      - run: dotnet --version
       - run: dotnet test sidecar/Sidecar.slnx
       - name: Publish the single-file build and smoke-test it
         shell: bash
@@ -83,10 +86,10 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      # wails3 build also builds the parser sidecar.
+      # wails3 build also builds the parser sidecar (same SDK as the sidecar job).
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
       - uses: pnpm/action-setup@v6
         with:
           package_json_file: frontend/package.json

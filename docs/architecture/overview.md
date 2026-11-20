@@ -187,6 +187,45 @@ Regular expressions are never used as the parser.
   - `GO n` is not T-SQL, and would otherwise be reported as a syntax error.
   - A procedure call without `EXEC` is valid only as the first statement of a batch.
 
+**The QueryModel (#41).** A `parse` request with `model: true` gets, for each batch without
+syntax errors, its `statements`. A batch with errors has none, because a broken tree is never
+guessed at. The C# DTOs (`sidecar/tsqlparser/Model.cs`) and the Go types
+(`internal/parser/model.go`) mirror each other.
+- **Statements** carry a kind (select, insert, update, delete, merge, truncate, ddl, exec,
+  declare, set, setOption, if, while, block, try, transaction, use, print, waitfor, return,
+  other) and the ScriptDom class name.
+  - CTEs, with recursion detected.
+  - The SELECT query, the `INTO` target, and the DML target, FROM and WHERE.
+  - IF/WHILE conditions, and nested bodies for IF, WHILE, BEGIN…END and TRY/CATCH, so a check
+    can find an `EXEC` inside an `IF`.
+- **Queries:**
+  - `select` (DISTINCT, TOP, select list, FROM, WHERE, GROUP BY, HAVING) or `setOp` (UNION
+    [ALL], EXCEPT, INTERSECT).
+  - ORDER BY and OFFSET/FETCH belong to the whole query.
+- **Sources:**
+  - Kinds: table (flagged when it names a CTE in scope), derived table, join, table-valued
+    function, table variable, VALUES.
+  - Join types: inner, left, right, full, cross, crossApply, outerApply, and **comma**. An
+    old-style comma list becomes left-deep `comma` joins with no `on`, so a missing join
+    predicate is directly visible.
+- **Expressions** are full trees: AND/OR/NOT, comparisons (including ANY/ALL), IN (list or
+  subquery), BETWEEN, LIKE, IS [NOT] NULL, EXISTS, columns (identifier parts), literals,
+  variables, functions (aggregates flagged; `OVER` with partition, order and frame),
+  subqueries, arithmetic, CAST/CONVERT and CASE.
+- **Rules:**
+  - Every node has a script-absolute UTF-16 span (`parser.SpanText` slices the script in Go).
+  - Parentheses are not nodes; the wrapped node gets `parenthesized`. So `a OR b AND c` reads
+    as `OR(a, AND(b, c))`, and a consumer still knows whether the author wrote the grouping.
+  - Identifiers are unquoted, and column references are left unresolved: binding names to
+    metadata is Phase 5 work, in Go.
+  - Anything not modelled is kind `unsupported` with its ScriptDom class, never dropped.
+    Expressions nested more than 256 deep are cut off as `unsupported` (`TooDeep`) instead of
+    risking the stack.
+  - Empty lists, absent values and false flags are omitted from the JSON.
+- **Versioning:** `modelVersion` (1) changes only when a field's meaning changes or a field
+  is removed. Adding fields or kinds doesn't change it, and consumers ignore what they don't
+  know. The Go client refuses a model version it doesn't know rather than misreading it.
+
 **The Go client (#40).** `internal/parser` defines `Parser` (`Parse`, `Check`, `Close`) and the
 result types. `internal/parser/sidecar` implements it:
 - **Lifecycle:** one long-lived process, started on first use, and closed by `app.Core.Close`.

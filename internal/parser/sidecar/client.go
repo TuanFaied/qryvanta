@@ -112,20 +112,23 @@ type request struct {
 	Op          string `json:"op"`
 	SQL         string `json:"sql,omitempty"`
 	CompatLevel int    `json:"compatLevel,omitempty"`
+	Model       bool   `json:"model,omitempty"`
 }
 
 type response struct {
-	ID          *string `json:"id"`
-	OK          bool    `json:"ok"`
-	CompatLevel int     `json:"compatLevel"`
-	Batches     []struct {
-		Index  int    `json:"index"`
-		Text   string `json:"text"`
-		Offset int    `json:"offset"`
-		Length int    `json:"length"`
-		Line   int    `json:"line"`
-		Column int    `json:"column"`
-		Repeat int    `json:"repeat"`
+	ID           *string `json:"id"`
+	OK           bool    `json:"ok"`
+	CompatLevel  int     `json:"compatLevel"`
+	ModelVersion int     `json:"modelVersion"`
+	Batches      []struct {
+		Index      int                `json:"index"`
+		Text       string             `json:"text"`
+		Offset     int                `json:"offset"`
+		Length     int                `json:"length"`
+		Line       int                `json:"line"`
+		Column     int                `json:"column"`
+		Repeat     int                `json:"repeat"`
+		Statements []parser.Statement `json:"statements"`
 	} `json:"batches"`
 	Diagnostics []struct {
 		Number  int    `json:"number"`
@@ -151,9 +154,14 @@ func (e *ProtocolError) Error() string { return "parser: " + e.Code + ": " + e.M
 
 // Parse implements parser.Parser.
 func (c *Client) Parse(ctx context.Context, sql string, opts parser.Options) (*parser.Result, error) {
-	resp, err := c.roundTrip(ctx, request{Op: "parse", SQL: sql, CompatLevel: opts.CompatLevel})
+	resp, err := c.roundTrip(ctx, request{Op: "parse", SQL: sql, CompatLevel: opts.CompatLevel, Model: opts.Model})
 	if err != nil {
 		return nil, err
+	}
+	if opts.Model && resp.ModelVersion != parser.ModelVersion {
+		// A newer sidecar with an incompatible model must not be read as if it were ours.
+		return nil, fmt.Errorf("%w: the parser produces query model %d, Qryvanta needs %d (reinstall Qryvanta)",
+			parser.ErrUnavailable, resp.ModelVersion, parser.ModelVersion)
 	}
 	return convert(sql, resp), nil
 }
@@ -334,15 +342,17 @@ func convert(sql string, r *response) *parser.Result {
 	bytesAt := parser.ByteOffsets(sql, offsets...)
 
 	res := &parser.Result{
-		CompatLevel: r.CompatLevel,
-		Batches:     make([]parser.Batch, len(r.Batches)),
-		Diagnostics: make([]parser.Diagnostic, len(r.Diagnostics)),
+		CompatLevel:  r.CompatLevel,
+		ModelVersion: r.ModelVersion,
+		Batches:      make([]parser.Batch, len(r.Batches)),
+		Diagnostics:  make([]parser.Diagnostic, len(r.Diagnostics)),
 	}
 	for i, b := range r.Batches {
 		start, end := bytesAt[2*i], bytesAt[2*i+1]
 		res.Batches[i] = parser.Batch{
 			Index: b.Index, Text: b.Text, Offset: b.Offset, Length: b.Length,
 			ByteOffset: start, ByteLength: end - start, Line: b.Line, Column: b.Column, Repeat: b.Repeat,
+			Statements: b.Statements,
 		}
 	}
 	base := 2 * len(r.Batches)

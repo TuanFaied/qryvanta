@@ -32,13 +32,18 @@ type Parser interface {
 type Options struct {
 	// CompatLevel is the SQL Server compatibility level (80-180). Zero uses the default.
 	CompatLevel int
+	// Model asks for the QueryModel: each batch without syntax errors gets its Statements.
+	// Editor syntax checks leave it off; analysis turns it on.
+	Model bool
 }
 
 // Result is a parsed script.
 type Result struct {
-	CompatLevel int          `json:"compatLevel"`
-	Batches     []Batch      `json:"batches"`
-	Diagnostics []Diagnostic `json:"diagnostics"`
+	CompatLevel int `json:"compatLevel"`
+	// ModelVersion is set when Options.Model was used.
+	ModelVersion int          `json:"modelVersion,omitempty"`
+	Batches      []Batch      `json:"batches"`
+	Diagnostics  []Diagnostic `json:"diagnostics"`
 }
 
 // Batch is one batch of a script, as separated by GO lines.
@@ -56,6 +61,9 @@ type Batch struct {
 	Column     int    `json:"column"`
 	// Repeat is n for "GO n" after the batch, otherwise 1.
 	Repeat int `json:"repeat"`
+	// Statements is the batch's QueryModel when Options.Model was set and the batch has no
+	// syntax errors; nil otherwise (a broken batch is never guessed at).
+	Statements []Statement `json:"statements,omitempty"`
 }
 
 // Diagnostic is a syntax error. Line and Column are 1-based; Column counts UTF-16 code units,

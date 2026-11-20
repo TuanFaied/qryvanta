@@ -83,6 +83,14 @@ func TestParseCommandJSON(t *testing.T) {
 	}
 }
 
+func TestParseCommandModelImpliesJSON(t *testing.T) {
+	p := &fakeParser{}
+	out, _, code := parseCmd(t, p, "--query", "SELECT 1", "--model")
+	if code != 0 || !p.gotOpt.Model || !strings.HasPrefix(strings.TrimSpace(out), "{") {
+		t.Fatalf("exit %d, model %v, output %q", code, p.gotOpt.Model, out)
+	}
+}
+
 func TestParseCommandParserUnavailableAndUsage(t *testing.T) {
 	unavailable := &fakeParser{err: fmt.Errorf("%w: the parser was not found at x", parser.ErrUnavailable)}
 	_, errOut, code := parseCmd(t, unavailable, "--query", "SELECT 1")

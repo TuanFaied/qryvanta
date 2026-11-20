@@ -21,6 +21,14 @@ All notable changes to this project are documented here. The format follows
   - After repeated start failures it reports "unavailable" for 30 s instead of retrying on
     every request.
   - Results carry byte offsets as well as editor (UTF-16) offsets.
+- QueryModel: the parser can describe each statement as a structured, versioned model.
+  - It covers statement kinds (including what is nested inside IF/WHILE/TRY), CTEs, queries
+    and set operations, and FROM trees with every join type. Comma joins are explicit joins
+    without a predicate.
+  - WHERE/HAVING become expression trees that keep AND/OR precedence and record explicit
+    parentheses. Aggregates and window functions are flagged.
+  - Every part carries its source position.
+  - `qryvanta-cli parse --model` prints it.
 - The status bar warns "Parser unavailable", with the reason, when the parser cannot run.
   Queries still run without it.
 - `qryvanta-cli parse` prints a script's `GO` batches and syntax errors (with `--json` and
@@ -141,6 +149,10 @@ All notable changes to this project are documented here. The format follows
   Code of Conduct, and a CI workflow (Go, frontend, and the Wails desktop build on Windows).
 
 ### Changed
+
+- The .NET SDK used to build the parser sidecar is pinned in `global.json`, and CI installs
+  exactly that version. A newer SDK patch on the CI runners had changed the trimming package's
+  version and broken the locked restore.
 
 - Quieter logs:
   - Wails runtime messages are recorded only at Warn and above (Info as well while Qryvanta's

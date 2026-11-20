@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -54,6 +55,40 @@ func TestRealSidecarParsesScripts(t *testing.T) {
 	// the four-byte emoji and two-byte ü earlier in the script.
 	if d.Line != 5 || d.Column != 10 || !strings.HasPrefix(sql[d.ByteOffset:], "FROM WHERE") {
 		t.Errorf("diagnostic = %+v, points at %q", d, sql[d.ByteOffset:])
+	}
+}
+
+func TestRealSidecarBuildsTheQueryModel(t *testing.T) {
+	c := realClient(t)
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "tests", "sample_queries", "06_and_or_precedence.buggy.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sql := string(data)
+	res, err := c.Parse(context.Background(), sql, parser.Options{Model: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.ModelVersion != parser.ModelVersion || len(res.Batches) != 1 || len(res.Batches[0].Statements) != 1 {
+		t.Fatalf("result = %+v", res)
+	}
+	q := res.Batches[0].Statements[0].Query
+	// AND binds tighter than OR: Status = 'Shipped' OR (Status = 'Delivered' AND ShipCountry = 'LK').
+	w := q.Where
+	if w.Kind != parser.ExprOr || w.Right.Kind != parser.ExprAnd || w.Right.Parenthesized {
+		t.Fatalf("where = %+v", w)
+	}
+	if got := parser.SpanText(sql, w.Left.Span); got != "Status = 'Shipped'" {
+		t.Errorf("left of OR = %q", got)
+	}
+	if q.From.Kind != parser.SourceTable || q.From.Name.Name != "Orders" || q.From.Name.Schema != "dbo" {
+		t.Errorf("from = %+v", q.From)
+	}
+
+	// The model is off unless asked for.
+	plain, err := c.Parse(context.Background(), sql, parser.Options{})
+	if err != nil || plain.Batches[0].Statements != nil || plain.ModelVersion != 0 {
+		t.Fatalf("without Model: %+v, %v", plain, err)
 	}
 }
 

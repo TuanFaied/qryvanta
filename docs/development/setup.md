@@ -10,7 +10,7 @@
 | Wails CLI | v3.1.0 | `go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0` |
 | WebView2 | any current | Preinstalled on Windows 11 |
 | Docker | optional | Needed from Phase 2 for the SQL Server integration database |
-| .NET SDK | 10.0 | For the parser sidecar; `wails3 build` builds it. `winget install Microsoft.DotNet.SDK.10`. Users of the app do not need .NET. |
+| .NET SDK | 10.0.403 (`global.json`) | For the parser sidecar; `wails3 build` builds it. `winget install Microsoft.DotNet.SDK.10`. Users of the app do not need .NET. |
 
 Check your environment with:
 
@@ -106,6 +106,15 @@ request. The protocol is documented in `sidecar/tsqlparser/Protocol.cs`.
   do not need .NET installed.
 - Package versions are pinned in `packages.lock.json`; CI restores in locked mode. After
   changing a package reference, run `dotnet restore sidecar/Sidecar.slnx --force-evaluate`.
+- **The .NET SDK is pinned in `global.json`**, and CI installs exactly that version. The
+  trimming package (`Microsoft.NET.ILLink.Tasks`) comes with the SDK, and its version follows
+  the SDK's, so a different SDK patch would no longer match the lock file. Use the SDK in
+  `global.json`. With `rollForward: patch`, a newer patch is used locally only when that exact
+  version isn't installed, and restore then rewrites the lock file.
+  - Don't change it to `latestPatch`: `actions/setup-dotnet` would then install the newest
+    10.0.4xx instead of the pinned version.
+  To move to a newer SDK, change `global.json`, then run
+  `dotnet restore sidecar/Sidecar.slnx --force-evaluate`, and commit both files together.
 - Tests: `dotnet test sidecar/Sidecar.slnx` (or `wails3 task common:test:sidecar`).
 
 The app and CLI look for the sidecar next to their own executable, so `bin/` builds work as
@@ -119,7 +128,12 @@ qryvanta-cli parse --file tests/sample_queries/02_one_to_many_fanout.correct.sql
 
 `parse` prints each `GO` batch and every syntax error with its line and column. It exits with
 code 1 when there are errors, so it can serve as a syntax check in scripts (`--json` gives the
-full result).
+full result). `--model` adds the QueryModel, which is the quickest way to see what the parser
+understood:
+
+```bash
+qryvanta-cli parse --file tests/sample_queries/10_missing_join_predicate.buggy.sql --model
+```
 
 The Go client's tests use a fake sidecar (the test binary itself), so they need nothing
 installed. The tests against the real sidecar use the `parser` build tag:
