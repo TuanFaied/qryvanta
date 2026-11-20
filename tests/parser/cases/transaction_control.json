@@ -1,0 +1,176 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- BEGIN TRAN, SAVE, ROLLBACK to a savepoint and COMMIT are transaction statements\nBEGIN TRANSACTION;\nUPDATE dbo.Orders SET Status = 'Hold' WHERE OrderID = 1;\nSAVE TRANSACTION before_delete;\nDELETE FROM dbo.Orders WHERE OrderID = 2;\nROLLBACK TRANSACTION before_delete;\nCOMMIT;\n",
+      "offset": 0,
+      "length": 277,
+      "byteOffset": 0,
+      "byteLength": 277,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "transaction",
+          "type": "BeginTransactionStatement",
+          "span": {
+            "offset": 83,
+            "length": 18,
+            "line": 2,
+            "column": 1
+          },
+          "action": "begin"
+        },
+        {
+          "kind": "update",
+          "type": "UpdateStatement",
+          "span": {
+            "offset": 102,
+            "length": 56,
+            "line": 3,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 109,
+              "length": 10,
+              "line": 3,
+              "column": 8
+            },
+            "name": {
+              "schema": "dbo",
+              "name": "Orders"
+            }
+          },
+          "where": {
+            "kind": "compare",
+            "span": {
+              "offset": 146,
+              "length": 11,
+              "line": 3,
+              "column": 45
+            },
+            "op": "=",
+            "left": {
+              "kind": "column",
+              "span": {
+                "offset": 146,
+                "length": 7,
+                "line": 3,
+                "column": 45
+              },
+              "parts": [
+                "OrderID"
+              ]
+            },
+            "right": {
+              "kind": "literal",
+              "span": {
+                "offset": 156,
+                "length": 1,
+                "line": 3,
+                "column": 55
+              },
+              "literalType": "integer",
+              "value": "1"
+            }
+          }
+        },
+        {
+          "kind": "transaction",
+          "type": "SaveTransactionStatement",
+          "span": {
+            "offset": 159,
+            "length": 31,
+            "line": 4,
+            "column": 1
+          },
+          "action": "save"
+        },
+        {
+          "kind": "delete",
+          "type": "DeleteStatement",
+          "span": {
+            "offset": 191,
+            "length": 41,
+            "line": 5,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 203,
+              "length": 10,
+              "line": 5,
+              "column": 13
+            },
+            "name": {
+              "schema": "dbo",
+              "name": "Orders"
+            }
+          },
+          "where": {
+            "kind": "compare",
+            "span": {
+              "offset": 220,
+              "length": 11,
+              "line": 5,
+              "column": 30
+            },
+            "op": "=",
+            "left": {
+              "kind": "column",
+              "span": {
+                "offset": 220,
+                "length": 7,
+                "line": 5,
+                "column": 30
+              },
+              "parts": [
+                "OrderID"
+              ]
+            },
+            "right": {
+              "kind": "literal",
+              "span": {
+                "offset": 230,
+                "length": 1,
+                "line": 5,
+                "column": 40
+              },
+              "literalType": "integer",
+              "value": "2"
+            }
+          }
+        },
+        {
+          "kind": "transaction",
+          "type": "RollbackTransactionStatement",
+          "span": {
+            "offset": 233,
+            "length": 35,
+            "line": 6,
+            "column": 1
+          },
+          "action": "rollback"
+        },
+        {
+          "kind": "transaction",
+          "type": "CommitTransactionStatement",
+          "span": {
+            "offset": 269,
+            "length": 7,
+            "line": 7,
+            "column": 1
+          },
+          "action": "commit"
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

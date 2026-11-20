@@ -1,0 +1,186 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Question: which customers have never placed an order?\n-- Bug: Orders contains a NULL CustomerID (a guest checkout). x NOT IN (..., NULL) is never TRUE,\n-- so the query returns no rows at all.\nSELECT c.CustomerID, c.Name\nFROM dbo.Customers AS c\nWHERE c.CustomerID NOT IN (SELECT o.CustomerID FROM dbo.Orders AS o)\nORDER BY c.CustomerID;\n",
+      "offset": 0,
+      "length": 339,
+      "byteOffset": 0,
+      "byteLength": 339,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 195,
+            "length": 143,
+            "line": 4,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 195,
+              "length": 142,
+              "line": 4,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 202,
+                    "length": 12,
+                    "line": 4,
+                    "column": 8
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 202,
+                  "length": 12,
+                  "line": 4,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 216,
+                    "length": 6,
+                    "line": 4,
+                    "column": 22
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 216,
+                  "length": 6,
+                  "line": 4,
+                  "column": 22
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 228,
+                "length": 18,
+                "line": 5,
+                "column": 6
+              },
+              "alias": "c",
+              "name": {
+                "schema": "dbo",
+                "name": "Customers"
+              }
+            },
+            "where": {
+              "kind": "in",
+              "span": {
+                "offset": 253,
+                "length": 62,
+                "line": 6,
+                "column": 7
+              },
+              "not": true,
+              "operand": {
+                "kind": "column",
+                "span": {
+                  "offset": 253,
+                  "length": 12,
+                  "line": 6,
+                  "column": 7
+                },
+                "parts": [
+                  "c",
+                  "CustomerID"
+                ]
+              },
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 274,
+                  "length": 40,
+                  "line": 6,
+                  "column": 28
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 281,
+                        "length": 12,
+                        "line": 6,
+                        "column": 35
+                      },
+                      "parts": [
+                        "o",
+                        "CustomerID"
+                      ]
+                    },
+                    "span": {
+                      "offset": 281,
+                      "length": 12,
+                      "line": 6,
+                      "column": 35
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 299,
+                    "length": 15,
+                    "line": 6,
+                    "column": 53
+                  },
+                  "alias": "o",
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Orders"
+                  }
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 325,
+                    "length": 12,
+                    "line": 7,
+                    "column": 10
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

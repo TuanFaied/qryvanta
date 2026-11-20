@@ -1,0 +1,165 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- INSERT with VALUES and INSERT ... SELECT with a column list\nINSERT INTO dbo.Log (Message) VALUES (N'start');\nINSERT dbo.Archive (OrderID, Amount) SELECT OrderID, Amount FROM dbo.Orders WHERE Status = 'Closed';\n",
+      "offset": 0,
+      "length": 213,
+      "byteOffset": 0,
+      "byteLength": 213,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "insert",
+          "type": "InsertStatement",
+          "span": {
+            "offset": 63,
+            "length": 48,
+            "line": 2,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 75,
+              "length": 7,
+              "line": 2,
+              "column": 13
+            },
+            "name": {
+              "schema": "dbo",
+              "name": "Log"
+            }
+          }
+        },
+        {
+          "kind": "insert",
+          "type": "InsertStatement",
+          "span": {
+            "offset": 112,
+            "length": 100,
+            "line": 3,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 149,
+              "length": 62,
+              "line": 3,
+              "column": 38
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 156,
+                    "length": 7,
+                    "line": 3,
+                    "column": 45
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 156,
+                  "length": 7,
+                  "line": 3,
+                  "column": 45
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 165,
+                    "length": 6,
+                    "line": 3,
+                    "column": 54
+                  },
+                  "parts": [
+                    "Amount"
+                  ]
+                },
+                "span": {
+                  "offset": 165,
+                  "length": 6,
+                  "line": 3,
+                  "column": 54
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 177,
+                "length": 10,
+                "line": 3,
+                "column": 66
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "compare",
+              "span": {
+                "offset": 194,
+                "length": 17,
+                "line": 3,
+                "column": 83
+              },
+              "op": "=",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 194,
+                  "length": 6,
+                  "line": 3,
+                  "column": 83
+                },
+                "parts": [
+                  "Status"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "span": {
+                  "offset": 203,
+                  "length": 8,
+                  "line": 3,
+                  "column": 92
+                },
+                "literalType": "string",
+                "value": "Closed"
+              }
+            }
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 119,
+              "length": 11,
+              "line": 3,
+              "column": 8
+            },
+            "name": {
+              "schema": "dbo",
+              "name": "Archive"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

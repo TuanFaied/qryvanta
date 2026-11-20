@@ -1,0 +1,154 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Unicode identifiers and N-string literals with characters outside the BMP (UTF-16 offsets)\nSELECT [Kunde GrÃ¶ÃŸe], N'æ±äº¬ ðŸ˜' AS Stadt, 'naÃ¯ve' AS ansi\nFROM dbo.[Bestellungen â‚¬] AS b\nWHERE b.Ort = N'ZÃ¼rich';\n",
+      "offset": 0,
+      "length": 219,
+      "byteOffset": 0,
+      "byteLength": 241,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 94,
+            "length": 124,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 94,
+              "length": 123,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 101,
+                    "length": 15,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "Kunde GrÃ¶ÃŸe"
+                  ]
+                },
+                "span": {
+                  "offset": 101,
+                  "length": 15,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 118,
+                    "length": 14,
+                    "line": 2,
+                    "column": 25
+                  },
+                  "literalType": "string",
+                  "value": "æ±äº¬ ðŸ˜",
+                  "national": true
+                },
+                "alias": "Stadt",
+                "span": {
+                  "offset": 118,
+                  "length": 23,
+                  "line": 2,
+                  "column": 25
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 143,
+                    "length": 8,
+                    "line": 2,
+                    "column": 50
+                  },
+                  "literalType": "string",
+                  "value": "naÃ¯ve"
+                },
+                "alias": "ansi",
+                "span": {
+                  "offset": 143,
+                  "length": 16,
+                  "line": 2,
+                  "column": 50
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 165,
+                "length": 27,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "b",
+              "name": {
+                "schema": "dbo",
+                "name": "Bestellungen â‚¬"
+              }
+            },
+            "where": {
+              "kind": "compare",
+              "span": {
+                "offset": 199,
+                "length": 18,
+                "line": 4,
+                "column": 7
+              },
+              "op": "=",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 199,
+                  "length": 5,
+                  "line": 4,
+                  "column": 7
+                },
+                "parts": [
+                  "b",
+                  "Ort"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "span": {
+                  "offset": 207,
+                  "length": 10,
+                  "line": 4,
+                  "column": 15
+                },
+                "literalType": "string",
+                "value": "ZÃ¼rich",
+                "national": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

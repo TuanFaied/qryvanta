@@ -1,0 +1,70 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- CREATE, ALTER and DROP of a table, a view and an index are all ddl\nCREATE TABLE dbo.T (id int NOT NULL PRIMARY KEY, name nvarchar(50) NULL);\nALTER TABLE dbo.T ADD created datetime2 NOT NULL DEFAULT SYSDATETIME();\nCREATE INDEX IX_T_name ON dbo.T (name);\nDROP INDEX IX_T_name ON dbo.T;\nDROP TABLE IF EXISTS dbo.T;\n",
+      "offset": 0,
+      "length": 315,
+      "byteOffset": 0,
+      "byteLength": 315,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "ddl",
+          "type": "CreateTableStatement",
+          "span": {
+            "offset": 70,
+            "length": 73,
+            "line": 2,
+            "column": 1
+          }
+        },
+        {
+          "kind": "ddl",
+          "type": "AlterTableAddTableElementStatement",
+          "span": {
+            "offset": 144,
+            "length": 71,
+            "line": 3,
+            "column": 1
+          }
+        },
+        {
+          "kind": "ddl",
+          "type": "CreateIndexStatement",
+          "span": {
+            "offset": 216,
+            "length": 39,
+            "line": 4,
+            "column": 1
+          }
+        },
+        {
+          "kind": "ddl",
+          "type": "DropIndexStatement",
+          "span": {
+            "offset": 256,
+            "length": 30,
+            "line": 5,
+            "column": 1
+          }
+        },
+        {
+          "kind": "ddl",
+          "type": "DropTableStatement",
+          "span": {
+            "offset": 287,
+            "length": 27,
+            "line": 6,
+            "column": 1
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

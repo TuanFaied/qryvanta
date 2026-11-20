@@ -1,0 +1,112 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a comma list of three tables becomes left-deep comma joins without predicates\nSELECT * FROM dbo.Orders o, dbo.Customers c, dbo.Products p;\n",
+      "offset": 0,
+      "length": 142,
+      "byteOffset": 0,
+      "byteLength": 142,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 81,
+            "length": 60,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 81,
+              "length": 59,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 88,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 95,
+                "length": 45,
+                "line": 2,
+                "column": 15
+              },
+              "joinType": "comma",
+              "left": {
+                "kind": "join",
+                "span": {
+                  "offset": 95,
+                  "length": 29,
+                  "line": 2,
+                  "column": 15
+                },
+                "joinType": "comma",
+                "left": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 95,
+                    "length": 12,
+                    "line": 2,
+                    "column": 15
+                  },
+                  "alias": "o",
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Orders"
+                  }
+                },
+                "right": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 109,
+                    "length": 15,
+                    "line": 2,
+                    "column": 29
+                  },
+                  "alias": "c",
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Customers"
+                  }
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 126,
+                  "length": 14,
+                  "line": 2,
+                  "column": 46
+                },
+                "alias": "p",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Products"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

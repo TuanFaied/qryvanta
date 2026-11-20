@@ -1,0 +1,215 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: NOT EXISTS is not affected by NULLs in the subquery.\nSELECT c.CustomerID, c.Name\nFROM dbo.Customers AS c\nWHERE NOT EXISTS (SELECT 1 FROM dbo.Orders AS o WHERE o.CustomerID = c.CustomerID)\nORDER BY c.CustomerID;\n",
+      "offset": 0,
+      "length": 219,
+      "byteOffset": 0,
+      "byteLength": 219,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 61,
+            "length": 157,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 61,
+              "length": 156,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 68,
+                    "length": 12,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 68,
+                  "length": 12,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 82,
+                    "length": 6,
+                    "line": 2,
+                    "column": 22
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 82,
+                  "length": 6,
+                  "line": 2,
+                  "column": 22
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 94,
+                "length": 18,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "c",
+              "name": {
+                "schema": "dbo",
+                "name": "Customers"
+              }
+            },
+            "where": {
+              "kind": "not",
+              "span": {
+                "offset": 119,
+                "length": 76,
+                "line": 4,
+                "column": 7
+              },
+              "operand": {
+                "kind": "exists",
+                "span": {
+                  "offset": 130,
+                  "length": 65,
+                  "line": 4,
+                  "column": 18
+                },
+                "query": {
+                  "kind": "select",
+                  "span": {
+                    "offset": 131,
+                    "length": 63,
+                    "line": 4,
+                    "column": 19
+                  },
+                  "select": [
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 138,
+                          "length": 1,
+                          "line": 4,
+                          "column": 26
+                        },
+                        "literalType": "integer",
+                        "value": "1"
+                      },
+                      "span": {
+                        "offset": 138,
+                        "length": 1,
+                        "line": 4,
+                        "column": 26
+                      }
+                    }
+                  ],
+                  "from": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 145,
+                      "length": 15,
+                      "line": 4,
+                      "column": 33
+                    },
+                    "alias": "o",
+                    "name": {
+                      "schema": "dbo",
+                      "name": "Orders"
+                    }
+                  },
+                  "where": {
+                    "kind": "compare",
+                    "span": {
+                      "offset": 167,
+                      "length": 27,
+                      "line": 4,
+                      "column": 55
+                    },
+                    "op": "=",
+                    "left": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 167,
+                        "length": 12,
+                        "line": 4,
+                        "column": 55
+                      },
+                      "parts": [
+                        "o",
+                        "CustomerID"
+                      ]
+                    },
+                    "right": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 182,
+                        "length": 12,
+                        "line": 4,
+                        "column": 70
+                      },
+                      "parts": [
+                        "c",
+                        "CustomerID"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 205,
+                    "length": 12,
+                    "line": 5,
+                    "column": 10
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

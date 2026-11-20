@@ -1,0 +1,275 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a correlated EXISTS and NOT EXISTS\nSELECT c.CustomerID\nFROM dbo.Customers c\nWHERE EXISTS (SELECT 1 FROM dbo.Orders o WHERE o.CustomerID = c.CustomerID)\n  AND NOT EXISTS (SELECT 1 FROM dbo.Refunds r WHERE r.CustomerID = c.CustomerID);\n",
+      "offset": 0,
+      "length": 237,
+      "byteOffset": 0,
+      "byteLength": 237,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 38,
+            "length": 198,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 38,
+              "length": 197,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 45,
+                    "length": 12,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 45,
+                  "length": 12,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 63,
+                "length": 15,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "c",
+              "name": {
+                "schema": "dbo",
+                "name": "Customers"
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 92,
+                "length": 143,
+                "line": 4,
+                "column": 14
+              },
+              "left": {
+                "kind": "exists",
+                "span": {
+                  "offset": 92,
+                  "length": 62,
+                  "line": 4,
+                  "column": 14
+                },
+                "query": {
+                  "kind": "select",
+                  "span": {
+                    "offset": 93,
+                    "length": 60,
+                    "line": 4,
+                    "column": 15
+                  },
+                  "select": [
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 100,
+                          "length": 1,
+                          "line": 4,
+                          "column": 22
+                        },
+                        "literalType": "integer",
+                        "value": "1"
+                      },
+                      "span": {
+                        "offset": 100,
+                        "length": 1,
+                        "line": 4,
+                        "column": 22
+                      }
+                    }
+                  ],
+                  "from": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 107,
+                      "length": 12,
+                      "line": 4,
+                      "column": 29
+                    },
+                    "alias": "o",
+                    "name": {
+                      "schema": "dbo",
+                      "name": "Orders"
+                    }
+                  },
+                  "where": {
+                    "kind": "compare",
+                    "span": {
+                      "offset": 126,
+                      "length": 27,
+                      "line": 4,
+                      "column": 48
+                    },
+                    "op": "=",
+                    "left": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 126,
+                        "length": 12,
+                        "line": 4,
+                        "column": 48
+                      },
+                      "parts": [
+                        "o",
+                        "CustomerID"
+                      ]
+                    },
+                    "right": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 141,
+                        "length": 12,
+                        "line": 4,
+                        "column": 63
+                      },
+                      "parts": [
+                        "c",
+                        "CustomerID"
+                      ]
+                    }
+                  }
+                }
+              },
+              "right": {
+                "kind": "not",
+                "span": {
+                  "offset": 161,
+                  "length": 74,
+                  "line": 5,
+                  "column": 7
+                },
+                "operand": {
+                  "kind": "exists",
+                  "span": {
+                    "offset": 172,
+                    "length": 63,
+                    "line": 5,
+                    "column": 18
+                  },
+                  "query": {
+                    "kind": "select",
+                    "span": {
+                      "offset": 173,
+                      "length": 61,
+                      "line": 5,
+                      "column": 19
+                    },
+                    "select": [
+                      {
+                        "kind": "expr",
+                        "expr": {
+                          "kind": "literal",
+                          "span": {
+                            "offset": 180,
+                            "length": 1,
+                            "line": 5,
+                            "column": 26
+                          },
+                          "literalType": "integer",
+                          "value": "1"
+                        },
+                        "span": {
+                          "offset": 180,
+                          "length": 1,
+                          "line": 5,
+                          "column": 26
+                        }
+                      }
+                    ],
+                    "from": {
+                      "kind": "table",
+                      "span": {
+                        "offset": 187,
+                        "length": 13,
+                        "line": 5,
+                        "column": 33
+                      },
+                      "alias": "r",
+                      "name": {
+                        "schema": "dbo",
+                        "name": "Refunds"
+                      }
+                    },
+                    "where": {
+                      "kind": "compare",
+                      "span": {
+                        "offset": 207,
+                        "length": 27,
+                        "line": 5,
+                        "column": 53
+                      },
+                      "op": "=",
+                      "left": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 207,
+                          "length": 12,
+                          "line": 5,
+                          "column": 53
+                        },
+                        "parts": [
+                          "r",
+                          "CustomerID"
+                        ]
+                      },
+                      "right": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 222,
+                          "length": 12,
+                          "line": 5,
+                          "column": 68
+                        },
+                        "parts": [
+                          "c",
+                          "CustomerID"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

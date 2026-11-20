@@ -1,0 +1,305 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- CROSS APPLY and OUTER APPLY with a correlated derived table and a table-valued function\nSELECT c.Name, last.OrderID, s.value\nFROM dbo.Customers c\nCROSS APPLY (SELECT TOP (1) o.OrderID FROM dbo.Orders o WHERE o.CustomerID = c.CustomerID ORDER BY o.OrderDate DESC) AS last\nOUTER APPLY STRING_SPLIT(c.Tags, ',') AS s;\n",
+      "offset": 0,
+      "length": 318,
+      "byteOffset": 0,
+      "byteLength": 318,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 91,
+            "length": 226,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 91,
+              "length": 225,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 98,
+                    "length": 6,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 98,
+                  "length": 6,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 106,
+                    "length": 12,
+                    "line": 2,
+                    "column": 16
+                  },
+                  "parts": [
+                    "last",
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 106,
+                  "length": 12,
+                  "line": 2,
+                  "column": 16
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 120,
+                    "length": 7,
+                    "line": 2,
+                    "column": 30
+                  },
+                  "parts": [
+                    "s",
+                    "value"
+                  ]
+                },
+                "span": {
+                  "offset": 120,
+                  "length": 7,
+                  "line": 2,
+                  "column": 30
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 133,
+                "length": 183,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "outerApply",
+              "left": {
+                "kind": "join",
+                "span": {
+                  "offset": 133,
+                  "length": 140,
+                  "line": 3,
+                  "column": 6
+                },
+                "joinType": "crossApply",
+                "left": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 133,
+                    "length": 15,
+                    "line": 3,
+                    "column": 6
+                  },
+                  "alias": "c",
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Customers"
+                  }
+                },
+                "right": {
+                  "kind": "derived",
+                  "span": {
+                    "offset": 161,
+                    "length": 112,
+                    "line": 4,
+                    "column": 13
+                  },
+                  "alias": "last",
+                  "query": {
+                    "kind": "select",
+                    "span": {
+                      "offset": 162,
+                      "length": 102,
+                      "line": 4,
+                      "column": 14
+                    },
+                    "top": {
+                      "expr": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 174,
+                          "length": 1,
+                          "line": 4,
+                          "column": 26
+                        },
+                        "parenthesized": true,
+                        "literalType": "integer",
+                        "value": "1"
+                      }
+                    },
+                    "select": [
+                      {
+                        "kind": "expr",
+                        "expr": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 177,
+                            "length": 9,
+                            "line": 4,
+                            "column": 29
+                          },
+                          "parts": [
+                            "o",
+                            "OrderID"
+                          ]
+                        },
+                        "span": {
+                          "offset": 177,
+                          "length": 9,
+                          "line": 4,
+                          "column": 29
+                        }
+                      }
+                    ],
+                    "from": {
+                      "kind": "table",
+                      "span": {
+                        "offset": 192,
+                        "length": 12,
+                        "line": 4,
+                        "column": 44
+                      },
+                      "alias": "o",
+                      "name": {
+                        "schema": "dbo",
+                        "name": "Orders"
+                      }
+                    },
+                    "where": {
+                      "kind": "compare",
+                      "span": {
+                        "offset": 211,
+                        "length": 27,
+                        "line": 4,
+                        "column": 63
+                      },
+                      "op": "=",
+                      "left": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 211,
+                          "length": 12,
+                          "line": 4,
+                          "column": 63
+                        },
+                        "parts": [
+                          "o",
+                          "CustomerID"
+                        ]
+                      },
+                      "right": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 226,
+                          "length": 12,
+                          "line": 4,
+                          "column": 78
+                        },
+                        "parts": [
+                          "c",
+                          "CustomerID"
+                        ]
+                      }
+                    },
+                    "orderBy": [
+                      {
+                        "expr": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 248,
+                            "length": 11,
+                            "line": 4,
+                            "column": 100
+                          },
+                          "parts": [
+                            "o",
+                            "OrderDate"
+                          ]
+                        },
+                        "descending": true
+                      }
+                    ]
+                  }
+                }
+              },
+              "right": {
+                "kind": "function",
+                "span": {
+                  "offset": 286,
+                  "length": 30,
+                  "line": 5,
+                  "column": 13
+                },
+                "alias": "s",
+                "name": {
+                  "name": "STRING_SPLIT"
+                },
+                "args": [
+                  {
+                    "kind": "column",
+                    "span": {
+                      "offset": 299,
+                      "length": 6,
+                      "line": 5,
+                      "column": 26
+                    },
+                    "parts": [
+                      "c",
+                      "Tags"
+                    ]
+                  },
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 307,
+                      "length": 3,
+                      "line": 5,
+                      "column": 34
+                    },
+                    "literalType": "string",
+                    "value": ","
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

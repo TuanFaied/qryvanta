@@ -1,0 +1,223 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: LEFT JOIN keeps employees without a matching department.\nSELECT e.EmployeeID, e.Name, COALESCE(d.Name, N'(no department)') AS Department\nFROM dbo.Employees AS e\nLEFT JOIN dbo.Departments AS d ON d.DepartmentID = e.DepartmentID\nORDER BY e.EmployeeID;\n",
+      "offset": 0,
+      "length": 258,
+      "byteOffset": 0,
+      "byteLength": 258,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 65,
+            "length": 192,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 65,
+              "length": 191,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 72,
+                    "length": 12,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "e",
+                    "EmployeeID"
+                  ]
+                },
+                "span": {
+                  "offset": 72,
+                  "length": 12,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 86,
+                    "length": 6,
+                    "line": 2,
+                    "column": 22
+                  },
+                  "parts": [
+                    "e",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 86,
+                  "length": 6,
+                  "line": 2,
+                  "column": 22
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 94,
+                    "length": 36,
+                    "line": 2,
+                    "column": 30
+                  },
+                  "name": "COALESCE",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 103,
+                        "length": 6,
+                        "line": 2,
+                        "column": 39
+                      },
+                      "parts": [
+                        "d",
+                        "Name"
+                      ]
+                    },
+                    {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 111,
+                        "length": 18,
+                        "line": 2,
+                        "column": 47
+                      },
+                      "literalType": "string",
+                      "value": "(no department)",
+                      "national": true
+                    }
+                  ]
+                },
+                "alias": "Department",
+                "span": {
+                  "offset": 94,
+                  "length": 50,
+                  "line": 2,
+                  "column": 30
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 150,
+                "length": 84,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "left",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 150,
+                  "length": 18,
+                  "line": 3,
+                  "column": 6
+                },
+                "alias": "e",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Employees"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 179,
+                  "length": 20,
+                  "line": 4,
+                  "column": 11
+                },
+                "alias": "d",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Departments"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 203,
+                  "length": 31,
+                  "line": 4,
+                  "column": 35
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 203,
+                    "length": 14,
+                    "line": 4,
+                    "column": 35
+                  },
+                  "parts": [
+                    "d",
+                    "DepartmentID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 220,
+                    "length": 14,
+                    "line": 4,
+                    "column": 52
+                  },
+                  "parts": [
+                    "e",
+                    "DepartmentID"
+                  ]
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 244,
+                    "length": 12,
+                    "line": 5,
+                    "column": 10
+                  },
+                  "parts": [
+                    "e",
+                    "EmployeeID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

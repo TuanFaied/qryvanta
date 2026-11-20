@@ -55,7 +55,7 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   ORDER BY, CTEs, subqueries, set operations, aggregates, window functions, source positions (#41)
 - Parser diagnostics are shown as editor markers
 - Execution policy layer 1 (statement allowlist) on top of the parse tree
-- Golden test suite
+- ✅ Golden test suite: 79 cases, including every sample query (#42)
 
 ## Phase 5: Diagnostic engine ⬜
 

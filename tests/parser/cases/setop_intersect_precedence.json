@@ -1,0 +1,237 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- INTERSECT binds tighter than EXCEPT; a parenthesized side is marked\nSELECT id FROM a\nEXCEPT\nSELECT id FROM b INTERSECT SELECT id FROM c\nUNION\n(SELECT id FROM d);\n",
+      "offset": 0,
+      "length": 165,
+      "byteOffset": 0,
+      "byteLength": 165,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 71,
+            "length": 93,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "setOp",
+            "span": {
+              "offset": 71,
+              "length": 92,
+              "line": 2,
+              "column": 1
+            },
+            "op": "union",
+            "left": {
+              "kind": "setOp",
+              "span": {
+                "offset": 71,
+                "length": 67,
+                "line": 2,
+                "column": 1
+              },
+              "op": "except",
+              "left": {
+                "kind": "select",
+                "span": {
+                  "offset": 71,
+                  "length": 16,
+                  "line": 2,
+                  "column": 1
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 78,
+                        "length": 2,
+                        "line": 2,
+                        "column": 8
+                      },
+                      "parts": [
+                        "id"
+                      ]
+                    },
+                    "span": {
+                      "offset": 78,
+                      "length": 2,
+                      "line": 2,
+                      "column": 8
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 86,
+                    "length": 1,
+                    "line": 2,
+                    "column": 16
+                  },
+                  "name": {
+                    "name": "a"
+                  }
+                }
+              },
+              "right": {
+                "kind": "setOp",
+                "span": {
+                  "offset": 95,
+                  "length": 43,
+                  "line": 4,
+                  "column": 1
+                },
+                "op": "intersect",
+                "left": {
+                  "kind": "select",
+                  "span": {
+                    "offset": 95,
+                    "length": 16,
+                    "line": 4,
+                    "column": 1
+                  },
+                  "select": [
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 102,
+                          "length": 2,
+                          "line": 4,
+                          "column": 8
+                        },
+                        "parts": [
+                          "id"
+                        ]
+                      },
+                      "span": {
+                        "offset": 102,
+                        "length": 2,
+                        "line": 4,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "from": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 110,
+                      "length": 1,
+                      "line": 4,
+                      "column": 16
+                    },
+                    "name": {
+                      "name": "b"
+                    }
+                  }
+                },
+                "right": {
+                  "kind": "select",
+                  "span": {
+                    "offset": 122,
+                    "length": 16,
+                    "line": 4,
+                    "column": 28
+                  },
+                  "select": [
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 129,
+                          "length": 2,
+                          "line": 4,
+                          "column": 35
+                        },
+                        "parts": [
+                          "id"
+                        ]
+                      },
+                      "span": {
+                        "offset": 129,
+                        "length": 2,
+                        "line": 4,
+                        "column": 35
+                      }
+                    }
+                  ],
+                  "from": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 137,
+                      "length": 1,
+                      "line": 4,
+                      "column": 43
+                    },
+                    "name": {
+                      "name": "c"
+                    }
+                  }
+                }
+              }
+            },
+            "right": {
+              "kind": "select",
+              "span": {
+                "offset": 146,
+                "length": 16,
+                "line": 6,
+                "column": 2
+              },
+              "parenthesized": true,
+              "select": [
+                {
+                  "kind": "expr",
+                  "expr": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 153,
+                      "length": 2,
+                      "line": 6,
+                      "column": 9
+                    },
+                    "parts": [
+                      "id"
+                    ]
+                  },
+                  "span": {
+                    "offset": 153,
+                    "length": 2,
+                    "line": 6,
+                    "column": 9
+                  }
+                }
+              ],
+              "from": {
+                "kind": "table",
+                "span": {
+                  "offset": 161,
+                  "length": 1,
+                  "line": 6,
+                  "column": 17
+                },
+                "name": {
+                  "name": "d"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

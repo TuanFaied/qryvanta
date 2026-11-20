@@ -1,0 +1,414 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- IF/ELSE, WHILE and TRY/CATCH keep their nested statements\nIF EXISTS (SELECT 1 FROM dbo.Orders WHERE Status = 'Open')\nBEGIN\n    PRINT 'open orders';\n    EXEC dbo.usp_Notify;\nEND\nELSE\n    SELECT 0 AS none;\n\nWHILE @@ROWCOUNT > 0\n    DELETE TOP (100) FROM dbo.Log WHERE LoggedAt < '2025-01-01';\n\nBEGIN TRY\n    SELECT 1 / 0;\nEND TRY\nBEGIN CATCH\n    SELECT ERROR_NUMBER() AS err;\nEND CATCH;\n",
+      "offset": 0,
+      "length": 388,
+      "byteOffset": 0,
+      "byteLength": 388,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "if",
+          "type": "IfStatement",
+          "span": {
+            "offset": 61,
+            "length": 145,
+            "line": 2,
+            "column": 1
+          },
+          "condition": {
+            "kind": "exists",
+            "span": {
+              "offset": 71,
+              "length": 48,
+              "line": 2,
+              "column": 11
+            },
+            "query": {
+              "kind": "select",
+              "span": {
+                "offset": 72,
+                "length": 46,
+                "line": 2,
+                "column": 12
+              },
+              "select": [
+                {
+                  "kind": "expr",
+                  "expr": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 79,
+                      "length": 1,
+                      "line": 2,
+                      "column": 19
+                    },
+                    "literalType": "integer",
+                    "value": "1"
+                  },
+                  "span": {
+                    "offset": 79,
+                    "length": 1,
+                    "line": 2,
+                    "column": 19
+                  }
+                }
+              ],
+              "from": {
+                "kind": "table",
+                "span": {
+                  "offset": 86,
+                  "length": 10,
+                  "line": 2,
+                  "column": 26
+                },
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "where": {
+                "kind": "compare",
+                "span": {
+                  "offset": 103,
+                  "length": 15,
+                  "line": 2,
+                  "column": 43
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 103,
+                    "length": 6,
+                    "line": 2,
+                    "column": 43
+                  },
+                  "parts": [
+                    "Status"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 112,
+                    "length": 6,
+                    "line": 2,
+                    "column": 52
+                  },
+                  "literalType": "string",
+                  "value": "Open"
+                }
+              }
+            }
+          },
+          "body": [
+            {
+              "kind": "block",
+              "type": "BeginEndBlockStatement",
+              "span": {
+                "offset": 120,
+                "length": 59,
+                "line": 3,
+                "column": 1
+              },
+              "body": [
+                {
+                  "kind": "print",
+                  "type": "PrintStatement",
+                  "span": {
+                    "offset": 130,
+                    "length": 20,
+                    "line": 4,
+                    "column": 5
+                  }
+                },
+                {
+                  "kind": "exec",
+                  "type": "ExecuteStatement",
+                  "span": {
+                    "offset": 155,
+                    "length": 20,
+                    "line": 5,
+                    "column": 5
+                  },
+                  "procedure": {
+                    "schema": "dbo",
+                    "name": "usp_Notify"
+                  }
+                }
+              ]
+            }
+          ],
+          "else": [
+            {
+              "kind": "select",
+              "type": "SelectStatement",
+              "span": {
+                "offset": 189,
+                "length": 17,
+                "line": 8,
+                "column": 5
+              },
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 189,
+                  "length": 16,
+                  "line": 8,
+                  "column": 5
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 196,
+                        "length": 1,
+                        "line": 8,
+                        "column": 12
+                      },
+                      "literalType": "integer",
+                      "value": "0"
+                    },
+                    "alias": "none",
+                    "span": {
+                      "offset": 196,
+                      "length": 9,
+                      "line": 8,
+                      "column": 12
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "kind": "while",
+          "type": "WhileStatement",
+          "span": {
+            "offset": 208,
+            "length": 85,
+            "line": 10,
+            "column": 1
+          },
+          "condition": {
+            "kind": "compare",
+            "span": {
+              "offset": 214,
+              "length": 14,
+              "line": 10,
+              "column": 7
+            },
+            "op": ">",
+            "left": {
+              "kind": "variable",
+              "span": {
+                "offset": 214,
+                "length": 10,
+                "line": 10,
+                "column": 7
+              },
+              "name": "@@ROWCOUNT"
+            },
+            "right": {
+              "kind": "literal",
+              "span": {
+                "offset": 227,
+                "length": 1,
+                "line": 10,
+                "column": 20
+              },
+              "literalType": "integer",
+              "value": "0"
+            }
+          },
+          "body": [
+            {
+              "kind": "delete",
+              "type": "DeleteStatement",
+              "span": {
+                "offset": 233,
+                "length": 60,
+                "line": 11,
+                "column": 5
+              },
+              "target": {
+                "kind": "table",
+                "span": {
+                  "offset": 255,
+                  "length": 7,
+                  "line": 11,
+                  "column": 27
+                },
+                "name": {
+                  "schema": "dbo",
+                  "name": "Log"
+                }
+              },
+              "where": {
+                "kind": "compare",
+                "span": {
+                  "offset": 269,
+                  "length": 23,
+                  "line": 11,
+                  "column": 41
+                },
+                "op": "<",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 269,
+                    "length": 8,
+                    "line": 11,
+                    "column": 41
+                  },
+                  "parts": [
+                    "LoggedAt"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 280,
+                    "length": 12,
+                    "line": 11,
+                    "column": 52
+                  },
+                  "literalType": "string",
+                  "value": "2025-01-01"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "kind": "try",
+          "type": "TryCatchStatement",
+          "span": {
+            "offset": 295,
+            "length": 92,
+            "line": 13,
+            "column": 1
+          },
+          "body": [
+            {
+              "kind": "select",
+              "type": "SelectStatement",
+              "span": {
+                "offset": 309,
+                "length": 13,
+                "line": 14,
+                "column": 5
+              },
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 309,
+                  "length": 12,
+                  "line": 14,
+                  "column": 5
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "arithmetic",
+                      "span": {
+                        "offset": 316,
+                        "length": 5,
+                        "line": 14,
+                        "column": 12
+                      },
+                      "op": "/",
+                      "left": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 316,
+                          "length": 1,
+                          "line": 14,
+                          "column": 12
+                        },
+                        "literalType": "integer",
+                        "value": "1"
+                      },
+                      "right": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 320,
+                          "length": 1,
+                          "line": 14,
+                          "column": 16
+                        },
+                        "literalType": "integer",
+                        "value": "0"
+                      }
+                    },
+                    "span": {
+                      "offset": 316,
+                      "length": 5,
+                      "line": 14,
+                      "column": 12
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "else": [
+            {
+              "kind": "select",
+              "type": "SelectStatement",
+              "span": {
+                "offset": 347,
+                "length": 29,
+                "line": 17,
+                "column": 5
+              },
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 347,
+                  "length": 28,
+                  "line": 17,
+                  "column": 5
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "function",
+                      "span": {
+                        "offset": 354,
+                        "length": 14,
+                        "line": 17,
+                        "column": 12
+                      },
+                      "name": "ERROR_NUMBER"
+                    },
+                    "alias": "err",
+                    "span": {
+                      "offset": 354,
+                      "length": 21,
+                      "line": 17,
+                      "column": 12
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

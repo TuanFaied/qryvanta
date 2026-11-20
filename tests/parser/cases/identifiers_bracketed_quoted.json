@@ -1,0 +1,140 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- bracketed and double-quoted identifiers with spaces, keywords and an escaped bracket\nSELECT [Order ID], \"Customer Name\", [Select], [a]]b]\nFROM [Sales Data].[dbo].[Order Details] AS [od];\n",
+      "offset": 0,
+      "length": 190,
+      "byteOffset": 0,
+      "byteLength": 190,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 88,
+            "length": 101,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 88,
+              "length": 100,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 95,
+                    "length": 10,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "Order ID"
+                  ]
+                },
+                "span": {
+                  "offset": 95,
+                  "length": 10,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 107,
+                    "length": 15,
+                    "line": 2,
+                    "column": 20
+                  },
+                  "parts": [
+                    "Customer Name"
+                  ]
+                },
+                "span": {
+                  "offset": 107,
+                  "length": 15,
+                  "line": 2,
+                  "column": 20
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 124,
+                    "length": 8,
+                    "line": 2,
+                    "column": 37
+                  },
+                  "parts": [
+                    "Select"
+                  ]
+                },
+                "span": {
+                  "offset": 124,
+                  "length": 8,
+                  "line": 2,
+                  "column": 37
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 134,
+                    "length": 6,
+                    "line": 2,
+                    "column": 47
+                  },
+                  "parts": [
+                    "a]b"
+                  ]
+                },
+                "span": {
+                  "offset": 134,
+                  "length": 6,
+                  "line": 2,
+                  "column": 47
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 146,
+                "length": 42,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "od",
+              "name": {
+                "database": "Sales Data",
+                "schema": "dbo",
+                "name": "Order Details"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

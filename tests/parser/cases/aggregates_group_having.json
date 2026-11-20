@@ -1,0 +1,307 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- aggregates with GROUP BY and HAVING, including COUNT(*), COUNT(DISTINCT) and STRING_AGG\nSELECT CustomerID, COUNT(*) AS Lines, COUNT(DISTINCT OrderID) AS Orders,\n       STRING_AGG(Status, ',') AS Statuses\nFROM dbo.Orders\nGROUP BY CustomerID\nHAVING COUNT(*) > 1 AND SUM(Amount) >= 100;\n",
+      "offset": 0,
+      "length": 287,
+      "byteOffset": 0,
+      "byteLength": 287,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 91,
+            "length": 195,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 91,
+              "length": 194,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 98,
+                    "length": 10,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 98,
+                  "length": 10,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 110,
+                    "length": 8,
+                    "line": 2,
+                    "column": 20
+                  },
+                  "name": "COUNT",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 116,
+                        "length": 1,
+                        "line": 2,
+                        "column": 26
+                      },
+                      "parts": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "aggregate": true
+                },
+                "alias": "Lines",
+                "span": {
+                  "offset": 110,
+                  "length": 17,
+                  "line": 2,
+                  "column": 20
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 129,
+                    "length": 23,
+                    "line": 2,
+                    "column": 39
+                  },
+                  "name": "COUNT",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 144,
+                        "length": 7,
+                        "line": 2,
+                        "column": 54
+                      },
+                      "parts": [
+                        "OrderID"
+                      ]
+                    }
+                  ],
+                  "distinct": true,
+                  "aggregate": true
+                },
+                "alias": "Orders",
+                "span": {
+                  "offset": 129,
+                  "length": 33,
+                  "line": 2,
+                  "column": 39
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 171,
+                    "length": 23,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "name": "STRING_AGG",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 182,
+                        "length": 6,
+                        "line": 3,
+                        "column": 19
+                      },
+                      "parts": [
+                        "Status"
+                      ]
+                    },
+                    {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 190,
+                        "length": 3,
+                        "line": 3,
+                        "column": 27
+                      },
+                      "literalType": "string",
+                      "value": ","
+                    }
+                  ],
+                  "aggregate": true
+                },
+                "alias": "Statuses",
+                "span": {
+                  "offset": 171,
+                  "length": 35,
+                  "line": 3,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 212,
+                "length": 10,
+                "line": 4,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "groupBy": [
+              {
+                "kind": "column",
+                "span": {
+                  "offset": 232,
+                  "length": 10,
+                  "line": 5,
+                  "column": 10
+                },
+                "parts": [
+                  "CustomerID"
+                ]
+              }
+            ],
+            "having": {
+              "kind": "and",
+              "span": {
+                "offset": 250,
+                "length": 35,
+                "line": 6,
+                "column": 8
+              },
+              "left": {
+                "kind": "compare",
+                "span": {
+                  "offset": 250,
+                  "length": 12,
+                  "line": 6,
+                  "column": 8
+                },
+                "op": ">",
+                "left": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 250,
+                    "length": 8,
+                    "line": 6,
+                    "column": 8
+                  },
+                  "name": "COUNT",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 256,
+                        "length": 1,
+                        "line": 6,
+                        "column": 14
+                      },
+                      "parts": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "aggregate": true
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 261,
+                    "length": 1,
+                    "line": 6,
+                    "column": 19
+                  },
+                  "literalType": "integer",
+                  "value": "1"
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 267,
+                  "length": 18,
+                  "line": 6,
+                  "column": 25
+                },
+                "op": ">=",
+                "left": {
+                  "kind": "function",
+                  "span": {
+                    "offset": 267,
+                    "length": 11,
+                    "line": 6,
+                    "column": 25
+                  },
+                  "name": "SUM",
+                  "args": [
+                    {
+                      "kind": "column",
+                      "span": {
+                        "offset": 271,
+                        "length": 6,
+                        "line": 6,
+                        "column": 29
+                      },
+                      "parts": [
+                        "Amount"
+                      ]
+                    }
+                  ],
+                  "aggregate": true
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 282,
+                    "length": 3,
+                    "line": 6,
+                    "column": 40
+                  },
+                  "literalType": "integer",
+                  "value": "100"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

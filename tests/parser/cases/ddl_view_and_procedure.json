@@ -1,0 +1,53 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- CREATE VIEW and CREATE PROCEDURE must each be alone in their batch\nCREATE VIEW dbo.vOpenOrders AS SELECT OrderID FROM dbo.Orders WHERE Status = 'Open';\n",
+      "offset": 0,
+      "length": 155,
+      "byteOffset": 0,
+      "byteLength": 155,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "ddl",
+          "type": "CreateViewStatement",
+          "span": {
+            "offset": 70,
+            "length": 84,
+            "line": 2,
+            "column": 1
+          }
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "text": "CREATE PROCEDURE dbo.usp_Close @id int AS UPDATE dbo.Orders SET Status = 'Closed' WHERE OrderID = @id;\n",
+      "offset": 158,
+      "length": 103,
+      "byteOffset": 158,
+      "byteLength": 103,
+      "line": 4,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "ddl",
+          "type": "CreateProcedureStatement",
+          "span": {
+            "offset": 158,
+            "length": 102,
+            "line": 4,
+            "column": 1
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

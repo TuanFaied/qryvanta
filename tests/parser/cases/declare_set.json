@@ -1,0 +1,80 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- DECLARE with initial values, SET and SELECT assignment, and a SET option\nDECLARE @from date = '2026-01-01', @n int;\nSET @n = (SELECT COUNT(*) FROM dbo.Orders WHERE OrderDate >= @from);\nSELECT @n = @n + 1;\nSET NOCOUNT ON;\n",
+      "offset": 0,
+      "length": 224,
+      "byteOffset": 0,
+      "byteLength": 224,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "declare",
+          "type": "DeclareVariableStatement",
+          "span": {
+            "offset": 76,
+            "length": 42,
+            "line": 2,
+            "column": 1
+          }
+        },
+        {
+          "kind": "set",
+          "type": "SetVariableStatement",
+          "span": {
+            "offset": 119,
+            "length": 68,
+            "line": 3,
+            "column": 1
+          }
+        },
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 188,
+            "length": 19,
+            "line": 4,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 188,
+              "length": 18,
+              "line": 4,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "unsupported",
+                "span": {
+                  "offset": 195,
+                  "length": 11,
+                  "line": 4,
+                  "column": 8
+                }
+              }
+            ]
+          }
+        },
+        {
+          "kind": "setOption",
+          "type": "PredicateSetStatement",
+          "span": {
+            "offset": 208,
+            "length": 15,
+            "line": 5,
+            "column": 1
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

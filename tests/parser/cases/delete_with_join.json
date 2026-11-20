@@ -1,0 +1,206 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- DELETE with FROM and JOIN, and a plain DELETE with WHERE\nDELETE l FROM dbo.OrderLines l JOIN dbo.Orders o ON o.OrderID = l.OrderID WHERE o.Status = 'Cancelled';\nDELETE FROM dbo.Log WHERE LoggedAt < '2025-01-01';\n",
+      "offset": 0,
+      "length": 215,
+      "byteOffset": 0,
+      "byteLength": 215,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "delete",
+          "type": "DeleteStatement",
+          "span": {
+            "offset": 60,
+            "length": 103,
+            "line": 2,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 67,
+              "length": 1,
+              "line": 2,
+              "column": 8
+            },
+            "name": {
+              "name": "l"
+            }
+          },
+          "from": {
+            "kind": "join",
+            "span": {
+              "offset": 74,
+              "length": 59,
+              "line": 2,
+              "column": 15
+            },
+            "joinType": "inner",
+            "left": {
+              "kind": "table",
+              "span": {
+                "offset": 74,
+                "length": 16,
+                "line": 2,
+                "column": 15
+              },
+              "alias": "l",
+              "name": {
+                "schema": "dbo",
+                "name": "OrderLines"
+              }
+            },
+            "right": {
+              "kind": "table",
+              "span": {
+                "offset": 96,
+                "length": 12,
+                "line": 2,
+                "column": 37
+              },
+              "alias": "o",
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "on": {
+              "kind": "compare",
+              "span": {
+                "offset": 112,
+                "length": 21,
+                "line": 2,
+                "column": 53
+              },
+              "op": "=",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 112,
+                  "length": 9,
+                  "line": 2,
+                  "column": 53
+                },
+                "parts": [
+                  "o",
+                  "OrderID"
+                ]
+              },
+              "right": {
+                "kind": "column",
+                "span": {
+                  "offset": 124,
+                  "length": 9,
+                  "line": 2,
+                  "column": 65
+                },
+                "parts": [
+                  "l",
+                  "OrderID"
+                ]
+              }
+            }
+          },
+          "where": {
+            "kind": "compare",
+            "span": {
+              "offset": 140,
+              "length": 22,
+              "line": 2,
+              "column": 81
+            },
+            "op": "=",
+            "left": {
+              "kind": "column",
+              "span": {
+                "offset": 140,
+                "length": 8,
+                "line": 2,
+                "column": 81
+              },
+              "parts": [
+                "o",
+                "Status"
+              ]
+            },
+            "right": {
+              "kind": "literal",
+              "span": {
+                "offset": 151,
+                "length": 11,
+                "line": 2,
+                "column": 92
+              },
+              "literalType": "string",
+              "value": "Cancelled"
+            }
+          }
+        },
+        {
+          "kind": "delete",
+          "type": "DeleteStatement",
+          "span": {
+            "offset": 164,
+            "length": 50,
+            "line": 3,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 176,
+              "length": 7,
+              "line": 3,
+              "column": 13
+            },
+            "name": {
+              "schema": "dbo",
+              "name": "Log"
+            }
+          },
+          "where": {
+            "kind": "compare",
+            "span": {
+              "offset": 190,
+              "length": 23,
+              "line": 3,
+              "column": 27
+            },
+            "op": "<",
+            "left": {
+              "kind": "column",
+              "span": {
+                "offset": 190,
+                "length": 8,
+                "line": 3,
+                "column": 27
+              },
+              "parts": [
+                "LoggedAt"
+              ]
+            },
+            "right": {
+              "kind": "literal",
+              "span": {
+                "offset": 201,
+                "length": 12,
+                "line": 3,
+                "column": 38
+              },
+              "literalType": "string",
+              "value": "2025-01-01"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

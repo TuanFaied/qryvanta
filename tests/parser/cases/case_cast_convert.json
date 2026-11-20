@@ -1,0 +1,380 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- searched and simple CASE, CAST, CONVERT with a style, TRY_CAST and TRY_CONVERT\nSELECT CASE WHEN Amount > 100 THEN 'big' WHEN Amount > 10 THEN 'medium' ELSE 'small' END AS size,\n       CASE Status WHEN 'S' THEN 'Shipped' END AS label,\n       CAST(Amount AS decimal(12, 2)) AS amt,\n       CONVERT(varchar(10), OrderDate, 120) AS day,\n       TRY_CAST(Code AS int) AS code,\n       TRY_CONVERT(date, RawDate) AS raw\nFROM dbo.Orders;\n",
+      "offset": 0,
+      "length": 431,
+      "byteOffset": 0,
+      "byteLength": 431,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 82,
+            "length": 348,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 82,
+              "length": 347,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "case",
+                  "span": {
+                    "offset": 89,
+                    "length": 81,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "whens": [
+                    {
+                      "when": {
+                        "kind": "compare",
+                        "span": {
+                          "offset": 99,
+                          "length": 12,
+                          "line": 2,
+                          "column": 18
+                        },
+                        "op": ">",
+                        "left": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 99,
+                            "length": 6,
+                            "line": 2,
+                            "column": 18
+                          },
+                          "parts": [
+                            "Amount"
+                          ]
+                        },
+                        "right": {
+                          "kind": "literal",
+                          "span": {
+                            "offset": 108,
+                            "length": 3,
+                            "line": 2,
+                            "column": 27
+                          },
+                          "literalType": "integer",
+                          "value": "100"
+                        }
+                      },
+                      "then": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 117,
+                          "length": 5,
+                          "line": 2,
+                          "column": 36
+                        },
+                        "literalType": "string",
+                        "value": "big"
+                      }
+                    },
+                    {
+                      "when": {
+                        "kind": "compare",
+                        "span": {
+                          "offset": 128,
+                          "length": 11,
+                          "line": 2,
+                          "column": 47
+                        },
+                        "op": ">",
+                        "left": {
+                          "kind": "column",
+                          "span": {
+                            "offset": 128,
+                            "length": 6,
+                            "line": 2,
+                            "column": 47
+                          },
+                          "parts": [
+                            "Amount"
+                          ]
+                        },
+                        "right": {
+                          "kind": "literal",
+                          "span": {
+                            "offset": 137,
+                            "length": 2,
+                            "line": 2,
+                            "column": 56
+                          },
+                          "literalType": "integer",
+                          "value": "10"
+                        }
+                      },
+                      "then": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 145,
+                          "length": 8,
+                          "line": 2,
+                          "column": 64
+                        },
+                        "literalType": "string",
+                        "value": "medium"
+                      }
+                    }
+                  ],
+                  "else": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 159,
+                      "length": 7,
+                      "line": 2,
+                      "column": 78
+                    },
+                    "literalType": "string",
+                    "value": "small"
+                  }
+                },
+                "alias": "size",
+                "span": {
+                  "offset": 89,
+                  "length": 89,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "case",
+                  "span": {
+                    "offset": 187,
+                    "length": 39,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 192,
+                      "length": 6,
+                      "line": 3,
+                      "column": 13
+                    },
+                    "parts": [
+                      "Status"
+                    ]
+                  },
+                  "whens": [
+                    {
+                      "when": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 204,
+                          "length": 3,
+                          "line": 3,
+                          "column": 25
+                        },
+                        "literalType": "string",
+                        "value": "S"
+                      },
+                      "then": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 213,
+                          "length": 9,
+                          "line": 3,
+                          "column": 34
+                        },
+                        "literalType": "string",
+                        "value": "Shipped"
+                      }
+                    }
+                  ]
+                },
+                "alias": "label",
+                "span": {
+                  "offset": 187,
+                  "length": 48,
+                  "line": 3,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "cast",
+                  "span": {
+                    "offset": 244,
+                    "length": 30,
+                    "line": 4,
+                    "column": 8
+                  },
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 249,
+                      "length": 6,
+                      "line": 4,
+                      "column": 13
+                    },
+                    "parts": [
+                      "Amount"
+                    ]
+                  },
+                  "name": "CAST",
+                  "dataType": "decimal(12, 2)"
+                },
+                "alias": "amt",
+                "span": {
+                  "offset": 244,
+                  "length": 37,
+                  "line": 4,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "cast",
+                  "span": {
+                    "offset": 290,
+                    "length": 36,
+                    "line": 5,
+                    "column": 8
+                  },
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 311,
+                      "length": 9,
+                      "line": 5,
+                      "column": 29
+                    },
+                    "parts": [
+                      "OrderDate"
+                    ]
+                  },
+                  "name": "CONVERT",
+                  "args": [
+                    {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 322,
+                        "length": 3,
+                        "line": 5,
+                        "column": 40
+                      },
+                      "literalType": "integer",
+                      "value": "120"
+                    }
+                  ],
+                  "dataType": "varchar(10)"
+                },
+                "alias": "day",
+                "span": {
+                  "offset": 290,
+                  "length": 43,
+                  "line": 5,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "cast",
+                  "span": {
+                    "offset": 342,
+                    "length": 21,
+                    "line": 6,
+                    "column": 8
+                  },
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 351,
+                      "length": 4,
+                      "line": 6,
+                      "column": 17
+                    },
+                    "parts": [
+                      "Code"
+                    ]
+                  },
+                  "name": "TRY_CAST",
+                  "dataType": "int"
+                },
+                "alias": "code",
+                "span": {
+                  "offset": 342,
+                  "length": 29,
+                  "line": 6,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "cast",
+                  "span": {
+                    "offset": 380,
+                    "length": 26,
+                    "line": 7,
+                    "column": 8
+                  },
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 398,
+                      "length": 7,
+                      "line": 7,
+                      "column": 26
+                    },
+                    "parts": [
+                      "RawDate"
+                    ]
+                  },
+                  "name": "TRY_CONVERT",
+                  "dataType": "date"
+                },
+                "alias": "raw",
+                "span": {
+                  "offset": 380,
+                  "length": 33,
+                  "line": 7,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 419,
+                "length": 10,
+                "line": 8,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

@@ -1,0 +1,282 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- arithmetic precedence, a parenthesized sum, unary minus and string concatenation\nSELECT (Price + Tax) * Qty - Discount / 2 % 3 AS total, -Qty AS neg, FirstName + ' ' + LastName AS full_name\nFROM dbo.Lines;\n",
+      "offset": 0,
+      "length": 209,
+      "byteOffset": 0,
+      "byteLength": 209,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 84,
+            "length": 124,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 84,
+              "length": 123,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "arithmetic",
+                  "span": {
+                    "offset": 91,
+                    "length": 38,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "op": "-",
+                  "left": {
+                    "kind": "arithmetic",
+                    "span": {
+                      "offset": 91,
+                      "length": 19,
+                      "line": 2,
+                      "column": 8
+                    },
+                    "op": "*",
+                    "left": {
+                      "kind": "arithmetic",
+                      "span": {
+                        "offset": 92,
+                        "length": 11,
+                        "line": 2,
+                        "column": 9
+                      },
+                      "parenthesized": true,
+                      "op": "+",
+                      "left": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 92,
+                          "length": 5,
+                          "line": 2,
+                          "column": 9
+                        },
+                        "parts": [
+                          "Price"
+                        ]
+                      },
+                      "right": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 100,
+                          "length": 3,
+                          "line": 2,
+                          "column": 17
+                        },
+                        "parts": [
+                          "Tax"
+                        ]
+                      }
+                    },
+                    "right": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 107,
+                        "length": 3,
+                        "line": 2,
+                        "column": 24
+                      },
+                      "parts": [
+                        "Qty"
+                      ]
+                    }
+                  },
+                  "right": {
+                    "kind": "arithmetic",
+                    "span": {
+                      "offset": 113,
+                      "length": 16,
+                      "line": 2,
+                      "column": 30
+                    },
+                    "op": "%",
+                    "left": {
+                      "kind": "arithmetic",
+                      "span": {
+                        "offset": 113,
+                        "length": 12,
+                        "line": 2,
+                        "column": 30
+                      },
+                      "op": "/",
+                      "left": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 113,
+                          "length": 8,
+                          "line": 2,
+                          "column": 30
+                        },
+                        "parts": [
+                          "Discount"
+                        ]
+                      },
+                      "right": {
+                        "kind": "literal",
+                        "span": {
+                          "offset": 124,
+                          "length": 1,
+                          "line": 2,
+                          "column": 41
+                        },
+                        "literalType": "integer",
+                        "value": "2"
+                      }
+                    },
+                    "right": {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 128,
+                        "length": 1,
+                        "line": 2,
+                        "column": 45
+                      },
+                      "literalType": "integer",
+                      "value": "3"
+                    }
+                  }
+                },
+                "alias": "total",
+                "span": {
+                  "offset": 91,
+                  "length": 47,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "unary",
+                  "span": {
+                    "offset": 140,
+                    "length": 4,
+                    "line": 2,
+                    "column": 57
+                  },
+                  "op": "-",
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 141,
+                      "length": 3,
+                      "line": 2,
+                      "column": 58
+                    },
+                    "parts": [
+                      "Qty"
+                    ]
+                  }
+                },
+                "alias": "neg",
+                "span": {
+                  "offset": 140,
+                  "length": 11,
+                  "line": 2,
+                  "column": 57
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "arithmetic",
+                  "span": {
+                    "offset": 153,
+                    "length": 26,
+                    "line": 2,
+                    "column": 70
+                  },
+                  "op": "+",
+                  "left": {
+                    "kind": "arithmetic",
+                    "span": {
+                      "offset": 153,
+                      "length": 15,
+                      "line": 2,
+                      "column": 70
+                    },
+                    "op": "+",
+                    "left": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 153,
+                        "length": 9,
+                        "line": 2,
+                        "column": 70
+                      },
+                      "parts": [
+                        "FirstName"
+                      ]
+                    },
+                    "right": {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 165,
+                        "length": 3,
+                        "line": 2,
+                        "column": 82
+                      },
+                      "literalType": "string",
+                      "value": " "
+                    }
+                  },
+                  "right": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 171,
+                      "length": 8,
+                      "line": 2,
+                      "column": 88
+                    },
+                    "parts": [
+                      "LastName"
+                    ]
+                  }
+                },
+                "alias": "full_name",
+                "span": {
+                  "offset": 153,
+                  "length": 39,
+                  "line": 2,
+                  "column": 70
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 198,
+                "length": 9,
+                "line": 3,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Lines"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

@@ -1,0 +1,136 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- SELECT ... INTO creates a table: the INTO target is recorded\nSELECT o.OrderID, o.Amount INTO #big_orders FROM dbo.Orders o WHERE o.Amount > 1000;\n",
+      "offset": 0,
+      "length": 149,
+      "byteOffset": 0,
+      "byteLength": 149,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 64,
+            "length": 84,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 64,
+              "length": 83,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 71,
+                    "length": 9,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 71,
+                  "length": 9,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 82,
+                    "length": 8,
+                    "line": 2,
+                    "column": 19
+                  },
+                  "parts": [
+                    "o",
+                    "Amount"
+                  ]
+                },
+                "span": {
+                  "offset": 82,
+                  "length": 8,
+                  "line": 2,
+                  "column": 19
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 113,
+                "length": 12,
+                "line": 2,
+                "column": 50
+              },
+              "alias": "o",
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "compare",
+              "span": {
+                "offset": 132,
+                "length": 15,
+                "line": 2,
+                "column": 69
+              },
+              "op": ">",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 132,
+                  "length": 8,
+                  "line": 2,
+                  "column": 69
+                },
+                "parts": [
+                  "o",
+                  "Amount"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "span": {
+                  "offset": 143,
+                  "length": 4,
+                  "line": 2,
+                  "column": 80
+                },
+                "literalType": "integer",
+                "value": "1000"
+              }
+            }
+          },
+          "into": {
+            "name": "#big_orders"
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

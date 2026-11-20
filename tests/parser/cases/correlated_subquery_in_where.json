@@ -1,0 +1,195 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a correlated scalar subquery compared in WHERE (latest order per customer)\nSELECT o.* FROM dbo.Orders o\nWHERE o.OrderDate = (SELECT MAX(o2.OrderDate) FROM dbo.Orders o2 WHERE o2.CustomerID = o.CustomerID);\n",
+      "offset": 0,
+      "length": 209,
+      "byteOffset": 0,
+      "byteLength": 209,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 78,
+            "length": 130,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 78,
+              "length": 129,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "qualifier": [
+                  "o"
+                ],
+                "span": {
+                  "offset": 85,
+                  "length": 3,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 94,
+                "length": 12,
+                "line": 2,
+                "column": 17
+              },
+              "alias": "o",
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "compare",
+              "span": {
+                "offset": 113,
+                "length": 94,
+                "line": 3,
+                "column": 7
+              },
+              "op": "=",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 113,
+                  "length": 11,
+                  "line": 3,
+                  "column": 7
+                },
+                "parts": [
+                  "o",
+                  "OrderDate"
+                ]
+              },
+              "right": {
+                "kind": "subquery",
+                "span": {
+                  "offset": 127,
+                  "length": 80,
+                  "line": 3,
+                  "column": 21
+                },
+                "query": {
+                  "kind": "select",
+                  "span": {
+                    "offset": 128,
+                    "length": 78,
+                    "line": 3,
+                    "column": 22
+                  },
+                  "select": [
+                    {
+                      "kind": "expr",
+                      "expr": {
+                        "kind": "function",
+                        "span": {
+                          "offset": 135,
+                          "length": 17,
+                          "line": 3,
+                          "column": 29
+                        },
+                        "name": "MAX",
+                        "args": [
+                          {
+                            "kind": "column",
+                            "span": {
+                              "offset": 139,
+                              "length": 12,
+                              "line": 3,
+                              "column": 33
+                            },
+                            "parts": [
+                              "o2",
+                              "OrderDate"
+                            ]
+                          }
+                        ],
+                        "aggregate": true
+                      },
+                      "span": {
+                        "offset": 135,
+                        "length": 17,
+                        "line": 3,
+                        "column": 29
+                      }
+                    }
+                  ],
+                  "from": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 158,
+                      "length": 13,
+                      "line": 3,
+                      "column": 52
+                    },
+                    "alias": "o2",
+                    "name": {
+                      "schema": "dbo",
+                      "name": "Orders"
+                    }
+                  },
+                  "where": {
+                    "kind": "compare",
+                    "span": {
+                      "offset": 178,
+                      "length": 28,
+                      "line": 3,
+                      "column": 72
+                    },
+                    "op": "=",
+                    "left": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 178,
+                        "length": 13,
+                        "line": 3,
+                        "column": 72
+                      },
+                      "parts": [
+                        "o2",
+                        "CustomerID"
+                      ]
+                    },
+                    "right": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 194,
+                        "length": 12,
+                        "line": 3,
+                        "column": 88
+                      },
+                      "parts": [
+                        "o",
+                        "CustomerID"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

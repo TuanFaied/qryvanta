@@ -1,0 +1,156 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- IS NULL and IS NOT NULL, plus the = NULL comparison mistake\nSELECT * FROM dbo.Employees\nWHERE DepartmentID IS NULL OR ManagerID IS NOT NULL OR Email = NULL;\n",
+      "offset": 0,
+      "length": 160,
+      "byteOffset": 0,
+      "byteLength": 160,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 63,
+            "length": 96,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 63,
+              "length": 95,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 70,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 77,
+                "length": 13,
+                "line": 2,
+                "column": 15
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Employees"
+              }
+            },
+            "where": {
+              "kind": "or",
+              "span": {
+                "offset": 97,
+                "length": 61,
+                "line": 3,
+                "column": 7
+              },
+              "left": {
+                "kind": "or",
+                "span": {
+                  "offset": 97,
+                  "length": 45,
+                  "line": 3,
+                  "column": 7
+                },
+                "left": {
+                  "kind": "isNull",
+                  "span": {
+                    "offset": 97,
+                    "length": 20,
+                    "line": 3,
+                    "column": 7
+                  },
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 97,
+                      "length": 12,
+                      "line": 3,
+                      "column": 7
+                    },
+                    "parts": [
+                      "DepartmentID"
+                    ]
+                  }
+                },
+                "right": {
+                  "kind": "isNull",
+                  "span": {
+                    "offset": 121,
+                    "length": 21,
+                    "line": 3,
+                    "column": 31
+                  },
+                  "not": true,
+                  "operand": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 121,
+                      "length": 9,
+                      "line": 3,
+                      "column": 31
+                    },
+                    "parts": [
+                      "ManagerID"
+                    ]
+                  }
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 146,
+                  "length": 12,
+                  "line": 3,
+                  "column": 56
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 146,
+                    "length": 5,
+                    "line": 3,
+                    "column": 56
+                  },
+                  "parts": [
+                    "Email"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 154,
+                    "length": 4,
+                    "line": 3,
+                    "column": 64
+                  },
+                  "literalType": "null"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

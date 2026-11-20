@@ -1,0 +1,221 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- without parentheses AND binds tighter than OR\nSELECT * FROM t WHERE a = 1 OR b = 2 AND c = 3 OR d = 4;\n",
+      "offset": 0,
+      "length": 106,
+      "byteOffset": 0,
+      "byteLength": 106,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 49,
+            "length": 56,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 49,
+              "length": 55,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 56,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 63,
+                "length": 1,
+                "line": 2,
+                "column": 15
+              },
+              "name": {
+                "name": "t"
+              }
+            },
+            "where": {
+              "kind": "or",
+              "span": {
+                "offset": 71,
+                "length": 33,
+                "line": 2,
+                "column": 23
+              },
+              "left": {
+                "kind": "or",
+                "span": {
+                  "offset": 71,
+                  "length": 24,
+                  "line": 2,
+                  "column": 23
+                },
+                "left": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 71,
+                    "length": 5,
+                    "line": 2,
+                    "column": 23
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 71,
+                      "length": 1,
+                      "line": 2,
+                      "column": 23
+                    },
+                    "parts": [
+                      "a"
+                    ]
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 75,
+                      "length": 1,
+                      "line": 2,
+                      "column": 27
+                    },
+                    "literalType": "integer",
+                    "value": "1"
+                  }
+                },
+                "right": {
+                  "kind": "and",
+                  "span": {
+                    "offset": 80,
+                    "length": 15,
+                    "line": 2,
+                    "column": 32
+                  },
+                  "left": {
+                    "kind": "compare",
+                    "span": {
+                      "offset": 80,
+                      "length": 5,
+                      "line": 2,
+                      "column": 32
+                    },
+                    "op": "=",
+                    "left": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 80,
+                        "length": 1,
+                        "line": 2,
+                        "column": 32
+                      },
+                      "parts": [
+                        "b"
+                      ]
+                    },
+                    "right": {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 84,
+                        "length": 1,
+                        "line": 2,
+                        "column": 36
+                      },
+                      "literalType": "integer",
+                      "value": "2"
+                    }
+                  },
+                  "right": {
+                    "kind": "compare",
+                    "span": {
+                      "offset": 90,
+                      "length": 5,
+                      "line": 2,
+                      "column": 42
+                    },
+                    "op": "=",
+                    "left": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 90,
+                        "length": 1,
+                        "line": 2,
+                        "column": 42
+                      },
+                      "parts": [
+                        "c"
+                      ]
+                    },
+                    "right": {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 94,
+                        "length": 1,
+                        "line": 2,
+                        "column": 46
+                      },
+                      "literalType": "integer",
+                      "value": "3"
+                    }
+                  }
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 99,
+                  "length": 5,
+                  "line": 2,
+                  "column": 51
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 99,
+                    "length": 1,
+                    "line": 2,
+                    "column": 51
+                  },
+                  "parts": [
+                    "d"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 103,
+                    "length": 1,
+                    "line": 2,
+                    "column": 55
+                  },
+                  "literalType": "integer",
+                  "value": "4"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

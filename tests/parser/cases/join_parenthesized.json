@@ -1,0 +1,179 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a parenthesized join on the right of another join keeps its own ON\nSELECT *\nFROM a\nLEFT JOIN (b INNER JOIN c ON c.bid = b.id) ON b.aid = a.id;\n",
+      "offset": 0,
+      "length": 146,
+      "byteOffset": 0,
+      "byteLength": 146,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 70,
+            "length": 75,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 70,
+              "length": 74,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 77,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 84,
+                "length": 60,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "left",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 84,
+                  "length": 1,
+                  "line": 3,
+                  "column": 6
+                },
+                "name": {
+                  "name": "a"
+                }
+              },
+              "right": {
+                "kind": "join",
+                "span": {
+                  "offset": 97,
+                  "length": 30,
+                  "line": 4,
+                  "column": 12
+                },
+                "parenthesized": true,
+                "joinType": "inner",
+                "left": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 97,
+                    "length": 1,
+                    "line": 4,
+                    "column": 12
+                  },
+                  "name": {
+                    "name": "b"
+                  }
+                },
+                "right": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 110,
+                    "length": 1,
+                    "line": 4,
+                    "column": 25
+                  },
+                  "name": {
+                    "name": "c"
+                  }
+                },
+                "on": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 115,
+                    "length": 12,
+                    "line": 4,
+                    "column": 30
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 115,
+                      "length": 5,
+                      "line": 4,
+                      "column": 30
+                    },
+                    "parts": [
+                      "c",
+                      "bid"
+                    ]
+                  },
+                  "right": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 123,
+                      "length": 4,
+                      "line": 4,
+                      "column": 38
+                    },
+                    "parts": [
+                      "b",
+                      "id"
+                    ]
+                  }
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 132,
+                  "length": 12,
+                  "line": 4,
+                  "column": 47
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 132,
+                    "length": 5,
+                    "line": 4,
+                    "column": 47
+                  },
+                  "parts": [
+                    "b",
+                    "aid"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 140,
+                    "length": 4,
+                    "line": 4,
+                    "column": 55
+                  },
+                  "parts": [
+                    "a",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

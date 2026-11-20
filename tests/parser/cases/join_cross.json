@@ -1,0 +1,123 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- CROSS JOIN has no ON predicate\nSELECT d.n, m.n FROM dbo.Digits AS d CROSS JOIN dbo.Months AS m;\n",
+      "offset": 0,
+      "length": 99,
+      "byteOffset": 0,
+      "byteLength": 99,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 34,
+            "length": 64,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 34,
+              "length": 63,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 41,
+                    "length": 3,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "d",
+                    "n"
+                  ]
+                },
+                "span": {
+                  "offset": 41,
+                  "length": 3,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 46,
+                    "length": 3,
+                    "line": 2,
+                    "column": 13
+                  },
+                  "parts": [
+                    "m",
+                    "n"
+                  ]
+                },
+                "span": {
+                  "offset": 46,
+                  "length": 3,
+                  "line": 2,
+                  "column": 13
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 55,
+                "length": 42,
+                "line": 2,
+                "column": 22
+              },
+              "joinType": "cross",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 55,
+                  "length": 15,
+                  "line": 2,
+                  "column": 22
+                },
+                "alias": "d",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Digits"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 82,
+                  "length": 15,
+                  "line": 2,
+                  "column": 49
+                },
+                "alias": "m",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Months"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

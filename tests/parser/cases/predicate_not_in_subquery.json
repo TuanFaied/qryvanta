@@ -1,0 +1,147 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- NOT IN with a subquery (the classic NULL trap)\nSELECT c.CustomerID FROM dbo.Customers c\nWHERE c.CustomerID NOT IN (SELECT o.CustomerID FROM dbo.Orders o);\n",
+      "offset": 0,
+      "length": 158,
+      "byteOffset": 0,
+      "byteLength": 158,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 50,
+            "length": 107,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 50,
+              "length": 106,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 57,
+                    "length": 12,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 57,
+                  "length": 12,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 75,
+                "length": 15,
+                "line": 2,
+                "column": 26
+              },
+              "alias": "c",
+              "name": {
+                "schema": "dbo",
+                "name": "Customers"
+              }
+            },
+            "where": {
+              "kind": "in",
+              "span": {
+                "offset": 97,
+                "length": 59,
+                "line": 3,
+                "column": 7
+              },
+              "not": true,
+              "operand": {
+                "kind": "column",
+                "span": {
+                  "offset": 97,
+                  "length": 12,
+                  "line": 3,
+                  "column": 7
+                },
+                "parts": [
+                  "c",
+                  "CustomerID"
+                ]
+              },
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 118,
+                  "length": 37,
+                  "line": 3,
+                  "column": 28
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 125,
+                        "length": 12,
+                        "line": 3,
+                        "column": 35
+                      },
+                      "parts": [
+                        "o",
+                        "CustomerID"
+                      ]
+                    },
+                    "span": {
+                      "offset": 125,
+                      "length": 12,
+                      "line": 3,
+                      "column": 35
+                    }
+                  }
+                ],
+                "from": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 143,
+                    "length": 12,
+                    "line": 3,
+                    "column": 53
+                  },
+                  "alias": "o",
+                  "name": {
+                    "schema": "dbo",
+                    "name": "Orders"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

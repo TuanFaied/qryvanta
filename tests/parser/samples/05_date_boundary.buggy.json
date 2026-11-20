@@ -1,0 +1,155 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Question: orders placed in January 2026.\n-- Bug: OrderDate has a time of day. BETWEEN ... AND '2026-01-31' stops at 2026-01-31 00:00:00,\n-- so the order placed on 31 January at 16:45 is missing.\nSELECT OrderID, OrderDate\nFROM dbo.Orders\nWHERE OrderDate BETWEEN '2026-01-01' AND '2026-01-31'\nORDER BY OrderID;\n",
+      "offset": 0,
+      "length": 312,
+      "byteOffset": 0,
+      "byteLength": 312,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 198,
+            "length": 113,
+            "line": 4,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 198,
+              "length": 112,
+              "line": 4,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 205,
+                    "length": 7,
+                    "line": 4,
+                    "column": 8
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 205,
+                  "length": 7,
+                  "line": 4,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 214,
+                    "length": 9,
+                    "line": 4,
+                    "column": 17
+                  },
+                  "parts": [
+                    "OrderDate"
+                  ]
+                },
+                "span": {
+                  "offset": 214,
+                  "length": 9,
+                  "line": 4,
+                  "column": 17
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 229,
+                "length": 10,
+                "line": 5,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "between",
+              "span": {
+                "offset": 246,
+                "length": 47,
+                "line": 6,
+                "column": 7
+              },
+              "operand": {
+                "kind": "column",
+                "span": {
+                  "offset": 246,
+                  "length": 9,
+                  "line": 6,
+                  "column": 7
+                },
+                "parts": [
+                  "OrderDate"
+                ]
+              },
+              "low": {
+                "kind": "literal",
+                "span": {
+                  "offset": 264,
+                  "length": 12,
+                  "line": 6,
+                  "column": 25
+                },
+                "literalType": "string",
+                "value": "2026-01-01"
+              },
+              "high": {
+                "kind": "literal",
+                "span": {
+                  "offset": 281,
+                  "length": 12,
+                  "line": 6,
+                  "column": 42
+                },
+                "literalType": "string",
+                "value": "2026-01-31"
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 303,
+                    "length": 7,
+                    "line": 7,
+                    "column": 10
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

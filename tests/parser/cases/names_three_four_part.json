@@ -1,0 +1,127 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- three-part and four-part (linked server) object names\nSELECT *\nFROM Sales.dbo.Orders o\nJOIN LinkedSrv.Archive.dbo.Orders a ON a.OrderID = o.OrderID;\n",
+      "offset": 0,
+      "length": 152,
+      "byteOffset": 0,
+      "byteLength": 152,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 57,
+            "length": 94,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 57,
+              "length": 93,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 64,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 71,
+                "length": 79,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 71,
+                  "length": 18,
+                  "line": 3,
+                  "column": 6
+                },
+                "alias": "o",
+                "name": {
+                  "database": "Sales",
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 95,
+                  "length": 30,
+                  "line": 4,
+                  "column": 6
+                },
+                "alias": "a",
+                "name": {
+                  "server": "LinkedSrv",
+                  "database": "Archive",
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 129,
+                  "length": 21,
+                  "line": 4,
+                  "column": 40
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 129,
+                    "length": 9,
+                    "line": 4,
+                    "column": 40
+                  },
+                  "parts": [
+                    "a",
+                    "OrderID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 141,
+                    "length": 9,
+                    "line": 4,
+                    "column": 52
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

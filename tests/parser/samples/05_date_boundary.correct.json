@@ -1,0 +1,187 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: use a half-open range: from the first instant of the month up to, not including, the next.\nSELECT OrderID, OrderDate\nFROM dbo.Orders\nWHERE OrderDate >= '2026-01-01' AND OrderDate < '2026-02-01'\nORDER BY OrderID;\n",
+      "offset": 0,
+      "length": 220,
+      "byteOffset": 0,
+      "byteLength": 220,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 99,
+            "length": 120,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 99,
+              "length": 119,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 106,
+                    "length": 7,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 106,
+                  "length": 7,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 115,
+                    "length": 9,
+                    "line": 2,
+                    "column": 17
+                  },
+                  "parts": [
+                    "OrderDate"
+                  ]
+                },
+                "span": {
+                  "offset": 115,
+                  "length": 9,
+                  "line": 2,
+                  "column": 17
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 130,
+                "length": 10,
+                "line": 3,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 147,
+                "length": 54,
+                "line": 4,
+                "column": 7
+              },
+              "left": {
+                "kind": "compare",
+                "span": {
+                  "offset": 147,
+                  "length": 25,
+                  "line": 4,
+                  "column": 7
+                },
+                "op": ">=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 147,
+                    "length": 9,
+                    "line": 4,
+                    "column": 7
+                  },
+                  "parts": [
+                    "OrderDate"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 160,
+                    "length": 12,
+                    "line": 4,
+                    "column": 20
+                  },
+                  "literalType": "string",
+                  "value": "2026-01-01"
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 177,
+                  "length": 24,
+                  "line": 4,
+                  "column": 37
+                },
+                "op": "<",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 177,
+                    "length": 9,
+                    "line": 4,
+                    "column": 37
+                  },
+                  "parts": [
+                    "OrderDate"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 189,
+                    "length": 12,
+                    "line": 4,
+                    "column": 49
+                  },
+                  "literalType": "string",
+                  "value": "2026-02-01"
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 211,
+                    "length": 7,
+                    "line": 5,
+                    "column": 10
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

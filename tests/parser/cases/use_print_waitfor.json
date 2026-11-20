@@ -1,0 +1,60 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- USE, PRINT, WAITFOR and RETURN statement kinds\nUSE Sales;\nPRINT N'starting';\nWAITFOR DELAY '00:00:01';\nRETURN;\n",
+      "offset": 0,
+      "length": 114,
+      "byteOffset": 0,
+      "byteLength": 114,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "use",
+          "type": "UseStatement",
+          "span": {
+            "offset": 50,
+            "length": 10,
+            "line": 2,
+            "column": 1
+          }
+        },
+        {
+          "kind": "print",
+          "type": "PrintStatement",
+          "span": {
+            "offset": 61,
+            "length": 18,
+            "line": 3,
+            "column": 1
+          }
+        },
+        {
+          "kind": "waitfor",
+          "type": "WaitForStatement",
+          "span": {
+            "offset": 80,
+            "length": 25,
+            "line": 4,
+            "column": 1
+          }
+        },
+        {
+          "kind": "return",
+          "type": "ReturnStatement",
+          "span": {
+            "offset": 106,
+            "length": 7,
+            "line": 5,
+            "column": 1
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

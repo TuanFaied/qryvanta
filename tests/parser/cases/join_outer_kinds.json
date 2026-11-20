@@ -1,0 +1,236 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- LEFT, RIGHT and FULL OUTER joins chained left-deep\nSELECT *\nFROM a\nLEFT JOIN b ON b.id = a.id\nRIGHT OUTER JOIN c ON c.id = b.id\nFULL JOIN d ON d.id = c.id;\n",
+      "offset": 0,
+      "length": 159,
+      "byteOffset": 0,
+      "byteLength": 159,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 54,
+            "length": 104,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 54,
+              "length": 103,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 61,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 68,
+                "length": 89,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "full",
+              "left": {
+                "kind": "join",
+                "span": {
+                  "offset": 68,
+                  "length": 62,
+                  "line": 3,
+                  "column": 6
+                },
+                "joinType": "right",
+                "left": {
+                  "kind": "join",
+                  "span": {
+                    "offset": 68,
+                    "length": 28,
+                    "line": 3,
+                    "column": 6
+                  },
+                  "joinType": "left",
+                  "left": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 68,
+                      "length": 1,
+                      "line": 3,
+                      "column": 6
+                    },
+                    "name": {
+                      "name": "a"
+                    }
+                  },
+                  "right": {
+                    "kind": "table",
+                    "span": {
+                      "offset": 80,
+                      "length": 1,
+                      "line": 4,
+                      "column": 11
+                    },
+                    "name": {
+                      "name": "b"
+                    }
+                  },
+                  "on": {
+                    "kind": "compare",
+                    "span": {
+                      "offset": 85,
+                      "length": 11,
+                      "line": 4,
+                      "column": 16
+                    },
+                    "op": "=",
+                    "left": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 85,
+                        "length": 4,
+                        "line": 4,
+                        "column": 16
+                      },
+                      "parts": [
+                        "b",
+                        "id"
+                      ]
+                    },
+                    "right": {
+                      "kind": "column",
+                      "span": {
+                        "offset": 92,
+                        "length": 4,
+                        "line": 4,
+                        "column": 23
+                      },
+                      "parts": [
+                        "a",
+                        "id"
+                      ]
+                    }
+                  }
+                },
+                "right": {
+                  "kind": "table",
+                  "span": {
+                    "offset": 114,
+                    "length": 1,
+                    "line": 5,
+                    "column": 18
+                  },
+                  "name": {
+                    "name": "c"
+                  }
+                },
+                "on": {
+                  "kind": "compare",
+                  "span": {
+                    "offset": 119,
+                    "length": 11,
+                    "line": 5,
+                    "column": 23
+                  },
+                  "op": "=",
+                  "left": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 119,
+                      "length": 4,
+                      "line": 5,
+                      "column": 23
+                    },
+                    "parts": [
+                      "c",
+                      "id"
+                    ]
+                  },
+                  "right": {
+                    "kind": "column",
+                    "span": {
+                      "offset": 126,
+                      "length": 4,
+                      "line": 5,
+                      "column": 30
+                    },
+                    "parts": [
+                      "b",
+                      "id"
+                    ]
+                  }
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 141,
+                  "length": 1,
+                  "line": 6,
+                  "column": 11
+                },
+                "name": {
+                  "name": "d"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 146,
+                  "length": 11,
+                  "line": 6,
+                  "column": 16
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 146,
+                    "length": 4,
+                    "line": 6,
+                    "column": 16
+                  },
+                  "parts": [
+                    "d",
+                    "id"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 153,
+                    "length": 4,
+                    "line": 6,
+                    "column": 23
+                  },
+                  "parts": [
+                    "c",
+                    "id"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

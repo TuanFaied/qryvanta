@@ -1,0 +1,191 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a scalar subquery in the select list\nSELECT c.CustomerID,\n       (SELECT COUNT(*) FROM dbo.Orders o WHERE o.CustomerID = c.CustomerID) AS Orders\nFROM dbo.Customers c;\n",
+      "offset": 0,
+      "length": 170,
+      "byteOffset": 0,
+      "byteLength": 170,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 40,
+            "length": 129,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 40,
+              "length": 128,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 47,
+                    "length": 12,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "span": {
+                  "offset": 47,
+                  "length": 12,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "subquery",
+                  "span": {
+                    "offset": 68,
+                    "length": 69,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "query": {
+                    "kind": "select",
+                    "span": {
+                      "offset": 69,
+                      "length": 67,
+                      "line": 3,
+                      "column": 9
+                    },
+                    "select": [
+                      {
+                        "kind": "expr",
+                        "expr": {
+                          "kind": "function",
+                          "span": {
+                            "offset": 76,
+                            "length": 8,
+                            "line": 3,
+                            "column": 16
+                          },
+                          "name": "COUNT",
+                          "args": [
+                            {
+                              "kind": "column",
+                              "span": {
+                                "offset": 82,
+                                "length": 1,
+                                "line": 3,
+                                "column": 22
+                              },
+                              "parts": [
+                                "*"
+                              ]
+                            }
+                          ],
+                          "aggregate": true
+                        },
+                        "span": {
+                          "offset": 76,
+                          "length": 8,
+                          "line": 3,
+                          "column": 16
+                        }
+                      }
+                    ],
+                    "from": {
+                      "kind": "table",
+                      "span": {
+                        "offset": 90,
+                        "length": 12,
+                        "line": 3,
+                        "column": 30
+                      },
+                      "alias": "o",
+                      "name": {
+                        "schema": "dbo",
+                        "name": "Orders"
+                      }
+                    },
+                    "where": {
+                      "kind": "compare",
+                      "span": {
+                        "offset": 109,
+                        "length": 27,
+                        "line": 3,
+                        "column": 49
+                      },
+                      "op": "=",
+                      "left": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 109,
+                          "length": 12,
+                          "line": 3,
+                          "column": 49
+                        },
+                        "parts": [
+                          "o",
+                          "CustomerID"
+                        ]
+                      },
+                      "right": {
+                        "kind": "column",
+                        "span": {
+                          "offset": 124,
+                          "length": 12,
+                          "line": 3,
+                          "column": 64
+                        },
+                        "parts": [
+                          "c",
+                          "CustomerID"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "alias": "Orders",
+                "span": {
+                  "offset": 68,
+                  "length": 79,
+                  "line": 3,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 153,
+                "length": 15,
+                "line": 4,
+                "column": 6
+              },
+              "alias": "c",
+              "name": {
+                "schema": "dbo",
+                "name": "Customers"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

@@ -1,0 +1,220 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Fix: group the OR explicitly (or use IN).\nSELECT OrderID, Status, ShipCountry\nFROM dbo.Orders\nWHERE Status IN ('Shipped', 'Delivered') AND ShipCountry = 'LK'\nORDER BY OrderID;\n",
+      "offset": 0,
+      "length": 179,
+      "byteOffset": 0,
+      "byteLength": 179,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 45,
+            "length": 133,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 45,
+              "length": 132,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 52,
+                    "length": 7,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 52,
+                  "length": 7,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 61,
+                    "length": 6,
+                    "line": 2,
+                    "column": 17
+                  },
+                  "parts": [
+                    "Status"
+                  ]
+                },
+                "span": {
+                  "offset": 61,
+                  "length": 6,
+                  "line": 2,
+                  "column": 17
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 69,
+                    "length": 11,
+                    "line": 2,
+                    "column": 25
+                  },
+                  "parts": [
+                    "ShipCountry"
+                  ]
+                },
+                "span": {
+                  "offset": 69,
+                  "length": 11,
+                  "line": 2,
+                  "column": 25
+                }
+              }
+            ],
+            "from": {
+              "kind": "table",
+              "span": {
+                "offset": 86,
+                "length": 10,
+                "line": 3,
+                "column": 6
+              },
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 103,
+                "length": 57,
+                "line": 4,
+                "column": 7
+              },
+              "left": {
+                "kind": "in",
+                "span": {
+                  "offset": 103,
+                  "length": 34,
+                  "line": 4,
+                  "column": 7
+                },
+                "operand": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 103,
+                    "length": 6,
+                    "line": 4,
+                    "column": 7
+                  },
+                  "parts": [
+                    "Status"
+                  ]
+                },
+                "values": [
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 114,
+                      "length": 9,
+                      "line": 4,
+                      "column": 18
+                    },
+                    "literalType": "string",
+                    "value": "Shipped"
+                  },
+                  {
+                    "kind": "literal",
+                    "span": {
+                      "offset": 125,
+                      "length": 11,
+                      "line": 4,
+                      "column": 29
+                    },
+                    "literalType": "string",
+                    "value": "Delivered"
+                  }
+                ]
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 142,
+                  "length": 18,
+                  "line": 4,
+                  "column": 46
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 142,
+                    "length": 11,
+                    "line": 4,
+                    "column": 46
+                  },
+                  "parts": [
+                    "ShipCountry"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 156,
+                    "length": 4,
+                    "line": 4,
+                    "column": 60
+                  },
+                  "literalType": "string",
+                  "value": "LK"
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 170,
+                    "length": 7,
+                    "line": 5,
+                    "column": 10
+                  },
+                  "parts": [
+                    "OrderID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

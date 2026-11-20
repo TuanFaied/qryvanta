@@ -126,6 +126,36 @@ public class ModelTests
         Assert.Single(q.OrderBy!);
     }
 
+    private static string Shape(Query q) => q.Kind == "setOp"
+        ? $"({Shape(q.Left!)} {q.Op} {Shape(q.Right!)})"
+        : ((q.Select![0].Expr!.Value) ?? "?") + (q.Parenthesized ? "ᵖ" : "");
+
+    [Theory]
+    // ScriptDom nests set operations left to right; SQL Server evaluates INTERSECT first.
+    [InlineData("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3", "(1 union (2 intersect 3))")]
+    [InlineData("SELECT 1 INTERSECT SELECT 2 UNION SELECT 3", "((1 intersect 2) union 3)")]
+    [InlineData("SELECT 1 EXCEPT SELECT 2 INTERSECT SELECT 3 INTERSECT SELECT 4 UNION ALL SELECT 5",
+        "((1 except ((2 intersect 3) intersect 4)) unionAll 5)")]
+    [InlineData("SELECT 1 UNION SELECT 2 EXCEPT SELECT 3", "((1 union 2) except 3)")]
+    [InlineData("(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3", "((1 union 2) intersect 3)")]
+    [InlineData("SELECT 1 INTERSECT (SELECT 2 UNION SELECT 3)", "(1 intersect (2 union 3))")]
+    public void SetOperationsFollowSqlServerPrecedence(string sql, string shape)
+    {
+        var q = Select(sql);
+        Assert.Equal(shape, Shape(q));
+        Assert.Equal(0, q.Span.Offset);
+    }
+
+    [Fact]
+    public void ReorderedSetOperationsKeepAccurateSpansAndTheOuterOrderBy()
+    {
+        var sql = "SELECT 1 AS n UNION SELECT 2 INTERSECT SELECT 3 ORDER BY n";
+        var q = Select(sql);
+        Assert.Single(q.OrderBy!);
+        Assert.Equal("SELECT 2 INTERSECT SELECT 3", Text(sql, q.Right!.Span));
+        Assert.Null(q.Right.OrderBy);
+    }
+
     [Fact]
     public void CtesAreResolvedAndRecursionIsDetected()
     {

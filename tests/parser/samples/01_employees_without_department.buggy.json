@@ -1,0 +1,199 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Question: list every employee with their department.\n-- Bug: INNER JOIN drops employees whose DepartmentID is NULL or points to a missing department.\nSELECT e.EmployeeID, e.Name, d.Name AS Department\nFROM dbo.Employees AS e\nINNER JOIN dbo.Departments AS d ON d.DepartmentID = e.DepartmentID\nORDER BY e.EmployeeID;\n",
+      "offset": 0,
+      "length": 317,
+      "byteOffset": 0,
+      "byteLength": 317,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 153,
+            "length": 163,
+            "line": 3,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 153,
+              "length": 162,
+              "line": 3,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 160,
+                    "length": 12,
+                    "line": 3,
+                    "column": 8
+                  },
+                  "parts": [
+                    "e",
+                    "EmployeeID"
+                  ]
+                },
+                "span": {
+                  "offset": 160,
+                  "length": 12,
+                  "line": 3,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 174,
+                    "length": 6,
+                    "line": 3,
+                    "column": 22
+                  },
+                  "parts": [
+                    "e",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 174,
+                  "length": 6,
+                  "line": 3,
+                  "column": 22
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 182,
+                    "length": 6,
+                    "line": 3,
+                    "column": 30
+                  },
+                  "parts": [
+                    "d",
+                    "Name"
+                  ]
+                },
+                "alias": "Department",
+                "span": {
+                  "offset": 182,
+                  "length": 20,
+                  "line": 3,
+                  "column": 30
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 208,
+                "length": 85,
+                "line": 4,
+                "column": 6
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 208,
+                  "length": 18,
+                  "line": 4,
+                  "column": 6
+                },
+                "alias": "e",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Employees"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 238,
+                  "length": 20,
+                  "line": 5,
+                  "column": 12
+                },
+                "alias": "d",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Departments"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 262,
+                  "length": 31,
+                  "line": 5,
+                  "column": 36
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 262,
+                    "length": 14,
+                    "line": 5,
+                    "column": 36
+                  },
+                  "parts": [
+                    "d",
+                    "DepartmentID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 279,
+                    "length": 14,
+                    "line": 5,
+                    "column": 53
+                  },
+                  "parts": [
+                    "e",
+                    "DepartmentID"
+                  ]
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 303,
+                    "length": 12,
+                    "line": 6,
+                    "column": 10
+                  },
+                  "parts": [
+                    "e",
+                    "EmployeeID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

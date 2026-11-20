@@ -1,0 +1,167 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- a CTE named Orders: the unqualified name is the CTE, dbo.Orders is the table\nWITH Orders AS (SELECT 1 AS OrderID)\nSELECT * FROM Orders AS cte JOIN dbo.Orders AS real ON real.OrderID = cte.OrderID;\n",
+      "offset": 0,
+      "length": 200,
+      "byteOffset": 0,
+      "byteLength": 200,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 80,
+            "length": 119,
+            "line": 2,
+            "column": 1
+          },
+          "ctes": [
+            {
+              "name": "Orders",
+              "query": {
+                "kind": "select",
+                "span": {
+                  "offset": 96,
+                  "length": 19,
+                  "line": 2,
+                  "column": 17
+                },
+                "select": [
+                  {
+                    "kind": "expr",
+                    "expr": {
+                      "kind": "literal",
+                      "span": {
+                        "offset": 103,
+                        "length": 1,
+                        "line": 2,
+                        "column": 24
+                      },
+                      "literalType": "integer",
+                      "value": "1"
+                    },
+                    "alias": "OrderID",
+                    "span": {
+                      "offset": 103,
+                      "length": 12,
+                      "line": 2,
+                      "column": 24
+                    }
+                  }
+                ]
+              },
+              "span": {
+                "offset": 85,
+                "length": 31,
+                "line": 2,
+                "column": 6
+              }
+            }
+          ],
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 117,
+              "length": 81,
+              "line": 3,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 124,
+                  "length": 1,
+                  "line": 3,
+                  "column": 8
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 131,
+                "length": 67,
+                "line": 3,
+                "column": 15
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 131,
+                  "length": 13,
+                  "line": 3,
+                  "column": 15
+                },
+                "alias": "cte",
+                "name": {
+                  "name": "Orders"
+                },
+                "cte": true
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 150,
+                  "length": 18,
+                  "line": 3,
+                  "column": 34
+                },
+                "alias": "real",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 172,
+                  "length": 26,
+                  "line": 3,
+                  "column": 56
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 172,
+                    "length": 12,
+                    "line": 3,
+                    "column": 56
+                  },
+                  "parts": [
+                    "real",
+                    "OrderID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 187,
+                    "length": 11,
+                    "line": 3,
+                    "column": 71
+                  },
+                  "parts": [
+                    "cte",
+                    "OrderID"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

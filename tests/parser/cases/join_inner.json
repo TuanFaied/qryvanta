@@ -1,0 +1,159 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- INNER JOIN with an ON predicate, aliases with and without AS\nSELECT o.OrderID, c.Name\nFROM dbo.Orders AS o\nINNER JOIN dbo.Customers c ON c.CustomerID = o.CustomerID;\n",
+      "offset": 0,
+      "length": 169,
+      "byteOffset": 0,
+      "byteLength": 169,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 64,
+            "length": 104,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 64,
+              "length": 103,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 71,
+                    "length": 9,
+                    "line": 2,
+                    "column": 8
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 71,
+                  "length": 9,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 82,
+                    "length": 6,
+                    "line": 2,
+                    "column": 19
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 82,
+                  "length": 6,
+                  "line": 2,
+                  "column": 19
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 94,
+                "length": 73,
+                "line": 3,
+                "column": 6
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 94,
+                  "length": 15,
+                  "line": 3,
+                  "column": 6
+                },
+                "alias": "o",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 121,
+                  "length": 15,
+                  "line": 4,
+                  "column": 12
+                },
+                "alias": "c",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Customers"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 140,
+                  "length": 27,
+                  "line": 4,
+                  "column": 31
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 140,
+                    "length": 12,
+                    "line": 4,
+                    "column": 31
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 155,
+                    "length": 12,
+                    "line": 4,
+                    "column": 46
+                  },
+                  "parts": [
+                    "o",
+                    "CustomerID"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

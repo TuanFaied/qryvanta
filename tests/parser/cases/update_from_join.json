@@ -1,0 +1,152 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- UPDATE with FROM, a JOIN and WHERE; the target is the alias\nUPDATE o SET o.Status = 'Late'\nFROM dbo.Orders o\nJOIN dbo.Shipments s ON s.OrderID = o.OrderID\nWHERE s.ShippedDate > o.DueDate;\n",
+      "offset": 0,
+      "length": 191,
+      "byteOffset": 0,
+      "byteLength": 191,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "update",
+          "type": "UpdateStatement",
+          "span": {
+            "offset": 63,
+            "length": 127,
+            "line": 2,
+            "column": 1
+          },
+          "target": {
+            "kind": "table",
+            "span": {
+              "offset": 70,
+              "length": 1,
+              "line": 2,
+              "column": 8
+            },
+            "name": {
+              "name": "o"
+            }
+          },
+          "from": {
+            "kind": "join",
+            "span": {
+              "offset": 99,
+              "length": 58,
+              "line": 3,
+              "column": 6
+            },
+            "joinType": "inner",
+            "left": {
+              "kind": "table",
+              "span": {
+                "offset": 99,
+                "length": 12,
+                "line": 3,
+                "column": 6
+              },
+              "alias": "o",
+              "name": {
+                "schema": "dbo",
+                "name": "Orders"
+              }
+            },
+            "right": {
+              "kind": "table",
+              "span": {
+                "offset": 117,
+                "length": 15,
+                "line": 4,
+                "column": 6
+              },
+              "alias": "s",
+              "name": {
+                "schema": "dbo",
+                "name": "Shipments"
+              }
+            },
+            "on": {
+              "kind": "compare",
+              "span": {
+                "offset": 136,
+                "length": 21,
+                "line": 4,
+                "column": 25
+              },
+              "op": "=",
+              "left": {
+                "kind": "column",
+                "span": {
+                  "offset": 136,
+                  "length": 9,
+                  "line": 4,
+                  "column": 25
+                },
+                "parts": [
+                  "s",
+                  "OrderID"
+                ]
+              },
+              "right": {
+                "kind": "column",
+                "span": {
+                  "offset": 148,
+                  "length": 9,
+                  "line": 4,
+                  "column": 37
+                },
+                "parts": [
+                  "o",
+                  "OrderID"
+                ]
+              }
+            }
+          },
+          "where": {
+            "kind": "compare",
+            "span": {
+              "offset": 164,
+              "length": 25,
+              "line": 5,
+              "column": 7
+            },
+            "op": ">",
+            "left": {
+              "kind": "column",
+              "span": {
+                "offset": 164,
+                "length": 13,
+                "line": 5,
+                "column": 7
+              },
+              "parts": [
+                "s",
+                "ShippedDate"
+              ]
+            },
+            "right": {
+              "kind": "column",
+              "span": {
+                "offset": 180,
+                "length": 9,
+                "line": 5,
+                "column": 23
+              },
+              "parts": [
+                "o",
+                "DueDate"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

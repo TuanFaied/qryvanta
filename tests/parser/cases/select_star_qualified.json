@@ -1,0 +1,158 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- SELECT * and qualified t.* items\nSELECT *, o.*, c.Name FROM dbo.Orders o JOIN dbo.Customers c ON c.CustomerID = o.CustomerID;\n",
+      "offset": 0,
+      "length": 129,
+      "byteOffset": 0,
+      "byteLength": 129,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 36,
+            "length": 92,
+            "line": 2,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 36,
+              "length": 91,
+              "line": 2,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "star",
+                "span": {
+                  "offset": 43,
+                  "length": 1,
+                  "line": 2,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "star",
+                "qualifier": [
+                  "o"
+                ],
+                "span": {
+                  "offset": 46,
+                  "length": 3,
+                  "line": 2,
+                  "column": 11
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 51,
+                    "length": 6,
+                    "line": 2,
+                    "column": 16
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "span": {
+                  "offset": 51,
+                  "length": 6,
+                  "line": 2,
+                  "column": 16
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 63,
+                "length": 64,
+                "line": 2,
+                "column": 28
+              },
+              "joinType": "inner",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 63,
+                  "length": 12,
+                  "line": 2,
+                  "column": 28
+                },
+                "alias": "o",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 81,
+                  "length": 15,
+                  "line": 2,
+                  "column": 46
+                },
+                "alias": "c",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Customers"
+                }
+              },
+              "on": {
+                "kind": "compare",
+                "span": {
+                  "offset": 100,
+                  "length": 27,
+                  "line": 2,
+                  "column": 65
+                },
+                "op": "=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 100,
+                    "length": 12,
+                    "line": 2,
+                    "column": 65
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                },
+                "right": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 115,
+                    "length": 12,
+                    "line": 2,
+                    "column": 80
+                  },
+                  "parts": [
+                    "o",
+                    "CustomerID"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

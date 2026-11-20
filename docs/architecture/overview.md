@@ -202,6 +202,10 @@ guessed at. The C# DTOs (`sidecar/tsqlparser/Model.cs`) and the Go types
   - `select` (DISTINCT, TOP, select list, FROM, WHERE, GROUP BY, HAVING) or `setOp` (UNION
     [ALL], EXCEPT, INTERSECT).
   - ORDER BY and OFFSET/FETCH belong to the whole query.
+  - **Set operations follow SQL Server's precedence.** ScriptDom nests them strictly left to
+    right, so `a UNION b INTERSECT c` would read as `(a UNION b) INTERSECT c`. The builder
+    flattens each unparenthesized chain and rebuilds it with INTERSECT first, then UNION, UNION
+    ALL and EXCEPT left to right, giving `a UNION (b INTERSECT c)`. The golden tests found this.
 - **Sources:**
   - Kinds: table (flagged when it names a CTE in scope), derived table, join, table-valued
     function, table variable, VALUES.
@@ -648,7 +652,7 @@ line, but never the connection string.
 | Layer | Approach |
 |---|---|
 | config, logging, security, compare, plan parsing, analyzer rules | Pure unit tests, table-driven, run on every build |
-| parser | Golden tests: SQL file → expected `QueryModel` JSON, run against the real sidecar |
+| parser | Golden tests (`tests/parser`, 79 cases including every sample query): SQL file → expected batches, diagnostics and `QueryModel` JSON, run against the real sidecar in CI; plus sidecar unit tests and Go client tests with a fake sidecar |
 | executor, connection, dialect | Integration tests against a real SQL Server (build tag `integration`, configured through `QRYVANTA_TEST_MSSQL_*` variables). CI runs them on Linux against `docker-compose.yml`, as the read-only `qryvanta_reader` login. |
 | fixture data | `tests/integration` runs the 10 scenario queries in `tests/sample_queries` and checks the documented wrong and correct results |
 | diagnostics end to end (Phase 5) | Each buggy scenario query must produce its finding, and each corrected query must not |

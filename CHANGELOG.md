@@ -29,6 +29,11 @@ All notable changes to this project are documented here. The format follows
     parentheses. Aggregates and window functions are flagged.
   - Every part carries its source position.
   - `qryvanta-cli parse --model` prints it.
+- Parser golden tests (`tests/parser`):
+  - 59 hand-written cases plus all 20 sample queries, each with its expected batches,
+    diagnostics and query model.
+  - CI runs them against the published sidecar. A failure names the JSON path of the first
+    difference, and `-update` regenerates the expected files for review.
 - The status bar warns "Parser unavailable", with the reason, when the parser cannot run.
   Queries still run without it.
 - `qryvanta-cli parse` prints a script's `GO` batches and syntax errors (with `--json` and
@@ -168,6 +173,10 @@ All notable changes to this project are documented here. The format follows
   at 260 px and 300 px, so they no longer collapse on narrow windows.
 
 ### Fixed
+
+- The query model now groups set operations as SQL Server does. `a UNION b INTERSECT c` means
+  `a UNION (b INTERSECT c)`; the parser library nests them left to right, and the model used to
+  inherit that.
 
 - The Settings dialog no longer overflows its frame on short windows. It now scrolls inside the
   dialog, with the footer kept visible.

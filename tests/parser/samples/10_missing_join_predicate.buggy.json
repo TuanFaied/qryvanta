@@ -1,0 +1,233 @@
+{
+  "compatLevel": 170,
+  "modelVersion": 1,
+  "batches": [
+    {
+      "index": 0,
+      "text": "-- Question: the customer for each order placed in January 2026.\n-- Bug: the old-style comma join has no join predicate, so every order is paired with every\n-- customer (a cartesian product).\nSELECT o.OrderID, c.Name AS Customer\nFROM dbo.Orders AS o, dbo.Customers AS c\nWHERE o.OrderDate >= '2026-01-01' AND o.OrderDate < '2026-02-01'\nORDER BY o.OrderID, c.CustomerID;\n",
+      "offset": 0,
+      "length": 369,
+      "byteOffset": 0,
+      "byteLength": 369,
+      "line": 1,
+      "column": 1,
+      "repeat": 1,
+      "statements": [
+        {
+          "kind": "select",
+          "type": "SelectStatement",
+          "span": {
+            "offset": 192,
+            "length": 176,
+            "line": 4,
+            "column": 1
+          },
+          "query": {
+            "kind": "select",
+            "span": {
+              "offset": 192,
+              "length": 175,
+              "line": 4,
+              "column": 1
+            },
+            "select": [
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 199,
+                    "length": 9,
+                    "line": 4,
+                    "column": 8
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                },
+                "span": {
+                  "offset": 199,
+                  "length": 9,
+                  "line": 4,
+                  "column": 8
+                }
+              },
+              {
+                "kind": "expr",
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 210,
+                    "length": 6,
+                    "line": 4,
+                    "column": 19
+                  },
+                  "parts": [
+                    "c",
+                    "Name"
+                  ]
+                },
+                "alias": "Customer",
+                "span": {
+                  "offset": 210,
+                  "length": 18,
+                  "line": 4,
+                  "column": 19
+                }
+              }
+            ],
+            "from": {
+              "kind": "join",
+              "span": {
+                "offset": 234,
+                "length": 35,
+                "line": 5,
+                "column": 6
+              },
+              "joinType": "comma",
+              "left": {
+                "kind": "table",
+                "span": {
+                  "offset": 234,
+                  "length": 15,
+                  "line": 5,
+                  "column": 6
+                },
+                "alias": "o",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Orders"
+                }
+              },
+              "right": {
+                "kind": "table",
+                "span": {
+                  "offset": 251,
+                  "length": 18,
+                  "line": 5,
+                  "column": 23
+                },
+                "alias": "c",
+                "name": {
+                  "schema": "dbo",
+                  "name": "Customers"
+                }
+              }
+            },
+            "where": {
+              "kind": "and",
+              "span": {
+                "offset": 276,
+                "length": 58,
+                "line": 6,
+                "column": 7
+              },
+              "left": {
+                "kind": "compare",
+                "span": {
+                  "offset": 276,
+                  "length": 27,
+                  "line": 6,
+                  "column": 7
+                },
+                "op": ">=",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 276,
+                    "length": 11,
+                    "line": 6,
+                    "column": 7
+                  },
+                  "parts": [
+                    "o",
+                    "OrderDate"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 291,
+                    "length": 12,
+                    "line": 6,
+                    "column": 22
+                  },
+                  "literalType": "string",
+                  "value": "2026-01-01"
+                }
+              },
+              "right": {
+                "kind": "compare",
+                "span": {
+                  "offset": 308,
+                  "length": 26,
+                  "line": 6,
+                  "column": 39
+                },
+                "op": "<",
+                "left": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 308,
+                    "length": 11,
+                    "line": 6,
+                    "column": 39
+                  },
+                  "parts": [
+                    "o",
+                    "OrderDate"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "span": {
+                    "offset": 322,
+                    "length": 12,
+                    "line": 6,
+                    "column": 53
+                  },
+                  "literalType": "string",
+                  "value": "2026-02-01"
+                }
+              }
+            },
+            "orderBy": [
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 344,
+                    "length": 9,
+                    "line": 7,
+                    "column": 10
+                  },
+                  "parts": [
+                    "o",
+                    "OrderID"
+                  ]
+                }
+              },
+              {
+                "expr": {
+                  "kind": "column",
+                  "span": {
+                    "offset": 355,
+                    "length": 12,
+                    "line": 7,
+                    "column": 21
+                  },
+                  "parts": [
+                    "c",
+                    "CustomerID"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}
