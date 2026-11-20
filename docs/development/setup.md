@@ -109,7 +109,10 @@ request. The protocol is documented in `sidecar/tsqlparser/Protocol.cs`.
 - **The .NET SDK is pinned in `global.json`**, and CI installs exactly that version. The
   trimming package (`Microsoft.NET.ILLink.Tasks`) comes with the SDK, and its version follows
   the SDK's, so a different SDK patch would no longer match the lock file. Use the SDK in
-  `global.json`; a newer patch also works locally, but restore then rewrites the lock file.
+  `global.json`. With `rollForward: patch`, a newer patch is used locally only when that exact
+  version isn't installed, and restore then rewrites the lock file.
+  - Don't change it to `latestPatch`: `actions/setup-dotnet` would then install the newest
+    10.0.4xx instead of the pinned version.
   To move to a newer SDK, change `global.json`, then run
   `dotnet restore sidecar/Sidecar.slnx --force-evaluate`, and commit both files together.
 - Tests: `dotnet test sidecar/Sidecar.slnx` (or `wails3 task common:test:sidecar`).
