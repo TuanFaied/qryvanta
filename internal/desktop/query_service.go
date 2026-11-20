@@ -9,6 +9,7 @@ import (
 
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/executor"
+	"github.com/TuanFaied/qryvanta/internal/parser"
 )
 
 // EventExecution carries the results of a running query to the frontend.
@@ -20,6 +21,7 @@ func init() {
 
 // Execution event kinds, in the order a run produces them.
 const (
+	KindBatch     = "batch"
 	KindResultSet = "resultSet"
 	KindRows      = "rows"
 	KindMessage   = "message"
@@ -31,14 +33,27 @@ const (
 // showing, so a cancelled or replaced run can never overwrite a newer one.
 type ExecutionEvent struct {
 	RunID string `json:"runId"`
-	// Kind is resultSet, rows, message or done.
+	// Kind is batch (a batch execution starts), resultSet, rows, message or done.
 	Kind string `json:"kind"`
 	// Index is the result set the event belongs to (resultSet and rows).
-	Index   int                `json:"index"`
+	Index int `json:"index"`
+	// Batch is the batch a resultSet belongs to.
+	Batch   int                `json:"batch"`
 	Columns []executor.Column  `json:"columns"`
 	Rows    [][]executor.Value `json:"rows"`
 	Message *executor.Message  `json:"message"`
+	Run     *executor.BatchRun `json:"run"`
 	Summary *executor.Summary  `json:"summary"`
+}
+
+// SyntaxCheck is the editor's view of a script: its syntax errors, or why it could not be
+// checked.
+type SyntaxCheck struct {
+	// Available is false when the parser cannot run; Reason says why.
+	Available   bool                `json:"available"`
+	Reason      string              `json:"reason"`
+	Batches     int                 `json:"batches"`
+	Diagnostics []parser.Diagnostic `json:"diagnostics"`
 }
 
 // QueryService runs queries from the editor and streams their results as events.
@@ -96,6 +111,20 @@ func (s *QueryService) Execute(ctx context.Context, runID, connectionID, databas
 	return sum, nil
 }
 
+// CheckSyntax parses sql for the editor's syntax markers. Cancelling the call (the editor does
+// when the text changes again) abandons the check without restarting the parser.
+func (s *QueryService) CheckSyntax(ctx context.Context, sql string) SyntaxCheck {
+	res, err := s.core.Parser().Parse(ctx, sql, parser.Options{})
+	if err != nil {
+		return SyntaxCheck{Reason: err.Error(), Diagnostics: []parser.Diagnostic{}}
+	}
+	diags := res.Diagnostics
+	if diags == nil {
+		diags = []parser.Diagnostic{}
+	}
+	return SyntaxCheck{Available: true, Batches: len(res.Batches), Diagnostics: diags}
+}
+
 // Cancel stops a run. It reports whether the run was still in progress.
 func (s *QueryService) Cancel(runID string) bool {
 	s.mu.Lock()
@@ -112,10 +141,17 @@ func (s *QueryService) Cancel(runID string) bool {
 type eventSink struct {
 	runID string
 	emit  func(ExecutionEvent)
+	batch int
+}
+
+func (k *eventSink) BatchStart(run executor.BatchRun) error {
+	k.batch = run.Batch
+	k.emit(ExecutionEvent{RunID: k.runID, Kind: KindBatch, Run: &run})
+	return nil
 }
 
 func (k *eventSink) ResultSet(index int, columns []executor.Column) error {
-	k.emit(ExecutionEvent{RunID: k.runID, Kind: KindResultSet, Index: index, Columns: columns})
+	k.emit(ExecutionEvent{RunID: k.runID, Kind: KindResultSet, Index: index, Batch: k.batch, Columns: columns})
 	return nil
 }
 

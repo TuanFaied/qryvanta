@@ -228,6 +228,9 @@ $env:QRYVANTA_TEST_MSSQL_SERVER = 'localhost'; $env:QRYVANTA_TEST_MSSQL_PORT = '
 go test -tags integration ./internal/dialect/mssql/ ./tests/integration/ ./cmd/qryvanta-cli/
 ```
 
+The CLI test for `GO` scripts also needs `QRYVANTA_PARSER_PATH` (see the parser section) and
+skips without it. CI publishes the sidecar for it.
+
 For a local Express instance with Windows authentication, set only
 `QRYVANTA_TEST_MSSQL_SERVER = 'localhost\SQLEXPRESS'` and `QRYVANTA_TEST_MSSQL_TRUST = 'true'`.
 
@@ -282,6 +285,11 @@ cat report.sql | qryvanta-cli run --conn fixtures --database QryvantaSample --fo
 - Results go to stdout. Messages, errors (`Msg 207, Level 16, State 1, Line 3`), row counts and
   warnings go to stderr, so output can be piped safely.
 - If the login can modify data, a warning saying so is printed to stderr.
+- Scripts with `GO` run batch by batch on one session, as in SSMS (`GO n` repeats a batch). The
+  parser sidecar is needed to split them; without it, a script with `GO` lines is refused. An
+  error in one batch does not stop the next. Error lines are script lines, and with several
+  batches the table output heads each batch's results with `-- Batch k`. In `json`, each
+  result set and message has a `batch`, and `batches` lists every execution.
 - Exit codes: `0` success, `1` query error or failed batch, `2` usage error, `3` timed out or
   cancelled. Ctrl+C cancels the query on the server.
 

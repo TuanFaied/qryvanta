@@ -15,9 +15,13 @@ import { Button } from "@/components/ui/button";
 import { useResolvedTheme } from "@/features/theme/theme";
 import { backend, type Config } from "@/services/backend";
 import { isDirty, unsavedTabs, useEditorStore, type Binding, type EditorTab } from "@/stores/editor-store";
+import { currentDiagnostics, useSyntaxStore } from "@/stores/syntax-store";
 import type { EditorCommand, SqlEditorHandle } from "./editor-types";
 import { openFile, saveTab } from "./file-actions";
 import { TabBar } from "./TabBar";
+
+/** How long typing must pause before the syntax check runs. */
+export const SYNTAX_DEBOUNCE_MS = 300;
 
 // Monaco is a large chunk; it loads with the first editor tab, not with the app shell.
 const SqlEditor = lazy(() => import("./SqlEditor"));
@@ -124,6 +128,26 @@ export function EditorArea({
   }, [hasUnsaved]);
   useEffect(() => backend.onCloseRequested(() => setCloseWindow(true)), []);
 
+  // Syntax check of the active tab, 300 ms after typing stops. A newer check cancels the older
+  // one, and a result is only shown for the exact text it was made for.
+  const activeTabId = active?.id ?? null;
+  const activeText = active?.content ?? "";
+  useEffect(() => {
+    if (!activeTabId) return;
+    const timer = window.setTimeout(() => void useSyntaxStore.getState().check(activeTabId, activeText), SYNTAX_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeTabId, activeText]);
+  const syntax = useSyntaxStore((s) => (activeTabId ? s.byTab[activeTabId] : undefined));
+  const diagnostics = currentDiagnostics(syntax, activeText);
+  // Closed tabs need no checks.
+  const tabKey = tabs.map((t) => t.id).join("\n");
+  useEffect(() => {
+    const open = new Set(tabKey.split("\n"));
+    for (const id of Object.keys(useSyntaxStore.getState().byTab)) {
+      if (!open.has(id)) useSyntaxStore.getState().forget(id);
+    }
+  }, [tabKey]);
+
   const closingTab = tabs.find((t) => t.id === closing) ?? null;
   const unsaved = unsavedTabs(tabs);
   const boundTo = active?.connectionId ? connectionName(active.connectionId) : null;
@@ -184,6 +208,7 @@ export function EditorArea({
               fontSize={config.appearance.editorFontSize}
               formatting={config.formatting}
               executing={executing}
+              diagnostics={diagnostics}
               onChange={(id, text) => store().setContent(id, text)}
               onCommand={(command) => onCommand(command, active)}
               onFormatResult={setNotice}

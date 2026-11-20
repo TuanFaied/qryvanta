@@ -1,8 +1,10 @@
 import { create } from "zustand";
-import type { ExecutionEvent, Message, ResultColumn, Summary, Value } from "@/services/backend";
+import type { BatchRun, ExecutionEvent, Message, ResultColumn, Summary, Value } from "@/services/backend";
 
 export interface ResultSetData {
   index: number;
+  /** The batch (GO-separated part of the script) that returned it. */
+  batch: number;
   columns: ResultColumn[];
   rows: Value[][];
 }
@@ -18,6 +20,8 @@ export interface Run {
   finishedAt: number | null;
   /** Editor line the batch started on, minus one: server line numbers are relative to the batch. */
   lineOffset: number;
+  /** Batch executions as they start (a script without GO has one). */
+  batches: BatchRun[];
   resultSets: ResultSetData[];
   messages: Message[];
   summary: Summary | null;
@@ -68,6 +72,7 @@ export const useExecutionStore = create<ExecutionState>((set) => ({
           status: "running",
           startedAt: Date.now(),
           finishedAt: null,
+          batches: [],
           resultSets: [],
           messages: [],
           summary: null,
@@ -80,8 +85,13 @@ export const useExecutionStore = create<ExecutionState>((set) => ({
     set((s) => {
       const runs = update(s.runs, event.runId, (run) => {
         switch (event.kind) {
+          case "batch":
+            return event.run ? { ...run, batches: [...run.batches, event.run] } : run;
           case "resultSet":
-            return { ...run, resultSets: [...run.resultSets, { index: event.index, columns: event.columns ?? [], rows: [] }] };
+            return {
+              ...run,
+              resultSets: [...run.resultSets, { index: event.index, batch: event.batch ?? 0, columns: event.columns ?? [], rows: [] }],
+            };
           case "rows": {
             const incoming = event.rows ?? [];
             return {

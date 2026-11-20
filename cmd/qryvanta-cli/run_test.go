@@ -307,3 +307,47 @@ func TestFit(t *testing.T) {
 		t.Error("exitError should unwrap")
 	}
 }
+
+func TestRunPrintsBatchesAndScriptLines(t *testing.T) {
+	runner := &fakeRunner{
+		sets: [][]executor.Column{{{Name: "a", Type: "INT"}}, {{Name: "b", Type: "INT"}}},
+		rows: [][][]executor.Value{{{int64(1)}}, {{int64(2)}}},
+		// The server reports line 2 of the second batch, which starts on line 4 of the script.
+		msgs: []executor.Message{{Kind: "error", Number: 207, Severity: 16, State: 1, Line: 2, ScriptLine: 5, Batch: 1,
+			Text: "Invalid column name 'x'."}},
+		summary: executor.Summary{TotalRows: 2, ErrorCount: 1, RowsAffected: []int64{},
+			ResultSets: []executor.ResultSet{{Index: 0, Batch: 0}, {Index: 1, Batch: 1}},
+			Batches:    []executor.BatchRun{{Batch: 0, Execution: 0, Line: 1}, {Batch: 1, Execution: 0, Line: 4, ErrorCount: 1}}},
+	}
+	opts := runSetup(t, runner, connection.AccessReadOnly)
+
+	out, errOut, code := runCmd(t, opts, "--query", "SELECT 1 AS a")
+	if code != exitQueryError {
+		t.Errorf("exit = %d, want %d", code, exitQueryError)
+	}
+	if !strings.Contains(errOut, "Msg 207, Level 16, State 1, Line 5") {
+		t.Errorf("stderr should give the script line:\n%s", errOut)
+	}
+	if !strings.HasPrefix(out, "-- Batch 1\n") || !strings.Contains(out, "\n-- Batch 2\n") {
+		t.Errorf("stdout should head each batch's results:\n%s", out)
+	}
+
+	out, _, _ = runCmd(t, opts, "--query", "SELECT 1 AS a", "--format", "json")
+	var res runResult
+	if err := json.Unmarshal([]byte(out), &res); err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Batches) != 2 || res.Batches[1].Line != 4 || res.ResultSets[1].Batch != 1 || res.Messages[0].ScriptLine != 5 {
+		t.Errorf("json = %+v", res)
+	}
+}
+
+func TestRunSingleBatchHasNoBatchHeader(t *testing.T) {
+	runner := ordersRunner()
+	runner.summary.Batches = []executor.BatchRun{{Batch: 0, Line: 1}}
+	opts := runSetup(t, runner, connection.AccessReadOnly)
+	out, _, _ := runCmd(t, opts, "--query", "SELECT 1")
+	if strings.Contains(out, "-- Batch") {
+		t.Errorf("a single batch needs no header:\n%s", out)
+	}
+}

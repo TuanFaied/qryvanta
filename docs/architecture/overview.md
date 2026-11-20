@@ -322,6 +322,12 @@ documentation states clearly which guarantees are hard and which are best effort
      transaction early, and later statements run unprotected. After the batch the executor
      checks `@@TRANCOUNT` and reports this as `Summary.Guard.EndedByBatch`, and the app logs a
      warning. The parser (layer 1) will reject such batches.
+   - **Scripts with `GO`:** one protective transaction spans all the batches of a script, so
+     a temp table or `SET` option from one batch is visible to the next, as in SSMS (a
+     transaction per batch would roll back `CREATE TABLE #t` before the batch that reads it).
+     After each batch the executor checks `@@TRANCOUNT`. If the batch ended the transaction,
+     `EndedByBatch` is reported and a new protective transaction starts before the next batch,
+     so only the rest of that one batch ran unprotected.
    - **What it does not undo:** effects outside the transaction, such as linked servers, `xp_`
      procedures, CLR, Database Mail, consumed identity and sequence values, and statements that
      refuse to run in a user transaction (which fail instead).
@@ -453,9 +459,21 @@ documentation states clearly which guarantees are hard and which are best effort
   - NULL stays a distinct value.
 - **Privacy:** result rows are never logged. SQL text is logged only at debug level when
   `logging.logSqlText` is on.
-- **Not yet supported:** `GO` batch separators. They are a client-side `sqlcmd`/SSMS convention,
-  and splitting on them needs a T-SQL-aware lexer. That arrives with the parser (Phase 4). Until
-  then, a script with `GO` lines fails with the server's syntax error.
+- **`GO` batches.** `GO` is a client-side `sqlcmd`/SSMS convention, so `app.Core.Execute`
+  splits a script with the parser (D2) into `Request.Batches`, which ignores `GO` inside
+  strings and comments. The runner sends them one at a time on the same connection, so
+  temp tables, `SET` options and `USE` carry over.
+  - `GO n` runs a batch n times. Batches that hold only comments are left out.
+  - **An error does not stop the script**, as in SSMS and `sqlcmd` without `-b`: server
+    errors are recorded and the next batch runs. A timeout, cancellation, truncation or a
+    lost connection stops the whole script. There is no setting for this yet.
+  - Messages, result sets and `Summary.Batches` (one `BatchRun` per execution, with its start
+    line and error count) carry the batch index. `Message.ScriptLine` is the server's line
+    mapped to the script (batch start line + line − 1); it is 0 inside a procedure.
+  - Limits apply to the whole script, not to each batch.
+  - **Without the parser**, a script that has a line holding only `GO` is refused with a clear
+    message instead of being sent as one batch (which would fail at the first `GO`). A script
+    without such a line runs as one batch.
 - **Session guard:** in read-only mode the runner wraps the batch in the D5 session guard
   (`Request.Policy`, reported in `Summary.Guard`).
 
@@ -565,9 +583,22 @@ form-action 'none'; frame-ancestors 'none'
   cancels the query on the server. The run still ends with a `done` event (outcome
   `cancelled`), so the UI always learns how a run ended.
 - **Selection and line numbers.** Execute runs the selection if there is one, otherwise the
-  whole tab. SQL Server reports error lines relative to the batch, so the editor line is
-  `line + selection start − 1`. Errors inside a procedure report the procedure's own lines and
-  are not linked to the editor.
+  whole tab. SQL Server reports error lines relative to the batch; the backend maps them to the
+  script (`scriptLine`, D7c), so the editor line is `scriptLine + selection start − 1`. Errors
+  inside a procedure report the procedure's own lines and are not linked to the editor.
+- **`GO` batches.** A `batch` event marks the start of each batch execution, and result sets
+  carry their batch. With more than one batch, the Messages tab groups output under
+  "Batch k · line L" headers (with "ran n times" for `GO n`) and result headings name the batch.
+- **Syntax markers.** 300 ms after the active tab stops changing, its text is sent to
+  `QueryService.CheckSyntax`, and the diagnostics become Monaco markers (squiggles with hover
+  text) and a problems count in the status bar, which jumps to the first problem.
+  - A newer check of the same tab aborts the older one, and a result is shown only while the
+    tab still has the text it was computed for, so a slow parse never shows stale markers.
+    Parsing never blocks typing.
+  - When the parser is unavailable there are no markers (the status bar already warns), not
+    "no problems".
+  - **Running SQL with syntax errors asks first** ("Fix it first" / "Run anyway"). Only
+    errors inside the selection count when a selection runs.
 - **Results stay in memory.** Rows exist only in the frontend store for the tab's latest run.
   They are never logged (the core logs counts and timings; SQL text only with
   `logging.logSqlText`), and are never written to history. Result samples are a separate,

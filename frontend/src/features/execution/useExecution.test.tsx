@@ -4,6 +4,7 @@ import { AccessLevel } from "@/services/backend";
 import { accessKey, useAccessStore } from "@/stores/access-store";
 import { useEditorStore } from "@/stores/editor-store";
 import { useExecutionStore } from "@/stores/execution-store";
+import { useSyntaxStore } from "@/stores/syntax-store";
 import { testConfig } from "@/test/fixtures";
 import type { SqlEditorHandle } from "@/features/editor/editor-types";
 
@@ -37,6 +38,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   resetWriteConfirmations();
   useExecutionStore.setState({ runs: {} });
+  useSyntaxStore.setState({ byTab: {} });
   useAccessStore.setState({ results: {}, loading: {} });
   useEditorStore.setState({ tabs: [], activeId: null, untitledCount: 0 });
   useEditorStore.getState().newTab({ connectionId: "c1", database: "Sales" });
@@ -99,6 +101,37 @@ describe("useExecution", () => {
     const second = setup(false).hook;
     act(() => second.result.current.execute());
     expect(second.result.current.pending).toBeNull();
+    expect(runner.execute).toHaveBeenCalledTimes(1);
+  });
+
+  const diag = (line: number) => ({ number: 102, message: "Incorrect syntax.", offset: 0, byteOffset: 0, line, column: 1 });
+
+  it("asks before running SQL with current syntax errors inside the selection", () => {
+    const tab = useEditorStore.getState().tabs[0]!;
+    useEditorStore.getState().setContent(tab.id, "SELECT 1\n\n\n\nUPDATE t SET x = 1\nSELECT FROM");
+    const content = useEditorStore.getState().tabs[0]!.content;
+    // The selection is line 5 only, so the error on line 6 does not count.
+    useSyntaxStore.setState({ byTab: { [tab.id]: { text: content, diagnostics: [diag(5), diag(6)], available: true, reason: "" } } });
+
+    const { hook } = setup(true);
+    act(() => hook.result.current.execute());
+    expect(runner.execute).not.toHaveBeenCalled();
+    expect(hook.result.current.pendingSyntax?.diagnostics.map((d) => d.line)).toEqual([5]);
+
+    act(() => hook.result.current.cancelSyntax());
+    expect(hook.result.current.pendingSyntax).toBeNull();
+    expect(runner.execute).not.toHaveBeenCalled();
+
+    act(() => hook.result.current.execute());
+    act(() => hook.result.current.confirmSyntax());
+    expect(runner.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores syntax results for older text", () => {
+    const tab = useEditorStore.getState().tabs[0]!;
+    useSyntaxStore.setState({ byTab: { [tab.id]: { text: "old text", diagnostics: [diag(5)], available: true, reason: "" } } });
+    const { hook } = setup(true);
+    act(() => hook.result.current.execute());
     expect(runner.execute).toHaveBeenCalledTimes(1);
   });
 });

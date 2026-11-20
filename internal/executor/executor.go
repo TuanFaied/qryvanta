@@ -20,13 +20,35 @@ type Limits struct {
 	MaxBytes int64 // approximate size of the converted values, across all result sets
 }
 
-// Request is one batch to execute.
+// Request is a script to execute: one batch, or several separated by GO.
 type Request struct {
+	// SQL is the whole script, used as a single batch when Batches is empty.
 	SQL string
+	// Batches, when set, are run one after another on the same session (temp tables and
+	// SET options carry over), as SSMS does with GO. Splitting is the caller's job (the
+	// parser knows where GO lines are); the executor never looks for GO itself.
+	Batches []Batch
 	// Database is the database to run in. Empty uses the connection's current database.
 	Database string
 	Limits   Limits
 	Policy   Policy
+}
+
+// Batch is one batch of a script.
+type Batch struct {
+	SQL string
+	// Line is the script line the batch starts on (1-based), to report script lines.
+	Line int
+	// Repeat is n for "GO n": the batch runs n times. Zero or one runs it once.
+	Repeat int
+}
+
+// BatchesOf returns the request's batches, or the whole SQL as one batch.
+func (r Request) BatchesOf() []Batch {
+	if len(r.Batches) > 0 {
+		return r.Batches
+	}
+	return []Batch{{SQL: r.SQL, Line: 1, Repeat: 1}}
 }
 
 // Policy controls the session guard (execution policy layer 2, architecture decision D5).
@@ -44,9 +66,10 @@ type Guard struct {
 	Active bool `json:"active"`
 	// RolledBack is true when the protective transaction was rolled back after the batch.
 	RolledBack bool `json:"rolledBack"`
-	// EndedByBatch is true when the batch itself committed or rolled back the protective
-	// transaction (a COMMIT or ROLLBACK in the SQL). Statements after that point ran
-	// unprotected and their changes may have been committed.
+	// EndedByBatch is true when a batch itself committed or rolled back the protective
+	// transaction (a COMMIT or ROLLBACK in the SQL). Statements after that point in the same
+	// batch ran unprotected and their changes may have been committed; later batches get a
+	// new protective transaction.
 	EndedByBatch bool `json:"endedByBatch"`
 }
 
@@ -76,13 +99,34 @@ type Message struct {
 	// AfterResultSet is the number of result sets returned before this message, so the UI
 	// can interleave messages and results in order.
 	AfterResultSet int `json:"afterResultSet"`
+	// Batch is the index of the batch that produced the message.
+	Batch int `json:"batch"`
+	// ScriptLine is Line translated to a line of the whole script (Line counts from the start
+	// of the batch). Zero when the server gave no line or the line is inside a procedure.
+	ScriptLine int32 `json:"scriptLine"`
 }
 
 // ResultSet summarises one result set.
 type ResultSet struct {
 	Index   int      `json:"index"`
+	Batch   int      `json:"batch"`
 	Columns []Column `json:"columns"`
 	Rows    int      `json:"rows"`
+}
+
+// BatchRun summarises one execution of a batch (a batch with GO n has n of them).
+type BatchRun struct {
+	Batch int `json:"batch"`
+	// Execution counts from 1 for GO n.
+	Execution  int   `json:"execution"`
+	Line       int   `json:"line"`
+	ErrorCount int   `json:"errorCount"`
+	ElapsedMs  int64 `json:"elapsedMs"`
+}
+
+// BatchSink is an optional Sink extension: BatchStart is called before each batch execution.
+type BatchSink interface {
+	BatchStart(run BatchRun) error
 }
 
 // Outcome is how an execution ended.
@@ -112,6 +156,10 @@ type Summary struct {
 	ElapsedMs int64 `json:"elapsedMs"`
 	// Guard reports the read-only session guard.
 	Guard Guard `json:"guard"`
+	// Batches lists each batch execution, in order. A script stops early only when it is
+	// cancelled, times out, hits a limit or loses its connection; errors in one batch do not
+	// stop the next, as in SSMS.
+	Batches []BatchRun `json:"batches"`
 	// Error explains OutcomeFailed. Server errors during the batch are in Messages instead.
 	Error string `json:"error"`
 }

@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sync"
 	"time"
@@ -204,22 +205,30 @@ func (c *Core) ExecutionPolicy() executor.Policy {
 	}
 }
 
-// Execute runs a batch on a connected profile and streams the results to sink. Result rows
-// are never logged; the SQL text is logged only at debug level when logging.logSqlText is on.
+// Execute runs a script on a connected profile and streams the results to sink. A script with
+// GO separators is split into batches by the parser and runs batch by batch on one session.
+// Result rows are never logged; the SQL text is logged only at debug level when
+// logging.logSqlText is on.
 func (c *Core) Execute(ctx context.Context, connectionID string, req executor.Request, sink executor.Sink) executor.Summary {
 	db, err := c.pool.DB(connectionID)
 	if err != nil {
-		return executor.Summary{Outcome: executor.OutcomeFailed, Error: "Connect to a server first.",
-			ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}}
+		return failedSummary("Connect to a server first.")
 	}
 	// The policy always comes from the settings, never from the caller: a caller that forgot
 	// to set it would otherwise get the zero value, which allows writes.
 	req.Policy = c.ExecutionPolicy()
+	if len(req.Batches) == 0 {
+		batches, err := c.splitBatches(ctx, req.SQL)
+		if err != nil {
+			return failedSummary(err.Error())
+		}
+		req.Batches = batches
+	}
 	sum := c.runner.Execute(ctx, db, req, sink)
 
 	attrs := []any{"profile_id", connectionID, "database", req.Database, "outcome", sum.Outcome,
-		"elapsed_ms", sum.ElapsedMs, "result_sets", len(sum.ResultSets), "rows", sum.TotalRows, "errors", sum.ErrorCount,
-		"guarded", sum.Guard.Active}
+		"elapsed_ms", sum.ElapsedMs, "batches", len(req.Batches), "result_sets", len(sum.ResultSets),
+		"rows", sum.TotalRows, "errors", sum.ErrorCount, "guarded", sum.Guard.Active}
 	if c.Config().Logging.LogSQLText {
 		attrs = append(attrs, "sql", req.SQL)
 	}
@@ -232,6 +241,49 @@ func (c *Core) Execute(ctx context.Context, connectionID string, req executor.Re
 			"profile_id", connectionID, "database", req.Database)
 	}
 	return sum
+}
+
+func failedSummary(reason string) executor.Summary {
+	return executor.Summary{Outcome: executor.OutcomeFailed, Error: reason,
+		ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}, Batches: []executor.BatchRun{}}
+}
+
+// goLine matches a line that is only a GO separator (optionally with a count). It is used only
+// to refuse a script when the parser is unavailable, never to split one: a GO line inside a
+// multi-line string or comment would make it refuse a script that needed no splitting, which
+// is the safe direction.
+var goLine = regexp.MustCompile(`(?im)^[ \t]*GO(?:[ \t]+\d+)?[ \t]*\r?$`)
+
+// splitBatches splits a script at its GO lines using the parser. Batches that hold only
+// comments are left out, as SSMS does. When the parser cannot run, a script without GO lines
+// runs as one batch, and a script with them is refused rather than sent to the server as one
+// batch (which would fail at the first GO).
+func (c *Core) splitBatches(ctx context.Context, sql string) ([]executor.Batch, error) {
+	res, err := c.parser.Parse(ctx, sql, parser.Options{})
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		if goLine.MatchString(sql) {
+			reason := err.Error()
+			if !errors.Is(err, parser.ErrUnavailable) {
+				reason = "the parser could not read it (" + reason + ")"
+			}
+			return nil, fmt.Errorf("this script has GO separators, which need the T-SQL parser to split it into batches, "+
+				"and %s. Run the batches one at a time, or remove the GO lines", reason)
+		}
+		c.log.Debug("running without splitting batches", "reason", err)
+		return []executor.Batch{{SQL: sql, Line: 1, Repeat: 1}}, nil
+	}
+	batches := make([]executor.Batch, 0, len(res.Batches))
+	for _, b := range res.Batches {
+		batches = append(batches, executor.Batch{SQL: b.Text, Line: b.Line, Repeat: max(b.Repeat, 1)})
+	}
+	if len(batches) == 0 {
+		// Only comments or whitespace: send it as it is and let the server answer.
+		batches = []executor.Batch{{SQL: sql, Line: 1, Repeat: 1}}
+	}
+	return batches, nil
 }
 
 // openOptions reads the current settings each time a connection is opened.

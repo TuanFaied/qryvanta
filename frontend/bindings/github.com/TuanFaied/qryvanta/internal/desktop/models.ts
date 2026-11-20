@@ -12,6 +12,9 @@ import * as connection$0 from "../connection/models.js";
 import * as executor$0 from "../executor/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as parser$0 from "../parser/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as schema$0 from "../schema/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -115,7 +118,7 @@ export interface ExecutionEvent {
     "runId": string;
 
     /**
-     * Kind is resultSet, rows, message or done.
+     * Kind is batch (a batch execution starts), resultSet, rows, message or done.
      */
     "kind": string;
 
@@ -123,9 +126,15 @@ export interface ExecutionEvent {
      * Index is the result set the event belongs to (resultSet and rows).
      */
     "index": number;
+
+    /**
+     * Batch is the batch a resultSet belongs to.
+     */
+    "batch": number;
     "columns": executor$0.Column[] | null;
     "rows": (executor$0.Value[] | null)[] | null;
     "message": executor$0.Message | null;
+    "run": executor$0.BatchRun | null;
     "summary": executor$0.Summary | null;
 }
 
@@ -222,6 +231,20 @@ export interface SaveFileResult {
     "name": string;
     "encoding": sqlfile$0.Encoding;
     "error": string;
+}
+
+/**
+ * SyntaxCheck is the editor's view of a script: its syntax errors, or why it could not be
+ * checked.
+ */
+export interface SyntaxCheck {
+    /**
+     * Available is false when the parser cannot run; Reason says why.
+     */
+    "available": boolean;
+    "reason": string;
+    "batches": number;
+    "diagnostics": parser$0.Diagnostic[] | null;
 }
 
 /**

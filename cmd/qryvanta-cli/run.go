@@ -214,25 +214,29 @@ func cmdRun(ctx context.Context, args []string, opts app.Options, stdout, stderr
 
 // runResult is the JSON output of "run" (also the model the other formats print from).
 type runResult struct {
-	Connection   string             `json:"connection"`
-	Database     string             `json:"database"`
-	ReadOnly     bool               `json:"readOnly"`
-	Outcome      executor.Outcome   `json:"outcome"`
-	Truncated    bool               `json:"truncated"`
-	TruncatedBy  string             `json:"truncatedBy,omitempty"`
-	MaxRows      int                `json:"maxRows"`
-	TimeoutSecs  int                `json:"timeoutSeconds"`
-	ElapsedMs    int64              `json:"elapsedMs"`
-	TotalRows    int                `json:"totalRows"`
-	RowsAffected []int64            `json:"rowsAffected"`
-	ErrorCount   int                `json:"errorCount"`
-	Error        string             `json:"error,omitempty"`
-	Guard        executor.Guard     `json:"guard"`
-	ResultSets   []resultSetOut     `json:"resultSets"`
-	Messages     []executor.Message `json:"messages"`
+	Connection   string           `json:"connection"`
+	Database     string           `json:"database"`
+	ReadOnly     bool             `json:"readOnly"`
+	Outcome      executor.Outcome `json:"outcome"`
+	Truncated    bool             `json:"truncated"`
+	TruncatedBy  string           `json:"truncatedBy,omitempty"`
+	MaxRows      int              `json:"maxRows"`
+	TimeoutSecs  int              `json:"timeoutSeconds"`
+	ElapsedMs    int64            `json:"elapsedMs"`
+	TotalRows    int              `json:"totalRows"`
+	RowsAffected []int64          `json:"rowsAffected"`
+	ErrorCount   int              `json:"errorCount"`
+	Error        string           `json:"error,omitempty"`
+	Guard        executor.Guard   `json:"guard"`
+	// Batches lists each batch execution (a script with GO has several).
+	Batches    []executor.BatchRun `json:"batches"`
+	ResultSets []resultSetOut      `json:"resultSets"`
+	Messages   []executor.Message  `json:"messages"`
 }
 
 type resultSetOut struct {
+	// Batch is the batch that returned the result set.
+	Batch   int                `json:"batch"`
 	Columns []executor.Column  `json:"columns"`
 	Rows    [][]executor.Value `json:"rows"`
 }
@@ -245,6 +249,13 @@ func buildResult(conn, database string, readOnly bool, l executor.Limits, sum ex
 			rows = [][]executor.Value{}
 		}
 		sets[i] = resultSetOut{Columns: col.Columns[i], Rows: rows}
+		if i < len(sum.ResultSets) {
+			sets[i].Batch = sum.ResultSets[i].Batch
+		}
+	}
+	batches := sum.Batches
+	if batches == nil {
+		batches = []executor.BatchRun{}
 	}
 	msgs := col.Messages
 	if msgs == nil {
@@ -267,6 +278,7 @@ func buildResult(conn, database string, readOnly bool, l executor.Limits, sum ex
 		TotalRows:    sum.TotalRows,
 		RowsAffected: affected,
 		ErrorCount:   sum.ErrorCount,
+		Batches:      batches,
 		Error:        sum.Error,
 		Guard:        sum.Guard,
 		ResultSets:   sets,
@@ -315,9 +327,16 @@ func fit(s string, width int) string {
 }
 
 func writeTables(w io.Writer, r runResult) error {
+	multiBatch := false
+	for _, b := range r.Batches {
+		multiBatch = multiBatch || b.Batch > 0
+	}
 	for i, rs := range r.ResultSets {
 		if i > 0 {
 			fmt.Fprintln(w)
+		}
+		if multiBatch && (i == 0 || r.ResultSets[i-1].Batch != rs.Batch) {
+			fmt.Fprintf(w, "-- Batch %d\n", rs.Batch+1)
 		}
 		widths := make([]int, len(rs.Columns))
 		header := make([]string, len(rs.Columns))
@@ -404,7 +423,11 @@ func writeMessages(w io.Writer, r runResult) {
 			if m.Procedure != "" {
 				head += ", Procedure " + m.Procedure
 			}
-			if m.Line > 0 {
+			// Script lines, so the line is right in a file with GO batches (SQL Server counts
+			// from the start of each batch); inside a procedure, the procedure's own line.
+			if m.ScriptLine > 0 {
+				head += fmt.Sprintf(", Line %d", m.ScriptLine)
+			} else if m.Line > 0 {
 				head += fmt.Sprintf(", Line %d", m.Line)
 			}
 			fmt.Fprintf(w, "%s\n%s\n", head, m.Text)

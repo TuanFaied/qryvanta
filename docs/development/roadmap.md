@@ -53,7 +53,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   cool-down when unavailable, status bar warning, `qryvanta-cli parse` (#40)
 - ✅ `QueryModel`: statements, sources, joins and predicates, WHERE/HAVING expression trees, GROUP BY,
   ORDER BY, CTEs, subqueries, set operations, aggregates, window functions, source positions (#41)
-- Parser diagnostics are shown as editor markers
+- ✅ `GO` batches in the desktop app and the CLI (same session, `GO n`, script line numbers,
+  grouped messages), and parser diagnostics as editor markers with a problems count (#43)
 - Execution policy layer 1 (statement allowlist) on top of the parse tree
 - ✅ Golden test suite: 79 cases, including every sample query (#42)
 

@@ -29,6 +29,18 @@ All notable changes to this project are documented here. The format follows
     parentheses. Aggregates and window functions are flagged.
   - Every part carries its source position.
   - `qryvanta-cli parse --model` prints it.
+- `GO` batches in the desktop app and `qryvanta-cli run`:
+  - Scripts are split with the parser and run batch by batch on one session, so temp tables,
+    `SET` options and `USE` carry over. `GO n` repeats a batch.
+  - An error does not stop later batches, as in SSMS. A timeout or cancellation stops the script.
+  - Error lines are mapped to the script and the editor. With several batches, messages are
+    grouped by batch and result headings name it.
+  - In read-only mode one protective transaction spans the script. If a batch's COMMIT ends it,
+    a new one starts before the next batch.
+  - Without the parser, a script with `GO` lines is refused instead of failing on the server.
+- Syntax errors in the editor: the active tab is parsed 300 ms after typing stops, errors show as
+  squiggles with hover text and a problems count in the status bar, and running SQL with errors
+  asks first.
 - Parser golden tests (`tests/parser`):
   - 59 hand-written cases plus all 20 sample queries, each with its expected batches,
     diagnostics and query model.
@@ -174,6 +186,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- The integration test for the lock timeout updated a row to its own value, which READ COMMITTED
+  readers can skip, so it sometimes passed without waiting on a lock. It now changes the value.
 - The query model now groups set operations as SQL Server does. `a UNION b INTERSECT c` means
   `a UNION (b INTERSECT c)`; the parser library nests them left to right, and the model used to
   inherit that.

@@ -123,6 +123,12 @@ jobs:
       # Linux has a C compiler for the race detector; the parser client is concurrency-heavy.
       - name: Parser client under the race detector
         run: go test -race -count=3 ./internal/parser/...
+      # The sidecar splits GO batches, so the integration tests can run scripts with GO.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Publish the parser sidecar
+        run: dotnet publish sidecar/tsqlparser -c Release -r linux-x64 -o publish
       - name: Start SQL Server and load the fixture database
         run: docker compose run --rm fixtures
       - name: Integration tests (read-only login)
@@ -134,7 +140,7 @@ jobs:
           # Used only by the write-access test that checks sysadmin is reported as can_write.
           QRYVANTA_TEST_MSSQL_ADMIN_PASSWORD: Qryvanta_Dev_2026!
           QRYVANTA_TEST_MSSQL_TRUST: "true"
-        run: go test -tags integration -count=1 -v ./internal/dialect/mssql/ ./tests/integration/ ./cmd/qryvanta-cli/
+        run: QRYVANTA_PARSER_PATH="$PWD/publish/qryvanta-tsqlparser" go test -tags integration -count=1 -v ./internal/dialect/mssql/ ./tests/integration/ ./cmd/qryvanta-cli/
       - name: SQL Server logs
         if: failure()
         run: docker compose logs sqlserver
