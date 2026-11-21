@@ -41,7 +41,8 @@
             "length": 25,
             "line": 4,
             "column": 1
-          }
+          },
+          "action": "delay"
         },
         {
           "kind": "return",

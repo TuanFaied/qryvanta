@@ -105,6 +105,7 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
       database: tab.database,
       sql: target.sql,
       startLine: target.startLine,
+      startColumn: target.startColumn ?? 1,
     };
     // Syntax errors found by the editor's check (only when it is current for this text, and
     // only those inside the selection when a selection runs) are confirmed first.

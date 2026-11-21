@@ -42,10 +42,12 @@ Commands:
   run [--conn NAME|ID] [--database DB] [--file query.sql | --query SQL]
       [--format table|json|csv] [--max-rows N] [--timeout SECONDS] [--allow-writes]
                  Run a batch with the desktop app's engine and protections. SQL comes
-                 from --query, --file or stdin. Read-only mode follows the settings;
-                 --allow-writes turns it off for this run. Results go to stdout,
-                 messages to stderr. Exit codes: 0 success, 1 query error, 2 usage
-                 error, 3 timed out or cancelled (Ctrl+C cancels on the server).
+                 from --query, --file or stdin. Read-only mode follows the settings:
+                 it checks each script first and refuses writes to tables, DDL, EXEC
+                 and transactions; --allow-writes turns it off for this run. Results
+                 go to stdout, messages to stderr. Exit codes: 0 success, 1 query
+                 error, 2 usage error, 3 timed out or cancelled (Ctrl+C cancels on
+                 the server), 4 refused by read-only mode.
   parse [--file query.sql | --query SQL] [--compat LEVEL] [--json] [--model]
                  Split a script into GO batches and report syntax errors with the
                  T-SQL parser (qryvanta-tsqlparser next to this program, or at

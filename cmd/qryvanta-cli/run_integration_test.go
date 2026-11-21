@@ -25,6 +25,10 @@ func fixtureOptions(t *testing.T) app.Options {
 	if server == "" {
 		t.Skip("QRYVANTA_TEST_MSSQL_SERVER not set; start the fixture database with `docker compose run --rm fixtures`")
 	}
+	// Read-only mode checks every script with the parser before it runs, so these tests need it.
+	if os.Getenv("QRYVANTA_PARSER_PATH") == "" {
+		t.Skip("QRYVANTA_PARSER_PATH not set; build the parser sidecar (read-only mode needs it)")
+	}
 	p := connection.Profile{
 		Name: "fixtures", Server: server, Database: "QryvantaSample", Auth: connection.AuthWindows,
 		Encrypt:                connection.EncryptMandatory,
@@ -109,12 +113,9 @@ func TestRunErrorsAndLimitsAgainstFixture(t *testing.T) {
 }
 
 // TestRunGoBatches runs a two-batch script whose second batch reads the first one's temp
-// table, and checks the error line is mapped to the script. It needs the parser sidecar
-// (QRYVANTA_PARSER_PATH) to split the script.
+// table, and checks the error line is mapped to the script. Local temporary tables are allowed
+// in read-only mode.
 func TestRunGoBatches(t *testing.T) {
-	if os.Getenv("QRYVANTA_PARSER_PATH") == "" {
-		t.Skip("QRYVANTA_PARSER_PATH not set; build the parser sidecar to split GO batches")
-	}
 	opts := fixtureOptions(t)
 	// The bad column is in a batch of its own: SQL Server compiles a whole batch first, so it
 	// would also stop the valid SELECT beside it.
@@ -142,5 +143,28 @@ func TestRunGoBatches(t *testing.T) {
 	}
 	if len(lines) != 1 || lines[0] != 6 {
 		t.Errorf("error script lines = %v, want [6]; messages %+v", lines, res.Messages)
+	}
+}
+
+// TestRunReadOnlyRefusalSendsNothing runs a script whose first statements would leave a trace
+// (a PRINT message and a result set) followed by one read-only mode refuses. Nothing may
+// reach the server: no messages, no result sets.
+func TestRunReadOnlyRefusalSendsNothing(t *testing.T) {
+	opts := fixtureOptions(t)
+	script := "PRINT 'reached the server';\nSELECT 1 AS n;\nUPDATE dbo.Customers SET Name = Name WHERE 1 = 0;"
+	var out, errOut bytes.Buffer
+	err := cmdRun(context.Background(), []string{"--conn", "fixtures", "--query", script, "--format", "json"}, opts, &out, &errOut)
+	if code := report(err, &bytes.Buffer{}, &bytes.Buffer{}); code != exitRefused {
+		t.Fatalf("exit = %d, want %d; stderr %s", code, exitRefused, errOut.String())
+	}
+	var res runResult
+	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+		t.Fatalf("%v: %s", err, out.String())
+	}
+	if len(res.Messages) != 0 || len(res.ResultSets) != 0 || len(res.Batches) != 0 {
+		t.Fatalf("something reached the server: %+v", res)
+	}
+	if len(res.Refusals) != 1 || res.Refusals[0].Line != 3 || res.Refusals[0].Statement != "UPDATE" {
+		t.Errorf("refusals = %+v", res.Refusals)
 	}
 }

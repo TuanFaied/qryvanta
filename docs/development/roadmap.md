@@ -55,7 +55,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   ORDER BY, CTEs, subqueries, set operations, aggregates, window functions, source positions (#41)
 - ✅ `GO` batches in the desktop app and the CLI (same session, `GO n`, script line numbers,
   grouped messages), and parser diagnostics as editor markers with a problems count (#43)
-- Execution policy layer 1 (statement allowlist) on top of the parse tree
+- ✅ Execution policy layer 1: read-only statement allowlist on the parse tree, with refusals
+  shown in the Messages tab and the CLI (#44)
 - ✅ Golden test suite: 79 cases, including every sample query (#42)
 
 ## Phase 5: Diagnostic engine ⬜

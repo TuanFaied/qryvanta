@@ -138,7 +138,25 @@ const (
 	OutcomeTruncated Outcome = "truncated" // a row or size limit stopped reading; the query was cancelled
 	OutcomeTimedOut  Outcome = "timed_out"
 	OutcomeCancelled Outcome = "cancelled"
+	// OutcomeRefused: read-only mode refused the script before anything was sent to the server
+	// (execution policy layer 1). Refusals says why.
+	OutcomeRefused Outcome = "refused"
 )
+
+// Refusal is one reason read-only mode refused a script: a statement, or the part of one,
+// that it does not allow. Positions are in the script that was submitted: Line and Column are
+// 1-based, Offset and Length are UTF-16 code units (what the editor uses).
+type Refusal struct {
+	Batch  int `json:"batch"`
+	Line   int `json:"line"`
+	Column int `json:"column"`
+	Offset int `json:"offset"`
+	Length int `json:"length"`
+	// Statement names the statement kind, for example "UPDATE" or "EXEC".
+	Statement string `json:"statement"`
+	// Reason explains, in plain language, why it is not allowed.
+	Reason string `json:"reason"`
+}
 
 // Summary describes a finished execution. It never contains result rows.
 type Summary struct {
@@ -160,7 +178,10 @@ type Summary struct {
 	// cancelled, times out, hits a limit or loses its connection; errors in one batch do not
 	// stop the next, as in SSMS.
 	Batches []BatchRun `json:"batches"`
-	// Error explains OutcomeFailed. Server errors during the batch are in Messages instead.
+	// Refusals explains OutcomeRefused, in script order.
+	Refusals []Refusal `json:"refusals"`
+	// Error explains OutcomeFailed and OutcomeRefused. Server errors during the batch are in
+	// Messages instead.
 	Error string `json:"error"`
 }
 

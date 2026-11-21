@@ -301,14 +301,50 @@ Checking only the statement type is not enough: functions, `EXEC`, linked server
 and `SELECT ... INTO` can all have side effects. The policy has several layers, and the
 documentation states clearly which guarantees are hard and which are best effort.
 
-1. **Statement allowlist** (hard, Phase 4): from the parsed batch, only `SELECT`, CTE-led
-   `SELECT`, and set operations are allowed. `INTO`, DML, DDL, `EXEC`, `DECLARE`/`SET` side
-   effects, and multi-statement batches are rejected in read-only mode.
-   - This layer needs the parser. Matching keywords in SQL text instead would be wrong and
-     falsely reassuring (comments, strings, dynamic SQL), so until Phase 4 read-only mode relies
-     on layers 2–4.
-   - Once the parser exists, read-only mode refuses to execute a batch it cannot parse instead
-     of guessing.
+1. **Statement allowlist** (implemented, hard): `security.ReadOnlyRefusals` decides from the
+   parsed script (QueryModel) whether read-only mode may run it. `app.Core.Execute` applies it
+   before anything is sent to the server, for the desktop app and the CLI alike, so no caller can
+   skip it. A refused script ends with outcome `refused` and one `Refusal` per statement
+   (position, statement kind, plain-language reason).
+   - **Allowed:** `SELECT` (CTEs, set operations, `FOR XML/JSON`); `DECLARE` of variables and
+     table variables, `SET @var`; `IF`, `WHILE`, `BEGIN...END`, `TRY...CATCH`, `PRINT`,
+     `RAISERROR`, `THROW`, `RETURN`, `BREAK`, `CONTINUE`, `GOTO`; `WAITFOR DELAY/TIME`; SET options
+     that change how queries are evaluated or reported (`NOCOUNT`, `ANSI_*` except
+     `ANSI_DEFAULTS`, `QUOTED_IDENTIFIER`, `STATISTICS`, `DATEFORMAT`, `LANGUAGE`, isolation
+     level, `ROWCOUNT`, ...).
+   - **Temporary objects are allowed.** `INSERT`/`UPDATE`/`DELETE`/`MERGE`/`TRUNCATE` and
+     `SELECT ... INTO` whose every target is a local temporary table (`#name`) or a table
+     variable, and `CREATE TABLE`, `CREATE INDEX` and `DROP TABLE` on `#tables`. They live in the
+     session's tempdb space and are rolled back with the guard, and debugging scripts need them
+     (the `CREATE TABLE #t` / `GO` / `SELECT ... FROM #t` pattern). Global `##tables` are shared,
+     so they are refused.
+   - **Several statements in one batch are allowed** when each one is. The session guard
+     (layer 2) still applies to all of them, so refusing them would only make scripts harder to
+     run without adding protection.
+   - **Refused:** writes to any other table, also when hidden in `OUTPUT ... INTO`, a CTE used
+     as a DML target, or an alias; all other DDL; `EXEC` (procedures, `sp_executesql`, dynamic
+     SQL, `INSERT ... EXEC`); transaction statements, which would end or nest the guard's
+     transaction; `USE`, because the write-access check and the toolbar refer to the chosen
+     database; cursors; `DBCC`, `BULK INSERT`, `GRANT` and every other statement not listed;
+     `OPENROWSET`, `OPENQUERY` and `OPENDATASOURCE`; `WAITFOR` on a Service Broker queue; SET
+     options that change transactions (`IMPLICIT_TRANSACTIONS`, `XACT_ABORT`, `ANSI_DEFAULTS`,
+     ...), `LOCK_TIMEOUT` (it would replace the guard's), `SHOWPLAN_*`, `IDENTITY_INSERT` and
+     `CONTEXT_INFO`.
+   - **How it sees everything:** the sidecar adds `effects` to each statement (objects written,
+     procedures or dynamic SQL executed, remote rowsets read), collected by a visitor over the
+     full ScriptDom tree rather than from the QueryModel, so a write in a construct the model
+     does not describe is still found. Keywords in comments and strings are never statements.
+   - **Refuse rather than guess:** a script with syntax errors, a parse without a model, a
+     statement the model marks unsupported, and an unknown effect kind are all refused. When the
+     parser is unavailable, read-only mode runs nothing and says why; turning read-only mode off
+     runs scripts without the check. Matching keywords in the SQL text is never used instead.
+   - **Residual risks (layer 2 still applies):** scalar and table-valued functions can call
+     `xp_` procedures or CLR code with side effects; four-part names read through linked servers,
+     whose queries run outside the transaction; `NEXT VALUE FOR` consumes sequence values, which
+     a rollback does not return.
+   - There is no "run once without the check" button: the policy is not a caller choice (see
+     the session guard below). The Messages tab offers "Turn off read-only mode…", which opens
+     Settings and its confirmation, and the CLI suggests `--allow-writes`.
 2. **Session guard** (implemented, best effort): `mssql.Executor` runs each read-only batch on a
    dedicated connection with `SET IMPLICIT_TRANSACTIONS OFF`, `SET LOCK_TIMEOUT`
    (`execution.lockTimeoutSeconds`, default 5 s), and `BEGIN TRANSACTION`. After the batch,
@@ -321,7 +357,8 @@ documentation states clearly which guarantees are hard and which are best effort
    - **What it cannot prevent:** a `COMMIT` or `ROLLBACK` inside the batch ends the protective
      transaction early, and later statements run unprotected. After the batch the executor
      checks `@@TRANCOUNT` and reports this as `Summary.Guard.EndedByBatch`, and the app logs a
-     warning. The parser (layer 1) will reject such batches.
+     warning. The statement allowlist (layer 1) now refuses transaction statements and `EXEC`
+     before they run, so this check remains as a second line of defence.
    - **Scripts with `GO`:** one protective transaction spans all the batches of a script, so
      a temp table or `SET` option from one batch is visible to the next, as in SSMS (a
      transaction per batch would roll back `CREATE TABLE #t` before the batch that reads it).

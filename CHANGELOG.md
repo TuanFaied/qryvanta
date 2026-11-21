@@ -8,6 +8,20 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Read-only mode checks every script before it runs (execution policy layer 1):
+  - Queries are allowed, and so are writes to temporary tables (`#name`) and table variables.
+    Writes to tables (also through `OUTPUT INTO`, CTEs and aliases), DDL, `EXEC` and dynamic SQL,
+    transaction statements, `USE`, cursors, `OPENROWSET`/`OPENQUERY`, and SET options that change
+    transactions are refused, and nothing is sent to the server.
+  - Each refused statement is listed in the Messages tab with its line and reason, and clicking
+    it selects it in the editor. "Turn off read-only mode…" opens Settings.
+  - `qryvanta-cli run` prints the refusals and exits with code 4; the JSON output has
+    `refusals`.
+  - A script with syntax errors is refused, and so is every script while the parser is
+    unavailable.
+- The parser's QueryModel describes what each statement can affect (`effects`: objects written,
+  procedures or dynamic SQL executed, remote rowsets read), collected from the full syntax tree,
+  and names the options of SET statements (`options`) and the kind of WAITFOR.
 - T-SQL parser sidecar (`sidecar/tsqlparser`, .NET 10 with Microsoft ScriptDom):
   - It reads requests as newline-delimited JSON on stdin and writes responses to stdout.
   - It splits scripts into batches on `GO` (including `GO n`, and ignoring `GO` inside strings
@@ -167,6 +181,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- In read-only mode (the default), queries no longer run without the T-SQL parser: when the
+  sidecar is missing, read-only mode refuses with the reason. Turn read-only mode off to run
+  without the check.
 - The .NET SDK used to build the parser sidecar is pinned in `global.json`, and CI installs
   exactly that version. A newer SDK patch on the CI runners had changed the trimming package's
   version and broken the locked restore.

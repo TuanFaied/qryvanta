@@ -10,6 +10,7 @@ export type {
     Column,
     Guard,
     Message,
+    Refusal,
     ResultSet,
     Summary,
     Value

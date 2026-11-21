@@ -51,6 +51,7 @@ vi.mock("./SqlEditor", async () => {
         focus: () => {},
         getRunTarget: () => ({ sql: props.value, startLine: 1, fromSelection: false }),
         revealLine: () => {},
+        selectRange: () => {},
       }));
       return (
         <textarea

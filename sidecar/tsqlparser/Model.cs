@@ -64,8 +64,31 @@ internal sealed class Statement
     [JsonPropertyName("else")] public List<Statement>? Else { get; set; }
     /// <summary>EXEC: the procedure name, when it is not dynamic SQL.</summary>
     [JsonPropertyName("procedure")] public ObjectName? Procedure { get; set; }
-    /// <summary>Transaction statements: begin, commit, rollback, save.</summary>
+    /// <summary>Transaction statements: begin, commit, rollback, save. WAITFOR: delay, time or statement.</summary>
     [JsonPropertyName("action")] public string? Action { get; set; }
+    /// <summary>SET options of a setOption statement, as ScriptDom names them (for example NoCount, DateFormat).</summary>
+    [JsonPropertyName("options")] public List<string>? Options { get; set; }
+    /// <summary>
+    /// What the statement can affect, found anywhere inside it (nested statements included):
+    /// objects it writes, procedures or dynamic SQL it executes, and remote data it reads.
+    /// It is collected from the full syntax tree, so it is complete even where the rest of the
+    /// model is not.
+    /// </summary>
+    [JsonPropertyName("effects")] public List<Effect>? Effects { get; set; }
+}
+
+/// <summary>
+/// One effect of a statement. Kind is "write" (Object or Variable is the target; neither when
+/// the target is not a plain table), "exec" (Object is the procedure, absent for dynamic SQL)
+/// or "remote" (OPENROWSET, OPENQUERY, OPENDATASOURCE; Type is the ScriptDom class).
+/// </summary>
+internal sealed class Effect
+{
+    [JsonPropertyName("kind")] public string Kind { get; set; } = "";
+    [JsonPropertyName("object")] public ObjectName? Object { get; set; }
+    [JsonPropertyName("variable")] public string? Variable { get; set; }
+    [JsonPropertyName("type")] public string? Type { get; set; }
+    [JsonPropertyName("span")] public Span Span { get; set; } = null!;
 }
 
 internal sealed class Cte

@@ -293,6 +293,8 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
                 maxRows={config.execution.maxRows}
                 timeoutSeconds={config.execution.timeoutSeconds}
                 onRevealLine={(line) => editorRef.current?.revealLine(line)}
+                onRevealRange={(line, column, length) => editorRef.current?.selectRange(line, column, length)}
+                onOpenSettings={openSettings}
               />
             </ResizablePanel>
           </ResizablePanelGroup>

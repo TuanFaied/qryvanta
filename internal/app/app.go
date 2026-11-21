@@ -26,6 +26,7 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/parser"
 	"github.com/TuanFaied/qryvanta/internal/parser/sidecar"
 	"github.com/TuanFaied/qryvanta/internal/schema"
+	"github.com/TuanFaied/qryvanta/internal/security"
 	"github.com/TuanFaied/qryvanta/internal/version"
 )
 
@@ -217,7 +218,21 @@ func (c *Core) Execute(ctx context.Context, connectionID string, req executor.Re
 	// The policy always comes from the settings, never from the caller: a caller that forgot
 	// to set it would otherwise get the zero value, which allows writes.
 	req.Policy = c.ExecutionPolicy()
-	if len(req.Batches) == 0 {
+	if req.Policy.ReadOnly {
+		// Execution policy layer 1: nothing reaches the server unless the parser could check
+		// every statement. The same parse splits the script into batches.
+		batches, refused := c.checkReadOnly(ctx, req)
+		if refused != nil {
+			if refused.Outcome == executor.OutcomeRefused {
+				c.log.Info("read-only mode refused a script", "profile_id", connectionID,
+					"refusals", len(refused.Refusals), "reason", refused.Error)
+			}
+			return *refused
+		}
+		if len(req.Batches) == 0 {
+			req.Batches = batches
+		}
+	} else if len(req.Batches) == 0 {
 		batches, err := c.splitBatches(ctx, req.SQL)
 		if err != nil {
 			return failedSummary(err.Error())
@@ -243,9 +258,74 @@ func (c *Core) Execute(ctx context.Context, connectionID string, req executor.Re
 	return sum
 }
 
+// checkReadOnly parses the script with the QueryModel and applies the read-only statement
+// allowlist. It returns the script's batches, or the summary to return instead of running:
+// refused (with the reasons) when a statement is not allowed, the script has syntax errors or
+// the parser cannot run, and cancelled when ctx ends. Batches given by the caller are checked
+// one at a time, with refusal lines mapped to the script.
+func (c *Core) checkReadOnly(ctx context.Context, req executor.Request) ([]executor.Batch, *executor.Summary) {
+	parts := []executor.Batch{{SQL: req.SQL, Line: 1, Repeat: 1}}
+	if len(req.Batches) > 0 {
+		parts = req.Batches
+	}
+	var batches []executor.Batch
+	var refusals []executor.Refusal
+	for i, p := range parts {
+		res, err := c.parser.Parse(ctx, p.SQL, parser.Options{Model: true})
+		if err != nil {
+			if ctx.Err() != nil {
+				s := failedSummary(ctx.Err().Error())
+				s.Outcome = executor.OutcomeCancelled
+				return nil, &s
+			}
+			why := "the parser could not read it (" + err.Error() + ")"
+			if errors.Is(err, parser.ErrUnavailable) {
+				why = "the parser is not available: " + err.Error()
+			}
+			s := refusedSummary("Read-only mode checks every statement with the T-SQL parser before anything is sent to the server, and "+
+				why+". Turn read-only mode off in Settings to run without the check.", nil)
+			return nil, &s
+		}
+		found := security.ReadOnlyRefusals(res)
+		if len(req.Batches) > 0 {
+			for j := range found {
+				found[j].Batch = i
+				found[j].Line += p.Line - 1
+			}
+		}
+		refusals = append(refusals, found...)
+		batches = append(batches, batchesOf(res)...)
+	}
+	if len(refusals) > 0 {
+		first := refusals[0]
+		text := fmt.Sprintf("Read-only mode did not run the script. Line %d: %s", first.Line, first.Reason)
+		if first.Statement != "" {
+			text = fmt.Sprintf("Read-only mode did not run the script. Line %d, %s: %s", first.Line, first.Statement, first.Reason)
+		}
+		if len(refusals) > 1 {
+			text += fmt.Sprintf(" (and %d more)", len(refusals)-1)
+		}
+		s := refusedSummary(text, refusals)
+		return nil, &s
+	}
+	if len(batches) == 0 {
+		batches = []executor.Batch{{SQL: req.SQL, Line: 1, Repeat: 1}}
+	}
+	return batches, nil
+}
+
+func refusedSummary(reason string, refusals []executor.Refusal) executor.Summary {
+	s := failedSummary(reason)
+	s.Outcome = executor.OutcomeRefused
+	if refusals != nil {
+		s.Refusals = refusals
+	}
+	return s
+}
+
 func failedSummary(reason string) executor.Summary {
 	return executor.Summary{Outcome: executor.OutcomeFailed, Error: reason,
-		ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}, Batches: []executor.BatchRun{}}
+		ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{}, Batches: []executor.BatchRun{}, Refusals: []executor.Refusal{}}
 }
 
 // goLine matches a line that is only a GO separator (optionally with a count). It is used only
@@ -275,10 +355,7 @@ func (c *Core) splitBatches(ctx context.Context, sql string) ([]executor.Batch, 
 		c.log.Debug("running without splitting batches", "reason", err)
 		return []executor.Batch{{SQL: sql, Line: 1, Repeat: 1}}, nil
 	}
-	batches := make([]executor.Batch, 0, len(res.Batches))
-	for _, b := range res.Batches {
-		batches = append(batches, executor.Batch{SQL: b.Text, Line: b.Line, Repeat: max(b.Repeat, 1)})
-	}
+	batches := batchesOf(res)
 	if len(batches) == 0 {
 		// Only comments or whitespace: send it as it is and let the server answer.
 		batches = []executor.Batch{{SQL: sql, Line: 1, Repeat: 1}}
@@ -353,4 +430,13 @@ func (c *Core) Close() error {
 		errs = append(errs, fmt.Errorf("close log: %w", err))
 	}
 	return errors.Join(errs...)
+}
+
+// batchesOf converts parsed batches to executor batches.
+func batchesOf(res *parser.Result) []executor.Batch {
+	batches := make([]executor.Batch, 0, len(res.Batches))
+	for _, b := range res.Batches {
+		batches = append(batches, executor.Batch{SQL: b.Text, Line: b.Line, Repeat: max(b.Repeat, 1)})
+	}
+	return batches
 }

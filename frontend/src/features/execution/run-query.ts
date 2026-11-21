@@ -8,6 +8,8 @@ export interface RunRequest {
   sql: string;
   /** Editor line where sql starts (1-based), to map server line numbers back to the editor. */
   startLine: number;
+  /** Editor column where sql starts on startLine (1-based); 1 when omitted. */
+  startColumn?: number;
 }
 
 function newRunId(): string {
@@ -31,6 +33,7 @@ export function executeQuery(req: RunRequest): string {
     connectionId: req.connectionId,
     database: req.database ?? "",
     lineOffset: Math.max(0, req.startLine - 1),
+    columnOffset: Math.max(0, (req.startColumn ?? 1) - 1),
   });
   backend
     .execute(runId, req.connectionId, req.database ?? "", req.sql)

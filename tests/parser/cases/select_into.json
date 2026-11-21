@@ -127,7 +127,21 @@
           },
           "into": {
             "name": "#big_orders"
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "name": "#big_orders"
+              },
+              "span": {
+                "offset": 96,
+                "length": 11,
+                "line": 2,
+                "column": 33
+              }
+            }
+          ]
         }
       ]
     }

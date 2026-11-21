@@ -118,6 +118,7 @@ internal sealed class ModelBuilder(string batchText, int batchOffset, LineIndex 
             case PredicateSetStatement or SetOnOffStatement or SetCommandStatement or SetRowCountStatement
                 or SetTransactionIsolationLevelStatement or SetTextSizeStatement or SetErrorLevelStatement:
                 st.Kind = "setOption";
+                st.Options = SetOptionNames(s);
                 break;
             case IfStatement ifs:
                 st.Kind = "if";
@@ -161,8 +162,9 @@ internal sealed class ModelBuilder(string batchText, int batchOffset, LineIndex 
             case PrintStatement:
                 st.Kind = "print";
                 break;
-            case WaitForStatement:
+            case WaitForStatement wf:
                 st.Kind = "waitfor";
+                st.Action = wf.WaitForOption.ToString().ToLowerInvariant();
                 break;
             case ReturnStatement:
                 st.Kind = "return";
@@ -171,7 +173,116 @@ internal sealed class ModelBuilder(string batchText, int batchOffset, LineIndex 
                 st.Kind = IsDdl(s) ? "ddl" : "other";
                 break;
         }
+        st.Effects = NonEmpty(new EffectCollector(this).Collect(s));
         return st;
+    }
+
+    /// <summary>The options a SET statement changes, as ScriptDom's enum names.</summary>
+    private static List<string>? SetOptionNames(TSqlStatement s)
+    {
+        static IEnumerable<string> Flags(Enum e) =>
+            e.ToString().Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        IEnumerable<string> names = s switch
+        {
+            PredicateSetStatement p => Flags(p.Options),
+            SetStatisticsStatement st => Flags(st.Options),
+            SetOffsetsStatement o => Flags(o.Options),
+            SetCommandStatement c => c.Commands.Select(cmd => cmd is GeneralSetCommand g ? g.CommandType.ToString() : cmd.GetType().Name),
+            SetTransactionIsolationLevelStatement t => [t.Level.ToString()],
+            _ => [],
+        };
+        return NonEmpty(names.ToList());
+    }
+
+    /// <summary>
+    /// Collects a statement's effects by visiting its whole syntax tree, so a write or EXEC
+    /// hidden in a construct the model does not describe is still reported.
+    /// </summary>
+    private sealed class EffectCollector(ModelBuilder b) : TSqlFragmentVisitor
+    {
+        private readonly List<Effect> _effects = [];
+
+        public List<Effect> Collect(TSqlStatement s)
+        {
+            s.Accept(this);
+            return _effects;
+        }
+
+        private void Write(TSqlFragment at, ObjectName? obj, string? variable = null) =>
+            _effects.Add(new Effect { Kind = "write", Object = obj, Variable = variable, Span = b.SpanOf(at) });
+
+        /// <summary>A DML target. A single-part name that is an alias in FROM resolves to that table.</summary>
+        private void Target(TableReference? target, FromClause? from)
+        {
+            switch (target)
+            {
+                case NamedTableReference named:
+                    Write(named, Name(ResolveAlias(named.SchemaObject, from)));
+                    break;
+                case VariableTableReference v:
+                    Write(v, null, v.Variable?.Name);
+                    break;
+                case null:
+                    break;
+                default:
+                    Write(target, null);
+                    break;
+            }
+        }
+
+        private static SchemaObjectName ResolveAlias(SchemaObjectName name, FromClause? from)
+        {
+            if (from is null || name.Count != 1) return name;
+            var alias = name.BaseIdentifier?.Value;
+            var match = from.TableReferences.SelectMany(Tables)
+                .FirstOrDefault(t => string.Equals(t.Alias?.Value, alias, StringComparison.OrdinalIgnoreCase));
+            return match?.SchemaObject ?? name;
+        }
+
+        private static IEnumerable<NamedTableReference> Tables(TableReference r) => r switch
+        {
+            NamedTableReference n => [n],
+            QualifiedJoin j => Tables(j.FirstTableReference).Concat(Tables(j.SecondTableReference)),
+            UnqualifiedJoin j => Tables(j.FirstTableReference).Concat(Tables(j.SecondTableReference)),
+            JoinParenthesisTableReference p => Tables(p.Join),
+            _ => [],
+        };
+
+        public override void Visit(InsertSpecification n) => Target(n.Target, null);
+        public override void Visit(UpdateSpecification n) => Target(n.Target, n.FromClause);
+        public override void Visit(DeleteSpecification n) => Target(n.Target, n.FromClause);
+        public override void Visit(MergeSpecification n) => Target(n.Target, null);
+        public override void Visit(OutputIntoClause n) => Target(n.IntoTable, null);
+
+        public override void Visit(SelectStatement n)
+        {
+            if (n.Into is not null) Write(n.Into, Name(n.Into));
+        }
+
+        public override void Visit(TruncateTableStatement n) => Write(n.TableName, Name(n.TableName));
+        public override void Visit(CreateTableStatement n) => Write(n.SchemaObjectName, Name(n.SchemaObjectName));
+        public override void Visit(AlterTableStatement n) => Write(n.SchemaObjectName, Name(n.SchemaObjectName));
+        public override void Visit(CreateIndexStatement n) => Write(n.OnName, Name(n.OnName));
+
+        public override void Visit(DropObjectsStatement n)
+        {
+            foreach (var o in n.Objects) Write(o, Name(o));
+        }
+
+        public override void Visit(ExecuteSpecification n)
+        {
+            var proc = (n.ExecutableEntity as ExecutableProcedureReference)?.ProcedureReference?.ProcedureReference?.Name;
+            _effects.Add(new Effect { Kind = "exec", Object = Name(proc), Span = b.SpanOf(n) });
+        }
+
+        private void Remote(TSqlFragment n) =>
+            _effects.Add(new Effect { Kind = "remote", Type = n.GetType().Name, Span = b.SpanOf(n) });
+
+        public override void Visit(OpenRowsetTableReference n) => Remote(n);
+        public override void Visit(OpenQueryTableReference n) => Remote(n);
+        public override void Visit(AdHocTableReference n) => Remote(n);
+        public override void Visit(BulkOpenRowset n) => Remote(n);
+        public override void Visit(InternalOpenRowset n) => Remote(n);
     }
 
     private static bool IsDdl(TSqlStatement s)

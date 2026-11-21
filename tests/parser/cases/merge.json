@@ -34,7 +34,22 @@
               "schema": "dbo",
               "name": "Stock"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Stock"
+              },
+              "span": {
+                "offset": 85,
+                "length": 9,
+                "line": 2,
+                "column": 7
+              }
+            }
+          ]
         }
       ]
     }

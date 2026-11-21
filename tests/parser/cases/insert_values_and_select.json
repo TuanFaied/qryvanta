@@ -34,7 +34,22 @@
               "schema": "dbo",
               "name": "Log"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Log"
+              },
+              "span": {
+                "offset": 75,
+                "length": 7,
+                "line": 2,
+                "column": 13
+              }
+            }
+          ]
         },
         {
           "kind": "insert",
@@ -156,7 +171,22 @@
               "schema": "dbo",
               "name": "Archive"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Archive"
+              },
+              "span": {
+                "offset": 119,
+                "length": 11,
+                "line": 3,
+                "column": 8
+              }
+            }
+          ]
         }
       ]
     }

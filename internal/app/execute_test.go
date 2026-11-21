@@ -13,6 +13,7 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/config"
 	"github.com/TuanFaied/qryvanta/internal/connection"
 	"github.com/TuanFaied/qryvanta/internal/executor"
+	"github.com/TuanFaied/qryvanta/internal/parser/parsertest"
 )
 
 type nopDriver struct{}
@@ -52,6 +53,7 @@ func TestExecuteUsesLimitsAndNeverLogsRows(t *testing.T) {
 		Driver:         nopDriver{},
 		Access:         noAccess{},
 		Runner:         runner,
+		Parser:         parsertest.Fake{},
 	})
 	if err != nil {
 		t.Fatal(err)

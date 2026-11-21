@@ -143,7 +143,22 @@
                 "DueDate"
               ]
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Orders"
+              },
+              "span": {
+                "offset": 70,
+                "length": 1,
+                "line": 2,
+                "column": 8
+              }
+            }
+          ]
         }
       ]
     }
