@@ -66,9 +66,9 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 
 - ✅ Finding / Evidence / Severity / Classification model with validation, the rule registry and
   engine, and findings in the analysis panel (D3, #66)
-- Static rules: `= NULL`/`<> NULL`, AND/OR precedence, `NOT IN` with a nullable subquery,
-  JOIN without a predicate / cartesian product, LEFT JOIN cancelled by a WHERE on the right table,
-  contradictory or redundant predicates (where provable), non-sargable date filters,
+- ✅ Static rules: `= NULL`/`<> NULL`, AND/OR precedence, `NOT IN` with a nullable subquery,
+  JOIN without a predicate / cartesian product, LEFT JOIN cancelled by a WHERE on the right table (#67)
+- Static rules: contradictory or redundant predicates (where provable), non-sargable date filters,
   `BETWEEN` on datetime end boundaries, COUNT(col) versus COUNT(*) versus COUNT(DISTINCT)
 - Metadata rules: join on non-key columns (fan-out risk), join type mismatch, nullable join keys
 - Probes (D4): fan-out per join, unmatched rows per INNER JOIN, rows excluded per predicate

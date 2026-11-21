@@ -8,6 +8,17 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Static diagnostic rules for wrong-result bugs. They find issues in CTEs, subqueries and every
+  branch of a set operation, and never in comments or strings:
+  - `QRY-NULL-002`: `NOT IN` with a subquery that can return NULL (no rows at all). It suggests
+    `NOT EXISTS` when the rewrite is safe. A NULL literal in a `NOT IN` list is confirmed.
+  - `QRY-LOGIC-001`: AND and OR mixed without parentheses. The explanation shows how SQL Server
+    groups the condition.
+  - `QRY-JOIN-001`: a comma join without a linking WHERE condition, or an ON that does not refer
+    to both sides (a cartesian product).
+  - `QRY-JOIN-002`: a WHERE condition on the optional side of a LEFT or RIGHT JOIN that rejects
+    NULLs and turns it into an inner join. It suggests moving the condition into ON.
+
 - The analysis panel lists diagnostic findings. Analyze runs on the selection or the whole tab,
   with no connection, and executes nothing:
   - Findings are grouped by severity and show their classification (confirmed, potential,

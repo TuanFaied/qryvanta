@@ -48,8 +48,22 @@ never reused, so reports and suppressions can rely on it. Areas:
 | Area | Covers |
 |---|---|
 | `NULL` | NULL comparisons and NULL logic |
+| `LOGIC` | Boolean logic: operator precedence |
+| `JOIN` | Joins: missing predicates, outer joins |
 
 ## Rules
+
+All rules below use static evidence only: they read the parsed query, so text in comments and
+string literals never triggers them. They apply wherever a query can appear: CTEs, derived
+tables, subqueries, every branch of a set operation, `UPDATE … FROM` and `DELETE … FROM`.
+
+| ID | Title | Severity | Classification |
+|---|---|---|---|
+| QRY-JOIN-001 | JOIN without a predicate (cartesian product) | High | Potential |
+| QRY-JOIN-002 | Outer join cancelled by a WHERE condition | High | Confirmed |
+| QRY-LOGIC-001 | AND and OR mixed without parentheses | Medium | Potential |
+| QRY-NULL-001 | Comparison with NULL using = or <> | High | Confirmed |
+| QRY-NULL-002 | NOT IN with a subquery that can return NULL | High | Potential (Confirmed for a NULL in the list) |
 
 ### QRY-NULL-001
 
@@ -67,3 +81,103 @@ Suggested correction: `Region IS NULL` (or `IS NOT NULL` for `<>` and `!=`).
 
 This assumes `ANSI_NULLS ON`, the default. `SET ANSI_NULLS OFF` is deprecated, and future SQL
 Server versions will not support it.
+
+### QRY-NULL-002
+
+**NOT IN with a subquery that can return NULL** · High · Potential · static evidence
+
+`x NOT IN (SELECT y …)` means `x <> y1 AND x <> y2 AND …`. If any `y` is NULL, that comparison
+is UNKNOWN, so the predicate is never true and the query returns no rows. There is no error.
+`NOT (x IN (SELECT y …))` behaves the same way.
+
+```sql
+SELECT c.CustomerID FROM dbo.Customers AS c
+WHERE c.CustomerID NOT IN (SELECT o.CustomerID FROM dbo.Orders AS o);  -- no rows if any CustomerID is NULL
+```
+
+Suggested correction:
+`NOT EXISTS (SELECT 1 FROM dbo.Orders AS o WHERE o.CustomerID = c.CustomerID)`. NULLs in the
+subquery don't affect NOT EXISTS. Unlike NOT IN, it also keeps rows where `x` is NULL.
+
+The rewrite is offered only when it is safe:
+- The subquery selects one column, from a FROM, without GROUP BY, HAVING, TOP or OFFSET.
+- `x` is a variable, a literal, or a column qualified with a name the subquery does not use.
+
+How it's classified:
+- **Potential:** whether the subquery can return NULL depends on the column and the data.
+  Metadata (nullability) or a probe can confirm it; that evidence comes in later issues.
+- **Silenced:** when the subquery selects a non-NULL literal, or its WHERE requires the selected
+  column `IS NOT NULL`.
+- **Confirmed:** `x NOT IN (1, NULL)`, a NULL literal in a list, is always a confirmed issue.
+
+### QRY-LOGIC-001
+
+**AND and OR mixed without parentheses** · Medium · Potential · static evidence
+
+AND is evaluated before OR, so `a OR b AND c` means `a OR (b AND c)`. The finding's explanation
+shows how SQL Server groups the condition.
+
+```sql
+SELECT OrderID FROM dbo.Orders
+WHERE Status = 'Shipped' OR Status = 'Delivered' AND ShipCountry = 'LK';
+-- SQL Server reads: Status = 'Shipped' OR (Status = 'Delivered' AND ShipCountry = 'LK')
+```
+
+How it's classified:
+- **Potential:** the grouping may be the intended one. The rule has no correction, because only
+  the author knows which grouping was meant.
+- **Reported:** a chain of ORs is reported once, when any of its operands is an unparenthesized
+  AND.
+- **Silenced:** parentheses around either the AND or the OR group.
+
+### QRY-JOIN-001
+
+**JOIN without a predicate (cartesian product)** · High · Potential · static evidence
+
+Every row of one side is paired with every row of the other. The rule reports two shapes:
+
+- A comma join (`FROM a, b`) with no WHERE condition that refers to both sides.
+- An INNER, LEFT, RIGHT or FULL JOIN whose ON does not refer to both sides (`ON a.x = a.y`,
+  `ON 1 = 1`, `ON b.active = 1`).
+
+```sql
+SELECT o.OrderID, c.Name FROM dbo.Orders AS o, dbo.Customers AS c
+WHERE o.OrderDate >= '2026-01-01';   -- every order paired with every customer
+```
+
+How it's classified:
+- **Potential:** the product is certain, but whether it is a bug isn't, so add the join condition.
+- **Not reported:** `CROSS JOIN` and `APPLY`, which say what they do.
+- **Silenced:** a comma join with a derived table that has at most one row (an aggregate without
+  GROUP BY, `TOP (1)`, or no FROM).
+- **Silenced, can't be checked without metadata:** conditions with unqualified columns or with
+  subqueries. Names from an outer query (in a correlated subquery) don't link the two sides.
+
+### QRY-JOIN-002
+
+**Outer join cancelled by a WHERE condition** · High · Confirmed · static evidence
+
+Rows that a LEFT JOIN adds without a match have NULL in every column of the right table (for a
+RIGHT JOIN, the left table). A WHERE condition on those columns that is never true for NULL
+removes exactly those rows, so the outer join returns what an INNER JOIN would.
+
+```sql
+SELECT e.Name, d.Name FROM dbo.Employees AS e
+LEFT JOIN dbo.Departments AS d ON d.DepartmentID = e.DepartmentID
+WHERE d.Active = 1;   -- employees without a department are gone
+```
+
+Suggested correction: move the condition into ON:
+`ON d.DepartmentID = e.DepartmentID AND d.Active = 1`. If an inner join is what you want, write
+INNER JOIN.
+
+How it's classified:
+- **Confirmed:** the condition provably rejects NULL. It is a comparison, `IN`, `BETWEEN` or
+  `LIKE` directly on a column of the optional side, an AND with such a condition, or an OR whose
+  every branch is one.
+- **Not reported:**
+  - `IS NULL` (`OR d.Active IS NULL` keeps the unmatched rows, and `WHERE d.ID IS NULL` is the
+    usual anti-join);
+  - functions like `ISNULL(d.Active, 1) = 1`;
+  - `NOT IN (subquery)`, which is true for NULL when the subquery is empty;
+  - FULL JOIN.
