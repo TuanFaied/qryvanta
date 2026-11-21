@@ -184,9 +184,11 @@ func TestRuleLeftJoinCancelled(t *testing.T) {
 func TestSampleQueries(t *testing.T) {
 	c := parserCore(t)
 	want := map[string][]string{
-		"04_not_in_with_null.buggy.sql":       {"QRY-NULL-002"},
-		"06_and_or_precedence.buggy.sql":      {"QRY-LOGIC-001"},
-		"10_missing_join_predicate.buggy.sql": {"QRY-JOIN-001"},
+		"04_not_in_with_null.buggy.sql":        {"QRY-NULL-002"},
+		"06_and_or_precedence.buggy.sql":       {"QRY-LOGIC-001"},
+		"10_missing_join_predicate.buggy.sql":  {"QRY-JOIN-001"},
+		"05_date_boundary.buggy.sql":           {"QRY-DATE-002"},
+		"07_count_vs_count_distinct.buggy.sql": {"QRY-COUNT-002"},
 	}
 	files, err := filepath.Glob(filepath.Join("..", "..", "tests", "sample_queries", "*.sql"))
 	if err != nil || len(files) < 20 {

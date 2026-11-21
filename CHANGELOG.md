@@ -8,6 +8,20 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Static diagnostic rules for predicates, date filters and counting:
+  - `QRY-PRED-001`: contradictory conditions on one column (`x = 1 AND x = 2`, `x > 5 AND x < 3`,
+    `x IS NULL AND x = 1`). These are confirmed: the AND is never true. Only comparisons with
+    numbers and IS [NOT] NULL are analyzed; anything else is skipped.
+  - `QRY-PRED-002`: a condition another one already implies (`x > 5 AND x > 3`), or the same
+    condition twice.
+  - `QRY-DATE-001`: a date function or conversion on a column in a filter (`YEAR(d) = 2024`),
+    which cannot use an index. It suggests the equivalent range where there is one.
+  - `QRY-DATE-002`: `BETWEEN … AND '2026-01-31'`, which misses the last day's times on a
+    datetime column. It suggests a half-open range.
+  - `QRY-COUNT-001`: `COUNT(column)` skips NULLs, unless the query already guarantees a value.
+  - `QRY-COUNT-002`: `COUNT(t.column)` without DISTINCT when other aggregates use another table of
+    the join. It suggests `COUNT(DISTINCT …)`.
+
 - Static diagnostic rules for wrong-result bugs. They find issues in CTEs, subqueries and every
   branch of a set operation, and never in comments or strings:
   - `QRY-NULL-002`: `NOT IN` with a subquery that can return NULL (no rows at all). It suggests
