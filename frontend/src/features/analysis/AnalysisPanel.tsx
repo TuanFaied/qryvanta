@@ -1,31 +1,66 @@
-import { ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, ScanSearch } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { PanelHeader } from "@/components/shell/PanelHeader";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useAnalysisStore } from "@/stores/analysis-store";
+import { FindingsSection } from "./FindingsSection";
 
 const sections = [
+  { id: "findings", title: "Findings", empty: "" },
   { id: "structure", title: "Query structure", empty: "Sources, joins, filters and grouping of the parsed query." },
   { id: "joins", title: "JOIN analysis", empty: "Join types, predicates, key cardinality and row multiplication." },
   { id: "filters", title: "Filter analysis", empty: "WHERE and HAVING predicates, NULL handling and precedence." },
-  { id: "findings", title: "Findings", empty: "Confirmed issues, potential issues and suggestions." },
   { id: "execution", title: "Execution", empty: "Duration, row counts and plan summary of the last run." },
 ] as const;
 
 type SectionId = (typeof sections)[number]["id"];
 
-export function AnalysisPanel() {
+export interface AnalysisPanelProps {
+  /** The active editor tab, or null when none is open. */
+  activeTab: { id: string; content: string } | null;
+  /** Analyzes the selection or the whole active tab. */
+  onAnalyze: () => void;
+  /** Selects a range of the active tab in the editor. */
+  onRevealRange: (line: number, column: number, length: number) => void;
+}
+
+export function AnalysisPanel({ activeTab, onAnalyze, onRevealRange }: AnalysisPanelProps) {
   const [open, setOpen] = useState<Record<SectionId, boolean>>({
+    findings: true,
     structure: true,
     joins: true,
     filters: true,
-    findings: true,
     execution: false,
   });
+  const { target, running, result, error } = useAnalysisStore();
+  const count = result?.available ? (result.findings ?? []).length : 0;
+
+  const body: Partial<Record<SectionId, ReactNode>> = {
+    findings: (
+      <FindingsSection target={target} running={running} result={result} error={error} activeTab={activeTab} onRevealRange={onRevealRange} />
+    ),
+  };
 
   return (
     <section aria-label="Analysis" className="flex h-full flex-col bg-panel">
-      <PanelHeader title="Analysis" />
+      <PanelHeader
+        title="Analysis"
+        actions={
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 gap-1 px-2 text-xs"
+            disabled={!activeTab || running}
+            onClick={onAnalyze}
+            title="Run the diagnostic rules on the selection or the whole tab"
+          >
+            <ScanSearch className="size-3.5" />
+            Analyze
+          </Button>
+        }
+      />
       <ScrollArea className="min-h-0 flex-1">
         <div className="pb-3">
           {sections.map((s) => {
@@ -40,12 +75,12 @@ export function AnalysisPanel() {
                 >
                   <ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                   {s.title}
+                  {s.id === "findings" && count > 0 && <span className="ml-1 text-muted-foreground">({count})</span>}
                 </button>
-                {isOpen && (
-                  <p className="px-7 pt-0.5 pb-3 text-xs leading-relaxed text-muted-foreground">
-                    Nothing analysed yet. {s.empty}
-                  </p>
-                )}
+                {isOpen &&
+                  (body[s.id] ?? (
+                    <p className="px-7 pt-0.5 pb-3 text-xs leading-relaxed text-muted-foreground">Nothing analyzed yet. {s.empty}</p>
+                  ))}
               </div>
             );
           })}

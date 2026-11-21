@@ -76,8 +76,8 @@ internal/
   executor/            Query execution model: requests, limits, streamed results, messages
   parser/              Parser interface and results; parser/sidecar is the ScriptDom client
                        (Phase 4: structured query model next)
-  analyzer/            (Phase 5) Rules that turn query structure + evidence into findings
-  diagnostics/         (Phase 5) Finding, Evidence, Severity, Classification types
+  analyzer/            Rule interface, registry and engine that turn the QueryModel into findings
+  diagnostics/         Finding, Evidence, Severity, Classification and their validation
   instrumentation/     (Phase 5/7) Probe query generation and approval workflow
   plan/                (Phase 6) Showplan XML parsing into an operator graph
   compare/             (Phase 7) Deterministic result comparison
@@ -276,6 +276,43 @@ A finding may be **Confirmed** only when its evidence proves it (for example, `=
 a confirmed issue, and a measured fan-out of 4.2× is confirmed row multiplication).
 Otherwise it is **Potential**. This rule is enforced in code: a confirmed finding with
 no evidence fails validation.
+
+**Implementation (#66).**
+
+- **Types:** `internal/diagnostics` defines the types:
+  - `Finding{RuleID, Title, Explanation, Severity, Classification, Span, Evidence, Correction}`.
+  - `Severity`: `critical`, `high`, `medium`, `low`, `informational`.
+  - `Classification`: `confirmed`, `potential`, `optimization`.
+  - `Evidence{Kind, Summary}` with exactly one payload for its kind: `StaticEvidence{Span, Text}`,
+    `MetadataEvidence{Object, Column, Property, Value}`,
+    `PlanEvidence{NodeID, Operator, Property, Value, Actual}` or `ProbeEvidence{SQL, Result}`.
+  - `Correction{Description, Span, Replacement}`.
+  - Spans are UTF-16 offsets into the analyzed SQL, like the parser's.
+- **Validation:** `diagnostics.Validate` rejects:
+  - a confirmed finding without evidence,
+  - a span (of the finding, its static evidence or its correction) that is empty or not inside
+    the SQL,
+  - unknown severities, classifications or evidence kinds,
+  - evidence without its payload.
+- **Rules:** `internal/analyzer` defines `Rule` (`Info()`: ID, title, default severity, evidence
+  kinds; `Check(*Input)`) and a `Registry` that requires IDs of the form `QRY-<AREA>-<NNN>` and
+  unique. The rules are listed in [docs/features/rules.md](../features/rules.md), and a test fails
+  when a built-in rule is missing there.
+- **The engine:** `Engine.Analyze`:
+  - It runs every rule and fills a finding's rule ID and default severity from its rule.
+  - It validates each finding, and also rejects evidence of a kind the rule does not declare.
+  - It drops invalid findings and turns them, errors and panics into `RuleFailure`s; the other
+    rules still run.
+  - It orders findings by offset (the enclosing one first), then severity, rule ID and title.
+- **Callers:** `app.Core.Analyze` parses with the model (batches with syntax errors are not
+  analyzed) and logs rule failures. `desktop.AnalysisService.Analyze` serves the analysis panel.
+  It reports an unavailable parser separately from "no findings".
+- **The panel:**
+  - Analyze runs on what Execute would run: the selection or the whole tab.
+  - Findings are grouped by severity, with their classification, evidence and the correction as
+    a diff.
+  - Clicking a finding selects its span in the editor.
+  - A correction is never applied (D4).
 
 ### D4. Probes versus modifications
 

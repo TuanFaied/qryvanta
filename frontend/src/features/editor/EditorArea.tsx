@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useResolvedTheme } from "@/features/theme/theme";
 import { backend, type Config } from "@/services/backend";
 import { isDirty, unsavedTabs, useEditorStore, type Binding, type EditorTab } from "@/stores/editor-store";
+import { useAnalysisStore } from "@/stores/analysis-store";
 import { currentDiagnostics, useSyntaxStore } from "@/stores/syntax-store";
 import type { EditorCommand, SqlEditorHandle } from "./editor-types";
 import { openFile, saveTab } from "./file-actions";
@@ -146,6 +147,8 @@ export function EditorArea({
     for (const id of Object.keys(useSyntaxStore.getState().byTab)) {
       if (!open.has(id)) useSyntaxStore.getState().forget(id);
     }
+    const analyzed = useAnalysisStore.getState().target?.tabId;
+    if (analyzed && !open.has(analyzed)) useAnalysisStore.getState().forget(analyzed);
   }, [tabKey]);
 
   const closingTab = tabs.find((t) => t.id === closing) ?? null;

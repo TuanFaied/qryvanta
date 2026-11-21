@@ -62,9 +62,10 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   functions, aliases through nested subqueries and set operations, with the heuristic as a
   fallback (#45)
 
-## Phase 5: Diagnostic engine ⬜
+## Phase 5: Diagnostic engine 🚧
 
-- Finding / Evidence / Severity / Classification model, with validation (D3)
+- ✅ Finding / Evidence / Severity / Classification model with validation, the rule registry and
+  engine, and findings in the analysis panel (D3, #66)
 - Static rules: `= NULL`/`<> NULL`, AND/OR precedence, `NOT IN` with a nullable subquery,
   JOIN without a predicate / cartesian product, LEFT JOIN cancelled by a WHERE on the right table,
   contradictory or redundant predicates (where provable), non-sargable date filters,
