@@ -7,30 +7,40 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/parser"
 )
 
+// predicateRoot is a filter condition with the FROM clause its columns refer to.
+type predicateRoot struct {
+	expr *parser.Expr
+	from *parser.Source
+}
+
 // predicateRoots lists every filter condition of the input: WHERE and HAVING of each query,
 // the ON of each join, and the WHERE of UPDATE and DELETE.
-func (in *Input) predicateRoots() []*parser.Expr {
-	var out []*parser.Expr
-	add := func(e *parser.Expr) {
+func (in *Input) predicateRoots() []predicateRoot {
+	var out []predicateRoot
+	add := func(e *parser.Expr, from *parser.Source) {
 		if e != nil {
-			out = append(out, e)
+			out = append(out, predicateRoot{e, from})
 		}
 	}
 	addFrom := func(from *parser.Source) {
 		for _, j := range joins(from) {
-			add(j.On)
+			add(j.On, from)
 		}
 	}
 	in.Walk(Visitor{
 		Statement: func(s *parser.Statement) {
 			if s.Kind == parser.StmtUpdate || s.Kind == parser.StmtDelete {
-				add(s.Where)
+				from := s.From
+				if from == nil {
+					from = s.Target
+				}
+				add(s.Where, from)
 				addFrom(s.From)
 			}
 		},
 		Query: func(q *parser.Query) {
-			add(q.Where)
-			add(q.Having)
+			add(q.Where, q.From)
+			add(q.Having, q.From)
 			addFrom(q.From)
 		},
 	})

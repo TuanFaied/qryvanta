@@ -35,7 +35,7 @@ func runRuleCases(t *testing.T, rule string, cases []ruleCase) {
 	c := parserCore(t)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			a, err := c.Analyze(context.Background(), tc.sql)
+			a, err := c.Analyze(context.Background(), tc.sql, AnalysisTarget{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -201,7 +201,7 @@ func TestSampleQueries(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			a, err := c.Analyze(context.Background(), string(data))
+			a, err := c.Analyze(context.Background(), string(data), AnalysisTarget{})
 			if err != nil {
 				t.Fatal(err)
 			}

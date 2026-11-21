@@ -61,7 +61,7 @@ func (nonSargableDate) Info() Info {
 func (nonSargableDate) Check(in *Input) ([]diagnostics.Finding, error) {
 	var out []diagnostics.Finding
 	for _, root := range in.predicateRoots() {
-		walkCondition(root, false, func(e *parser.Expr, _ bool) {
+		walkCondition(root.expr, false, func(e *parser.Expr, _ bool) {
 			if e.Kind != parser.ExprCompare || e.Quantifier != "" {
 				return
 			}
@@ -160,14 +160,14 @@ func (betweenDates) Info() Info {
 		ID:       "QRY-DATE-002",
 		Title:    "BETWEEN with a date as the end of a datetime range",
 		Severity: diagnostics.SeverityMedium,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic, diagnostics.EvidenceMetadata},
 	}
 }
 
 func (betweenDates) Check(in *Input) ([]diagnostics.Finding, error) {
 	var out []diagnostics.Finding
 	for _, root := range in.predicateRoots() {
-		walkCondition(root, false, func(e *parser.Expr, _ bool) {
+		walkCondition(root.expr, false, func(e *parser.Expr, _ bool) {
 			if e.Kind != parser.ExprBetween || e.Not || columnKey(e.Operand) == "" || !isLiteral(e.High, "string") {
 				return
 			}
@@ -178,16 +178,29 @@ func (betweenDates) Check(in *Input) ([]diagnostics.Finding, error) {
 			}
 			c := in.Text(e.Operand.Span)
 			span := SpanOf(e.Span)
+			// Metadata: a date column has no time, so BETWEEN is right; a datetime column confirms it.
+			class := diagnostics.Potential
+			var typed []diagnostics.Evidence
+			if r, ok := in.resolveColumn(root.from, e.Operand); ok {
+				switch {
+				case r.column.Type == "date":
+					return
+				case dateTimeTypes[r.column.Type]:
+					class = diagnostics.Confirmed
+					typed = append(typed, columnEvidence(r, "type", r.column.DataType,
+						fmt.Sprintf("%s.%s is %s, which has a time of day.", r.table.FullName(), r.column.Name, r.column.DataType)))
+				}
+			}
 			out = append(out, diagnostics.Finding{
 				Title: fmt.Sprintf("BETWEEN … AND '%s' misses most of the last day if %s has a time", high, c),
 				Explanation: fmt.Sprintf("BETWEEN includes its end, but '%s' means the very start of that day (or its last "+
 					"whole second). If %s is a datetime with a time of day, rows later on the last day are not "+
 					"included. If it is a date column, the range is correct. A half-open range (>= the start, < the "+
 					"next day) works for both.", high, c),
-				Classification: diagnostics.Potential,
+				Classification: class,
 				Span:           span,
-				Evidence: []diagnostics.Evidence{staticEvidence(in, e.High,
-					"The upper bound is a date without a time of day, or the last whole second of a day.")},
+				Evidence: append([]diagnostics.Evidence{staticEvidence(in, e.High,
+					"The upper bound is a date without a time of day, or the last whole second of a day.")}, typed...),
 				Correction: &diagnostics.Correction{
 					Description: "Use a half-open range that ends before the next day.",
 					Span:        span,

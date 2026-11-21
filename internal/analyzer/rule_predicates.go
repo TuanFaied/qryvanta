@@ -49,7 +49,7 @@ func conditionOf(e *parser.Expr) (condition, bool) {
 func (in *Input) andChains(fn func(root *parser.Expr, operands []*parser.Expr)) {
 	seen := map[*parser.Expr]bool{}
 	for _, root := range in.predicateRoots() {
-		walkCondition(root, false, func(e *parser.Expr, negated bool) {
+		walkCondition(root.expr, false, func(e *parser.Expr, negated bool) {
 			if e.Kind != parser.ExprAnd || seen[e] || negated {
 				return
 			}

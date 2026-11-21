@@ -166,3 +166,23 @@ func wrapOr(e *parser.Expr, text string) string {
 	}
 	return text
 }
+
+// outerJoined reports whether s is on the side of an outer join that gets NULLs for rows
+// without a match (the right of a LEFT JOIN, the left of a RIGHT JOIN, either side of FULL).
+func outerJoined(from, s *parser.Source) bool {
+	for _, j := range joins(from) {
+		switch j.JoinType {
+		case parser.JoinLeft, parser.JoinOuterApply:
+			if containsSource(leaves(j.Right), s) {
+				return true
+			}
+		case parser.JoinRight:
+			if containsSource(leaves(j.Left), s) {
+				return true
+			}
+		case parser.JoinFull:
+			return true
+		}
+	}
+	return false
+}

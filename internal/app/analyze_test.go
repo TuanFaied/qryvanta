@@ -29,14 +29,14 @@ func analyzeCore(t *testing.T, p parser.Parser) *Core {
 
 func TestAnalyzeReportsAnUnavailableParser(t *testing.T) {
 	c := analyzeCore(t, parsertest.Fake{Err: fmt.Errorf("%w: not found", parser.ErrUnavailable)})
-	if _, err := c.Analyze(context.Background(), "SELECT 1"); !errors.Is(err, parser.ErrUnavailable) {
+	if _, err := c.Analyze(context.Background(), "SELECT 1", AnalysisTarget{}); !errors.Is(err, parser.ErrUnavailable) {
 		t.Fatalf("err = %v, want ErrUnavailable", err)
 	}
 }
 
 func TestAnalyzeCountsStatements(t *testing.T) {
 	c := analyzeCore(t, parsertest.Fake{})
-	a, err := c.Analyze(context.Background(), "SELECT 1")
+	a, err := c.Analyze(context.Background(), "SELECT 1", AnalysisTarget{})
 	if err != nil {
 		t.Fatal(err)
 	}

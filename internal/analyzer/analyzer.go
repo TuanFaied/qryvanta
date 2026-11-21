@@ -23,6 +23,8 @@ import (
 type Input struct {
 	SQL    string
 	Result *parser.Result
+	// Catalog is the metadata of the tables the script reads, or nil without a connection.
+	Catalog *Catalog
 }
 
 // Text returns the SQL a span covers.
@@ -125,6 +127,10 @@ func Builtin() []Rule {
 		notInNull{},
 		nonSargableDate{},
 		nullComparison{},
+		joinFanOut{},
+		joinTypeMismatch{},
+		nullableJoinKey{},
+		joinIgnoresForeignKey{},
 		redundancy{},
 	}
 }

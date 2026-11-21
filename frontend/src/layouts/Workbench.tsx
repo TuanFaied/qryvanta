@@ -186,6 +186,9 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
       tabText: activeTab.content,
       startLine: target.startLine,
       startColumn: target.startColumn ?? 1,
+      // Metadata rules read the catalog of the tab's connection, when it is the connected one.
+      connectionId: activeTab.connectionId && activeTab.connectionId === activeId ? activeTab.connectionId : "",
+      database: activeTab.database ?? "",
     });
   };
 
@@ -194,6 +197,7 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
     if (activeId) {
       forget(activeId);
       forgetAccess(activeId);
+      void backend.forgetMetadata(activeId).catch(() => undefined);
     }
     void conn.load();
   };

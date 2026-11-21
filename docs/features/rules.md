@@ -49,21 +49,27 @@ never reused, so reports and suppressions can rely on it. Areas:
 |---|---|
 | `NULL` | NULL comparisons and NULL logic |
 | `LOGIC` | Boolean logic: operator precedence |
-| `JOIN` | Joins: missing predicates, outer joins |
+| `JOIN` | Joins: missing predicates, outer joins, keys, types and foreign keys |
 | `PRED` | Predicates that cannot be true or add nothing |
 | `DATE` | Date and time filters |
 | `COUNT` | Counting |
 
 ## Rules
 
-All rules below use static evidence only: they read the parsed query, so text in comments and
-string literals never triggers them. They apply wherever a query can appear: CTEs, derived
+The rules read the parsed query, so text in comments and string literals never triggers them.
+`QRY-JOIN-003` to `QRY-JOIN-006` also need metadata (they run only when the tab is connected),
+and three static rules use metadata when it is there (see
+[Metadata](#metadata-confirmations-and-dismissals)). They apply wherever a query can appear: CTEs, derived
 tables, subqueries, every branch of a set operation, `UPDATE … FROM` and `DELETE … FROM`.
 
 | ID | Title | Severity | Classification |
 |---|---|---|---|
 | QRY-JOIN-001 | JOIN without a predicate (cartesian product) | High | Potential |
 | QRY-JOIN-002 | Outer join cancelled by a WHERE condition | High | Confirmed |
+| QRY-JOIN-003 | Join on non-key columns (fan-out risk) | Medium | Potential |
+| QRY-JOIN-004 | Join columns of different types | Medium | Potential |
+| QRY-JOIN-005 | INNER JOIN on a nullable column | Medium | Potential |
+| QRY-JOIN-006 | Join does not follow the foreign key | High | Potential |
 | QRY-LOGIC-001 | AND and OR mixed without parentheses | Medium | Potential |
 | QRY-NULL-001 | Comparison with NULL using = or <> | High | Confirmed |
 | QRY-NULL-002 | NOT IN with a subquery that can return NULL | High | Potential (Confirmed for a NULL in the list) |
@@ -329,3 +335,107 @@ How it's classified:
   a different table of the join.
 - **Left to the fan-out probe:** `COUNT(*)` over a join, which says nothing statically (counting
   joined rows is often intended).
+
+## Metadata: confirmations and dismissals
+
+When the analyzed tab is connected, Qryvanta reads the catalog entries of the tables and views
+the query names: column types, nullability, keys (primary key, unique constraints, unique indexes
+without a filter) and foreign keys. These are read-only catalog queries, cached per connection
+and cleared by the explorer's Refresh. Tables it cannot read (missing, no permission, linked
+servers, no database selected) are listed under the findings, and never fail the analysis.
+
+| Rule | Metadata |
+|---|---|
+| QRY-DATE-002 | Confirmed when the column is `datetime`, `datetime2`, `smalldatetime` or `datetimeoffset`; dismissed when it is `date` |
+| QRY-NULL-002 | Dismissed when the subquery's column is NOT NULL; otherwise the nullable column is named |
+| QRY-COUNT-001 | Dismissed when the column is NOT NULL (unless on the optional side of an outer join); otherwise the nullable column is named |
+
+### QRY-JOIN-003
+
+**Join on non-key columns (fan-out risk)** · Medium · Potential · metadata evidence
+
+Two shapes, judged from the keys of the joined tables:
+
+- **Many-to-many:** neither side's join columns cover a primary key or unique set, so a row on
+  either side can match several on the other.
+
+  ```sql
+  SELECT … FROM dbo.Orders AS o JOIN dbo.Payments AS p ON p.OrderID = o.CustomerID
+  ```
+
+- **Two one-to-many joins from one table:** each row of the table is repeated per match on both
+  sides, so the two tables' rows multiply, and SUM or COUNT over either is inflated.
+
+  ```sql
+  FROM dbo.Orders AS o
+  JOIN dbo.OrderItems AS oi ON oi.OrderID = o.OrderID   -- one-to-many
+  JOIN dbo.Payments AS p ON p.OrderID = o.OrderID       -- one-to-many: items × payments
+  ```
+
+How it's classified:
+- **Potential:** whether rows actually multiply depends on the data. The fan-out probe (#70)
+  measures it.
+- **How keys are judged:** conditions on a constant count as covered (`AND l.LineNumber = 1`
+  completes a key of (OrderID, LineNumber)).
+- **Not judged:** joins to views (they have no keys to judge), unresolved tables, and joins whose
+  conditions on one side span several tables.
+
+### QRY-JOIN-004
+
+**Join columns of different types** · Medium · Potential · metadata evidence
+
+A join that compares columns of different type families: a string with a number or date,
+`varchar` with `nvarchar`, or `date` with a datetime type.
+
+```sql
+FROM dbo.Legacy AS g JOIN dbo.Codes AS c ON c.Code = g.Code   -- varchar(10) = nvarchar(10)
+```
+
+SQL Server converts one side for every row, by data type precedence:
+- a conversion can change what matches (`'01' = 1`) or fail for values that don't convert;
+- it prevents an index seek on the converted column;
+- a `date` compared with a datetime matches only at midnight.
+
+How it's classified:
+- **Potential:** the implicit-conversion warning in an actual plan (Phase 6) confirms it.
+- **Not reported:** numbers of different sizes (`int` and `bigint`), which compare correctly.
+  Different collations are an error that SQL Server reports itself.
+
+### QRY-JOIN-005
+
+**INNER JOIN on a nullable column** · Medium · Potential · metadata evidence
+
+```sql
+SELECT e.Name, d.Name FROM dbo.Employees AS e
+JOIN dbo.Departments AS d ON d.DepartmentID = e.DepartmentID   -- Employees.DepartmentID allows NULL
+```
+
+NULL equals nothing, so employees without a department have no match and the INNER JOIN drops
+them without a sign. If they belong in the result, use a LEFT JOIN.
+
+How it's classified:
+- **Potential:** dropping them may be intended. The finding names the column.
+- **Silenced:** when WHERE already requires a value in the column, or the column's table is on
+  the optional side of an outer join.
+
+### QRY-JOIN-006
+
+**Join does not follow the foreign key** · High · Potential · metadata evidence
+
+Two tables linked by a single-column foreign key, joined with the key on one side and another
+column on the other:
+
+```sql
+FROM dbo.OrderItems AS oi
+JOIN dbo.Products AS p ON p.ProductID = oi.OrderItemID   -- OrderItems.ProductID references Products.ProductID
+```
+
+When the values happen to be in the same range, the join returns plausible, wrong rows and
+drops the rest, without an error.
+
+Suggested correction: join on the foreign key column (`p.ProductID = oi.ProductID`). It is
+offered only when the wrong column is qualified; an unqualified name could become ambiguous.
+
+How it's classified:
+- **Potential:** joining on another column can be intended.
+- **Not reported:** a join that follows any foreign key between the two tables, and self-joins.

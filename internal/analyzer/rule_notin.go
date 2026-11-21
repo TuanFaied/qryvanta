@@ -18,7 +18,7 @@ func (notInNull) Info() Info {
 		ID:       "QRY-NULL-002",
 		Title:    "NOT IN with a subquery that can return NULL",
 		Severity: diagnostics.SeverityHigh,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic, diagnostics.EvidenceMetadata},
 	}
 }
 
@@ -65,6 +65,17 @@ func (notInNull) Check(in *Input) ([]diagnostics.Finding, error) {
 		if q == nil || excludesNull(q) {
 			return
 		}
+		// Metadata: a non-nullable column cannot return NULL; a nullable one is named.
+		var nullable []diagnostics.Evidence
+		if q.Kind == parser.QuerySelect && len(q.Select) == 1 && q.Select[0].Expr != nil {
+			if r, ok := in.resolveColumn(q.From, q.Select[0].Expr); ok {
+				if !r.column.Nullable {
+					return
+				}
+				nullable = append(nullable, columnEvidence(r, "nullable", "yes",
+					fmt.Sprintf("%s.%s allows NULL.", r.table.FullName(), r.column.Name)))
+			}
+		}
 		f := diagnostics.Finding{
 			Title: "NOT IN with a subquery returns no rows if the subquery returns a NULL",
 			Explanation: "x NOT IN (SELECT y …) is never true when any y is NULL: x <> NULL is UNKNOWN, so the " +
@@ -72,7 +83,7 @@ func (notInNull) Check(in *Input) ([]diagnostics.Finding, error) {
 				"or add WHERE y IS NOT NULL to the subquery.",
 			Classification: diagnostics.Potential,
 			Span:           span,
-			Evidence:       evidence("NOT IN compares with every value the subquery returns, NULLs included."),
+			Evidence:       append(evidence("NOT IN compares with every value the subquery returns, NULLs included."), nullable...),
 		}
 		if rewrite, ok := notExists(in, e); ok {
 			f.Correction = &diagnostics.Correction{

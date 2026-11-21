@@ -70,7 +70,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   JOIN without a predicate / cartesian product, LEFT JOIN cancelled by a WHERE on the right table (#67)
 - ✅ Static rules: contradictory or redundant predicates (where provable), non-sargable date filters,
   `BETWEEN` on datetime end boundaries, COUNT(col) versus COUNT(*) versus COUNT(DISTINCT) (#68)
-- Metadata rules: join on non-key columns (fan-out risk), join type mismatch, nullable join keys
+- ✅ Metadata rules: join on non-key columns (fan-out risk), join type mismatch, nullable join keys,
+  joins that do not follow the foreign key; metadata confirms or dismisses static findings (#69)
 - Probes (D4): fan-out per join, unmatched rows per INNER JOIN, rows excluded per predicate
 - CLI: `qryvanta-cli diagnose query.sql --conn X`
 

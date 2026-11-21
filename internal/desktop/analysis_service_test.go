@@ -30,7 +30,7 @@ func newAnalysisService(t *testing.T, p parser.Parser) *AnalysisService {
 
 func TestAnalysisServiceParserUnavailable(t *testing.T) {
 	s := newAnalysisService(t, parsertest.Fake{Err: fmt.Errorf("%w: sidecar not found", parser.ErrUnavailable)})
-	a := s.Analyze(context.Background(), "SELECT 1")
+	a := s.Analyze(context.Background(), "SELECT 1", "", "")
 	if a.Available || !strings.Contains(a.Reason, "sidecar not found") {
 		t.Fatalf("analysis = %+v, want unavailable with the reason", a)
 	}
@@ -40,7 +40,7 @@ func TestAnalysisServiceParserUnavailable(t *testing.T) {
 }
 
 func TestAnalysisServiceNoFindings(t *testing.T) {
-	a := newAnalysisService(t, parsertest.Fake{}).Analyze(context.Background(), "SELECT 1")
+	a := newAnalysisService(t, parsertest.Fake{}).Analyze(context.Background(), "SELECT 1", "", "")
 	if !a.Available || a.Statements != 1 || a.Rules == 0 || a.Findings == nil || len(a.Findings) != 0 || a.Failures == nil {
 		t.Fatalf("analysis = %+v", a)
 	}

@@ -118,3 +118,7 @@ func TestSchemaClassifiesErrors(t *testing.T) {
 		}
 	}
 }
+
+func (f *fakeReader) Table(context.Context, *sql.DB, string, string, string) (schema.Table, error) {
+	return schema.Table{}, schema.ErrObjectNotFound
+}
