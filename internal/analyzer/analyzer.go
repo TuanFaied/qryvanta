@@ -115,6 +115,10 @@ func (r *Registry) Rules() []Rule { return slices.Clone(r.rules) }
 // docs/features/rules.md (a test checks that every ID is there).
 func Builtin() []Rule {
 	return []Rule{
+		andOrPrecedence{},
+		leftJoinCancelled{},
+		missingJoinPredicate{},
+		notInNull{},
 		nullComparison{},
 	}
 }

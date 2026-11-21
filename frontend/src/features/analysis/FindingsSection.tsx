@@ -157,7 +157,7 @@ function FindingItem({
         <span className="font-mono">{f.ruleId}</span>
         {" · "}Line {at.line}, column {at.column}
       </p>
-      <p className="mt-1 leading-relaxed">{f.explanation}</p>
+      <p className="mt-1 leading-relaxed whitespace-pre-line">{f.explanation}</p>
       {(f.evidence ?? []).length > 0 && (
         <div className="mt-1.5">
           <p className="text-[11px] font-medium text-muted-foreground">Evidence</p>
