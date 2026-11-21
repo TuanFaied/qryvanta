@@ -21,6 +21,7 @@ function summary(outcome: Outcome, extra: Partial<Summary> = {}): Summary {
     elapsedMs: 12,
     guard: { active: true, rolledBack: true, endedByBatch: false },
     batches: [],
+    refusals: [],
     error: "",
     ...extra,
   };

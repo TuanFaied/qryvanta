@@ -21,6 +21,7 @@ const handle: SqlEditorHandle = {
   format: () => {},
   focus: () => {},
   revealLine: () => {},
+  selectRange: () => {},
   getRunTarget: () => ({ sql: "UPDATE t SET x = 1", startLine: 5, fromSelection: true }),
 };
 

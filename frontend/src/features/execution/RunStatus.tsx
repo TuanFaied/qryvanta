@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleSlash, Clock, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, CircleSlash, Clock, Loader2, ShieldX, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Outcome } from "@/services/backend";
 import type { Run } from "@/stores/execution-store";
@@ -41,6 +41,9 @@ export function RunStatus({ run }: { run: Run }) {
     if (run.error || outcome === Outcome.OutcomeFailed) {
       icon = <XCircle className="size-3.5 text-destructive" />;
       label = "Failed";
+    } else if (outcome === Outcome.OutcomeRefused) {
+      icon = <ShieldX className="size-3.5 text-warning" />;
+      label = "Not run: refused by read-only mode";
     } else if (outcome === Outcome.OutcomeCancelled) {
       icon = <CircleSlash className="size-3.5 text-muted-foreground" />;
       label = "Cancelled";

@@ -20,6 +20,8 @@ export interface Run {
   finishedAt: number | null;
   /** Editor line the batch started on, minus one: server line numbers are relative to the batch. */
   lineOffset: number;
+  /** Editor column the run's SQL started at on its first line, minus one (0 when absent). */
+  columnOffset?: number;
   /** Batch executions as they start (a script without GO has one). */
   batches: BatchRun[];
   resultSets: ResultSetData[];
@@ -35,6 +37,7 @@ export interface StartRun {
   connectionId: string;
   database: string;
   lineOffset: number;
+  columnOffset?: number;
 }
 
 interface ExecutionState {

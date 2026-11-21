@@ -120,7 +120,8 @@ request. The protocol is documented in `sidecar/tsqlparser/Protocol.cs`.
 The app and CLI look for the sidecar next to their own executable, so `bin/` builds work as
 they are. When running from source (`go run`, `wails3 dev`, tests), point
 `QRYVANTA_PARSER_PATH` at a built sidecar. Without one, the status bar shows "Parser
-unavailable" and queries still run.
+unavailable", and read-only mode (the default) refuses to run anything, because it checks every
+statement with the parser first. Queries run without it only when read-only mode is off.
 
 ```bash
 qryvanta-cli parse --file tests/sample_queries/02_one_to_many_fanout.correct.sql
@@ -228,8 +229,9 @@ $env:QRYVANTA_TEST_MSSQL_SERVER = 'localhost'; $env:QRYVANTA_TEST_MSSQL_PORT = '
 go test -tags integration ./internal/dialect/mssql/ ./tests/integration/ ./cmd/qryvanta-cli/
 ```
 
-The CLI test for `GO` scripts also needs `QRYVANTA_PARSER_PATH` (see the parser section) and
-skips without it. CI publishes the sidecar for it.
+The CLI integration tests also need `QRYVANTA_PARSER_PATH` (see the parser section), because
+read-only mode checks every script with the parser, and skip without it. CI publishes the sidecar
+for them.
 
 For a local Express instance with Windows authentication, set only
 `QRYVANTA_TEST_MSSQL_SERVER = 'localhost\SQLEXPRESS'` and `QRYVANTA_TEST_MSSQL_TRUST = 'true'`.
@@ -290,8 +292,12 @@ cat report.sql | qryvanta-cli run --conn fixtures --database QryvantaSample --fo
   error in one batch does not stop the next. Error lines are script lines, and with several
   batches the table output heads each batch's results with `-- Batch k`. In `json`, each
   result set and message has a `batch`, and `batches` lists every execution.
+- In read-only mode, every script is checked with the parser before it runs (architecture D5).
+  A refused script prints each statement that is not allowed, with its line, column and reason,
+  sends nothing to the server, and exits with `4`. In `json`, `refusals` lists them. Without the
+  parser sidecar, read-only mode runs nothing; `--allow-writes` runs without the check.
 - Exit codes: `0` success, `1` query error or failed batch, `2` usage error, `3` timed out or
-  cancelled. Ctrl+C cancels the query on the server.
+  cancelled, `4` refused by read-only mode. Ctrl+C cancels the query on the server.
 
 ## Notes
 

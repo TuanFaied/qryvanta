@@ -141,6 +141,36 @@
                   "procedure": {
                     "schema": "dbo",
                     "name": "usp_Notify"
+                  },
+                  "effects": [
+                    {
+                      "kind": "exec",
+                      "object": {
+                        "schema": "dbo",
+                        "name": "usp_Notify"
+                      },
+                      "span": {
+                        "offset": 155,
+                        "length": 19,
+                        "line": 5,
+                        "column": 5
+                      }
+                    }
+                  ]
+                }
+              ],
+              "effects": [
+                {
+                  "kind": "exec",
+                  "object": {
+                    "schema": "dbo",
+                    "name": "usp_Notify"
+                  },
+                  "span": {
+                    "offset": 155,
+                    "length": 19,
+                    "line": 5,
+                    "column": 5
                   }
                 }
               ]
@@ -187,6 +217,21 @@
                     }
                   }
                 ]
+              }
+            }
+          ],
+          "effects": [
+            {
+              "kind": "exec",
+              "object": {
+                "schema": "dbo",
+                "name": "usp_Notify"
+              },
+              "span": {
+                "offset": 155,
+                "length": 19,
+                "line": 5,
+                "column": 5
               }
             }
           ]
@@ -286,6 +331,36 @@
                   "literalType": "string",
                   "value": "2025-01-01"
                 }
+              },
+              "effects": [
+                {
+                  "kind": "write",
+                  "object": {
+                    "schema": "dbo",
+                    "name": "Log"
+                  },
+                  "span": {
+                    "offset": 255,
+                    "length": 7,
+                    "line": 11,
+                    "column": 27
+                  }
+                }
+              ]
+            }
+          ],
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Log"
+              },
+              "span": {
+                "offset": 255,
+                "length": 7,
+                "line": 11,
+                "column": 27
               }
             }
           ]

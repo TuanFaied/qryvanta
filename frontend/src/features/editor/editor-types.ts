@@ -6,6 +6,8 @@ export interface RunTarget {
   sql: string;
   /** Editor line (1-based) the SQL starts on. */
   startLine: number;
+  /** Editor column (1-based) the SQL starts at on startLine; 1 unless a selection starts mid-line. */
+  startColumn?: number;
   fromSelection: boolean;
 }
 
@@ -17,4 +19,6 @@ export interface SqlEditorHandle {
   getRunTarget: () => RunTarget | null;
   /** Moves the cursor to the start of a line and scrolls it into view. */
   revealLine: (line: number) => void;
+  /** Selects length UTF-16 code units from line and column (1-based) and scrolls them into view. */
+  selectRange: (line: number, column: number, length: number) => void;
 }

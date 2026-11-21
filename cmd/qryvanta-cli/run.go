@@ -22,6 +22,7 @@ import (
 const (
 	exitQueryError = 1 // the batch failed or reported errors
 	exitStopped    = 3 // timed out or cancelled (Ctrl+C)
+	exitRefused    = 4 // read-only mode refused the script; nothing was sent to the server
 )
 
 // exitError carries a specific exit code. Its message has already been printed when silent.
@@ -229,9 +230,11 @@ type runResult struct {
 	Error        string           `json:"error,omitempty"`
 	Guard        executor.Guard   `json:"guard"`
 	// Batches lists each batch execution (a script with GO has several).
-	Batches    []executor.BatchRun `json:"batches"`
-	ResultSets []resultSetOut      `json:"resultSets"`
-	Messages   []executor.Message  `json:"messages"`
+	Batches []executor.BatchRun `json:"batches"`
+	// Refusals lists why read-only mode refused the script (outcome "refused").
+	Refusals   []executor.Refusal `json:"refusals"`
+	ResultSets []resultSetOut     `json:"resultSets"`
+	Messages   []executor.Message `json:"messages"`
 }
 
 type resultSetOut struct {
@@ -257,6 +260,10 @@ func buildResult(conn, database string, readOnly bool, l executor.Limits, sum ex
 	if batches == nil {
 		batches = []executor.BatchRun{}
 	}
+	refusals := sum.Refusals
+	if refusals == nil {
+		refusals = []executor.Refusal{}
+	}
 	msgs := col.Messages
 	if msgs == nil {
 		msgs = []executor.Message{}
@@ -279,6 +286,7 @@ func buildResult(conn, database string, readOnly bool, l executor.Limits, sum ex
 		RowsAffected: affected,
 		ErrorCount:   sum.ErrorCount,
 		Batches:      batches,
+		Refusals:     refusals,
 		Error:        sum.Error,
 		Guard:        sum.Guard,
 		ResultSets:   sets,
@@ -295,6 +303,8 @@ func exitFor(r runResult) error {
 		return &exitError{code: exitStopped, silent: true, err: errors.New("the query was cancelled")}
 	case r.Outcome == executor.OutcomeFailed:
 		return &exitError{code: exitQueryError, silent: true, err: errors.New(r.Error)}
+	case r.Outcome == executor.OutcomeRefused:
+		return &exitError{code: exitRefused, silent: true, err: errors.New(r.Error)}
 	case r.ErrorCount > 0:
 		return &exitError{code: exitQueryError, silent: true, err: fmt.Errorf("the batch reported %d error(s)", r.ErrorCount)}
 	}
@@ -455,8 +465,27 @@ func writeMessages(w io.Writer, r runResult) {
 		fmt.Fprintln(w, "The query was cancelled.")
 	case executor.OutcomeFailed:
 		fmt.Fprintln(w, r.Error)
+	case executor.OutcomeRefused:
+		writeRefusals(w, r)
 	}
 	if r.Guard.EndedByBatch {
 		fmt.Fprintln(w, "WARNING: a COMMIT or ROLLBACK in the batch ended read-only protection; later changes may have been committed.")
 	}
+}
+
+// writeRefusals explains why read-only mode refused the script, one line per statement.
+func writeRefusals(w io.Writer, r runResult) {
+	if len(r.Refusals) == 0 {
+		fmt.Fprintln(w, r.Error)
+		return
+	}
+	fmt.Fprintln(w, "Read-only mode did not run the script; nothing was sent to the server:")
+	for _, f := range r.Refusals {
+		where := fmt.Sprintf("Line %d, column %d", f.Line, f.Column)
+		if f.Statement != "" {
+			where += ", " + f.Statement
+		}
+		fmt.Fprintf(w, "  %s: %s\n", where, f.Reason)
+	}
+	fmt.Fprintln(w, "Use --allow-writes to run it without the check (in a transaction that is not rolled back).")
 }

@@ -79,8 +79,38 @@ type Statement struct {
 	Else []Statement `json:"else,omitempty"`
 	// Procedure called by EXEC, unless it runs dynamic SQL.
 	Procedure *ObjectName `json:"procedure,omitempty"`
-	// Action of a transaction statement: begin, commit, rollback, save.
+	// Action of a transaction statement (begin, commit, rollback, save) or WAITFOR (delay, time,
+	// statement).
 	Action string `json:"action,omitempty"`
+	// Options of a setOption statement, as ScriptDom names them: SetOptions flags (NoCount,
+	// AnsiNulls, XactAbort, ...), SetStatisticsOptions (IO, Time, ...), GeneralSetCommandType
+	// (DateFormat, LockTimeout, ...) or the isolation level (ReadUncommitted, ...).
+	Options []string `json:"options,omitempty"`
+	// Effects lists what the statement can affect, found anywhere inside it (nested statements
+	// included). The sidecar collects them from the full syntax tree, so they are complete even
+	// where the rest of the model is not.
+	Effects []Effect `json:"effects,omitempty"`
+}
+
+// Effect kinds.
+const (
+	// EffectWrite: the statement writes Object (a table) or Variable (a table variable). Neither
+	// is set when the target is not a plain table.
+	EffectWrite = "write"
+	// EffectExec: the statement executes the procedure Object, or dynamic SQL when Object is nil.
+	EffectExec = "exec"
+	// EffectRemote: the statement reads through OPENROWSET, OPENQUERY or OPENDATASOURCE (Type is
+	// the ScriptDom class).
+	EffectRemote = "remote"
+)
+
+// Effect is one thing a statement can affect.
+type Effect struct {
+	Kind     string      `json:"kind"`
+	Object   *ObjectName `json:"object,omitempty"`
+	Variable string      `json:"variable,omitempty"`
+	Type     string      `json:"type,omitempty"`
+	Span     Span        `json:"span"`
 }
 
 // Cte is one common table expression of a WITH clause.

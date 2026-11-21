@@ -95,6 +95,58 @@ public class ModelTests
         Assert.Equal("isNull", m[3].Where!.Kind);
     }
 
+    // ---- Effects and options (the read-only allowlist's inputs) ----------------------------
+
+    private static string Effects(Statement st) => string.Join(" ", (st.Effects ?? []).Select(e =>
+        e.Kind + ":" + (e.Object?.Name ?? e.Variable ?? e.Type ?? "?")));
+
+    [Theory]
+    [InlineData("SELECT 1", "")]
+    [InlineData("SELECT * INTO #t FROM dbo.T", "write:#t")]
+    [InlineData("UPDATE x SET a = 1 FROM dbo.Orders AS x", "write:Orders")]
+    [InlineData("DELETE FROM #t OUTPUT deleted.a INTO dbo.Audit", "write:#t write:Audit")]
+    [InlineData("INSERT #t EXEC dbo.p", "write:#t exec:p")]
+    [InlineData("DECLARE @t TABLE (a int); INSERT @t VALUES (1)", "write:@t")]
+    [InlineData("EXEC ('SELECT 1')", "exec:?")]
+    [InlineData("SELECT * FROM OPENQUERY(s, 'SELECT 1')", "remote:OpenQueryTableReference")]
+    [InlineData("SELECT * FROM t WHERE a IN (SELECT a FROM OPENROWSET('p', 'c', 'q'))", "remote:OpenRowsetTableReference")]
+    [InlineData("DROP TABLE #a, dbo.b", "write:#a write:b")]
+    [InlineData("CREATE INDEX ix ON #t (a)", "write:#t")]
+    public void CollectsEffectsFromTheWholeTree(string sql, string effects)
+    {
+        Assert.Equal(effects, Effects(Model(sql).Last()));
+    }
+
+    [Fact]
+    public void ContainersReportTheEffectsOfTheirStatements()
+    {
+        var st = Assert.Single(Model("IF 1 = 1 BEGIN UPDATE dbo.T SET a = 1 END"));
+        Assert.Equal("write:T", Effects(st));
+        Assert.Equal("write:T", Effects(st.Body![0].Body![0]));
+    }
+
+    [Theory]
+    [InlineData("SET NOCOUNT, ANSI_NULLS ON", "PredicateSetStatement", "NoCount AnsiNulls")]
+    [InlineData("SET STATISTICS IO, TIME ON", "SetStatisticsStatement", "IO Time")]
+    [InlineData("SET LOCK_TIMEOUT 10", "SetCommandStatement", "LockTimeout")]
+    [InlineData("SET TRANSACTION ISOLATION LEVEL SNAPSHOT", "SetTransactionIsolationLevelStatement", "Snapshot")]
+    public void NamesSetOptions(string sql, string type, string options)
+    {
+        var st = Assert.Single(Model(sql));
+        Assert.Equal("setOption", st.Kind);
+        Assert.Equal(type, st.Type);
+        Assert.Equal(options, string.Join(" ", st.Options ?? []));
+    }
+
+    [Theory]
+    [InlineData("WAITFOR DELAY '00:00:01'", "delay")]
+    [InlineData("WAITFOR TIME '23:00'", "time")]
+    [InlineData("WAITFOR (RECEIVE * FROM q)", "statement")]
+    public void RecordsTheWaitForKind(string sql, string action)
+    {
+        Assert.Equal(action, Assert.Single(Model(sql)).Action);
+    }
+
     // ---- Queries ----------------------------------------------------------------------------
 
     [Fact]

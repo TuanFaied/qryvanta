@@ -12,6 +12,7 @@ import (
 
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/connection"
+	"github.com/TuanFaied/qryvanta/internal/parser/parsertest"
 )
 
 type fakeDriver struct{ gotSecret string }
@@ -41,6 +42,7 @@ func testOpts(t *testing.T) (app.Options, *connection.MemoryStore, *fakeDriver) 
 		DisableFileLog: true,
 		Credentials:    creds,
 		Driver:         drv,
+		Parser:         parsertest.Fake{},
 	}, creds, drv
 }
 

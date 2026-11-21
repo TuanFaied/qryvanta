@@ -11,6 +11,7 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/connection"
 	"github.com/TuanFaied/qryvanta/internal/executor"
+	"github.com/TuanFaied/qryvanta/internal/parser/parsertest"
 )
 
 // scriptedRunner streams one result set and a message, or waits for cancellation.
@@ -52,6 +53,7 @@ func newQueryTestService(t *testing.T, runner executor.Runner) (*QueryService, *
 		Credentials:    connection.NewMemoryStore(),
 		Driver:         &fakeDriver{},
 		Runner:         runner,
+		Parser:         parsertest.Fake{},
 	})
 	if err != nil {
 		t.Fatal(err)

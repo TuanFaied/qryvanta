@@ -110,7 +110,36 @@ export enum Outcome {
     OutcomeTruncated = "truncated",
     OutcomeTimedOut = "timed_out",
     OutcomeCancelled = "cancelled",
+
+    /**
+     * OutcomeRefused: read-only mode refused the script before anything was sent to the server
+     * (execution policy layer 1). Refusals says why.
+     */
+    OutcomeRefused = "refused",
 };
+
+/**
+ * Refusal is one reason read-only mode refused a script: a statement, or the part of one,
+ * that it does not allow. Positions are in the script that was submitted: Line and Column are
+ * 1-based, Offset and Length are UTF-16 code units (what the editor uses).
+ */
+export interface Refusal {
+    "batch": number;
+    "line": number;
+    "column": number;
+    "offset": number;
+    "length": number;
+
+    /**
+     * Statement names the statement kind, for example "UPDATE" or "EXEC".
+     */
+    "statement": string;
+
+    /**
+     * Reason explains, in plain language, why it is not allowed.
+     */
+    "reason": string;
+}
 
 /**
  * ResultSet summarises one result set.
@@ -161,7 +190,13 @@ export interface Summary {
     "batches": BatchRun[] | null;
 
     /**
-     * Error explains OutcomeFailed. Server errors during the batch are in Messages instead.
+     * Refusals explains OutcomeRefused, in script order.
+     */
+    "refusals": Refusal[] | null;
+
+    /**
+     * Error explains OutcomeFailed and OutcomeRefused. Server errors during the batch are in
+     * Messages instead.
      */
     "error": string;
 }

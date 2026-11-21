@@ -1,7 +1,7 @@
-import { MessageSquareText } from "lucide-react";
+import { MessageSquareText, ShieldX } from "lucide-react";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { cn } from "@/lib/utils";
-import { Outcome, type Message } from "@/services/backend";
+import { Outcome, type Message, type Refusal } from "@/services/backend";
 import type { Run } from "@/stores/execution-store";
 import { formatDuration, rowCount } from "./RunStatus";
 
@@ -10,6 +10,69 @@ interface MessagesViewProps {
   timeoutSeconds: number;
   /** Moves the editor cursor to a line of the tab the run came from. */
   onRevealLine: (line: number) => void;
+  /** Selects a range of the tab the run came from: line and column (1-based) and a UTF-16 length. */
+  onRevealRange?: (line: number, column: number, length: number) => void;
+  /** Opens Settings, where read-only mode is turned off (with its confirmation). */
+  onOpenSettings?: () => void;
+}
+
+/** Where a refusal is in the editor: script positions, offset by where the run's SQL started. */
+export function refusalPosition(run: Run, r: Refusal): { line: number; column: number } {
+  return { line: r.line + run.lineOffset, column: r.line === 1 ? r.column + (run.columnOffset ?? 0) : r.column };
+}
+
+/** Why read-only mode refused a script, each statement linked to the editor. */
+function Refusals({
+  run,
+  onRevealLine,
+  onRevealRange,
+  onOpenSettings,
+}: {
+  run: Run;
+  onRevealLine: (line: number) => void;
+  onRevealRange?: ((line: number, column: number, length: number) => void) | undefined;
+  onOpenSettings?: (() => void) | undefined;
+}) {
+  const s = run.summary!;
+  return (
+    <div role="alert" aria-label="Refused by read-only mode" className="space-y-1.5 text-foreground">
+      <p className="flex items-center gap-1.5 font-medium text-warning">
+        <ShieldX className="size-3.5 shrink-0" aria-hidden="true" />
+        Read-only mode did not run the script. Nothing was sent to the server.
+      </p>
+      {s.refusals && s.refusals.length > 0 ? (
+        <ul className="space-y-1">
+          {s.refusals.map((r, i) => {
+            const at = refusalPosition(run, r);
+            const label = `Line ${at.line}, column ${at.column}${r.statement ? ` · ${r.statement}` : ""}`;
+            return (
+              <li key={i}>
+                <button
+                  type="button"
+                  className="font-mono text-left text-destructive underline-offset-2 hover:underline"
+                  title="Select it in the editor"
+                  onClick={() => (onRevealRange && r.length > 0 ? onRevealRange(at.line, at.column, r.length) : onRevealLine(at.line))}
+                >
+                  {label}
+                </button>
+                <p>{r.reason}</p>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p>{s.error}</p>
+      )}
+      <p className="text-muted-foreground">
+        Read-only mode allows queries, and writes only to temporary tables (#name) and table variables.{" "}
+        {onOpenSettings && (
+          <button type="button" className="text-primary underline-offset-2 hover:underline" onClick={onOpenSettings}>
+            Turn off read-only mode…
+          </button>
+        )}
+      </p>
+    </div>
+  );
 }
 
 /** "Batch 2 · line 5 · ran 3 times", above the messages of one GO batch. */
@@ -37,7 +100,7 @@ export function messageHeader(m: Message): string {
 }
 
 /** Server messages and errors in order, followed by how the run ended. */
-export function MessagesView({ run, timeoutSeconds, onRevealLine }: MessagesViewProps) {
+export function MessagesView({ run, timeoutSeconds, onRevealLine, onRevealRange, onOpenSettings }: MessagesViewProps) {
   if (!run) {
     return (
       <EmptyState icon={MessageSquareText} title="No messages">
@@ -48,6 +111,7 @@ export function MessagesView({ run, timeoutSeconds, onRevealLine }: MessagesView
   const s = run.summary;
   // With GO batches, messages are grouped under the batch that produced them.
   const multiBatch = new Set(run.batches.map((b) => b.batch)).size > 1;
+  const notRun = s?.outcome === Outcome.OutcomeFailed || s?.outcome === Outcome.OutcomeRefused;
 
   return (
     <div className="selectable h-full overflow-auto bg-editor px-3 py-2 font-mono text-xs leading-relaxed" role="log" aria-label="Messages">
@@ -96,6 +160,9 @@ export function MessagesView({ run, timeoutSeconds, onRevealLine }: MessagesView
         <div className="mt-2 space-y-1 border-t pt-2 font-sans text-muted-foreground">
           {run.error && <p className="text-destructive">{run.error}</p>}
           {s?.outcome === Outcome.OutcomeFailed && s.error && <p className="text-destructive">{s.error}</p>}
+          {s?.outcome === Outcome.OutcomeRefused && (
+            <Refusals run={run} onRevealLine={onRevealLine} onRevealRange={onRevealRange} onOpenSettings={onOpenSettings} />
+          )}
           {s?.outcome === Outcome.OutcomeCancelled && <p>The query was cancelled on the server.</p>}
           {s?.outcome === Outcome.OutcomeTimedOut && (
             <p className="text-warning">The query was stopped after the {timeoutSeconds} s timeout. The timeout is in Settings.</p>
@@ -110,8 +177,8 @@ export function MessagesView({ run, timeoutSeconds, onRevealLine }: MessagesView
           )}
           {s && (
             <p className={cn(s.errorCount > 0 && "text-foreground")}>
-              {s.outcome === Outcome.OutcomeFailed ? "Not run." : `Finished in ${formatDuration(s.elapsedMs)}.`}{" "}
-              {s.outcome !== Outcome.OutcomeFailed && `${rowCount(s.totalRows)} returned.`}
+              {notRun ? "Not run." : `Finished in ${formatDuration(s.elapsedMs)}.`}{" "}
+              {!notRun && `${rowCount(s.totalRows)} returned.`}
               {run.finishedAt && ` Completed at ${new Date(run.finishedAt).toLocaleTimeString()}.`}
             </p>
           )}

@@ -77,9 +77,30 @@ export default function SqlEditor(props: SqlEditorProps) {
       if (!editor || !model) return null;
       const selection = editor.getSelection();
       if (selection && !selection.isEmpty()) {
-        return { sql: model.getValueInRange(selection), startLine: selection.startLineNumber, fromSelection: true };
+        return {
+          sql: model.getValueInRange(selection),
+          startLine: selection.startLineNumber,
+          startColumn: selection.startColumn,
+          fromSelection: true,
+        };
       }
-      return { sql: model.getValue(), startLine: 1, fromSelection: false };
+      return { sql: model.getValue(), startLine: 1, startColumn: 1, fromSelection: false };
+    },
+    selectRange: (line: number, column: number, length: number) => {
+      const editor = editorRef.current;
+      const model = editor?.getModel();
+      if (!editor || !model) return;
+      // Monaco offsets are UTF-16 code units, like the parser's.
+      const start = model.validatePosition({ lineNumber: line, column });
+      const end = model.getPositionAt(model.getOffsetAt(start) + Math.max(length, 0));
+      editor.setSelection({ startLineNumber: start.lineNumber, startColumn: start.column, endLineNumber: end.lineNumber, endColumn: end.column });
+      editor.revealRangeInCenterIfOutsideViewport({
+        startLineNumber: start.lineNumber,
+        startColumn: start.column,
+        endLineNumber: end.lineNumber,
+        endColumn: end.column,
+      });
+      editor.focus();
     },
     revealLine: (line: number) => {
       const editor = editorRef.current;
