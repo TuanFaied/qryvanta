@@ -12,6 +12,9 @@ export interface AnalysisTarget {
   startLine: number;
   /** Editor column (1-based) the SQL starts at on startLine. */
   startColumn: number;
+  /** Connection and database whose catalog the metadata rules read ("" for none). */
+  connectionId: string;
+  database: string;
 }
 
 interface AnalysisStoreState {
@@ -40,7 +43,7 @@ export const useAnalysisStore = create<AnalysisStoreState>((set, get) => ({
     inFlight = controller;
     set({ target, running: true, result: null, error: null });
     try {
-      const result = await backend.analyze(target.sql, controller.signal);
+      const result = await backend.analyze(target.sql, target.connectionId, target.database, controller.signal);
       if (controller.signal.aborted) return;
       set({ result, running: false });
     } catch (err) {

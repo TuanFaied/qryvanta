@@ -76,6 +76,7 @@ type Core struct {
 	runner      executor.Runner
 	pool        *connection.Pool
 	parser      parser.Parser
+	meta        metadataCache
 	allowWrites bool
 
 	mu  sync.RWMutex

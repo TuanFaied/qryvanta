@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 )
 
 // Database is a database on the connected server.
@@ -58,7 +59,57 @@ type Reader interface {
 	Databases(ctx context.Context, db *sql.DB) ([]Database, error)
 	Objects(ctx context.Context, db *sql.DB, database string) ([]Object, error)
 	Columns(ctx context.Context, db *sql.DB, database, schema, object string) ([]Column, error)
+	// Table resolves a table or view as SQL Server would from database (schema may be empty: the
+	// login's default schema, then dbo) and describes it for analysis. A missing or invisible
+	// object is ErrObjectNotFound.
+	Table(ctx context.Context, db *sql.DB, database, schema, name string) (Table, error)
 }
+
+// Table describes a table or view for query analysis: its columns with their types, and the
+// column sets that are unique and the foreign keys it declares.
+type Table struct {
+	Schema  string        `json:"schema"`
+	Name    string        `json:"name"`
+	Kind    ObjectKind    `json:"kind"`
+	Columns []TableColumn `json:"columns"`
+	// Keys are the column sets that identify a row: the primary key, unique constraints and
+	// unique indexes without a filter. A view has none.
+	Keys        [][]string   `json:"keys"`
+	ForeignKeys []ForeignKey `json:"foreignKeys"`
+}
+
+// TableColumn is a column of a Table.
+type TableColumn struct {
+	Name string `json:"name"`
+	// Type is the base system type, lower-case (int, nvarchar, datetime2, ...).
+	Type string `json:"type"`
+	// DataType is the type as written, for messages (nvarchar(100), decimal(10,2)).
+	DataType  string `json:"dataType"`
+	Nullable  bool   `json:"nullable"`
+	Collation string `json:"collation"`
+}
+
+// ForeignKey is a foreign key from Columns of the table to RefColumns of RefSchema.RefTable.
+type ForeignKey struct {
+	Name       string   `json:"name"`
+	Columns    []string `json:"columns"`
+	RefSchema  string   `json:"refSchema"`
+	RefTable   string   `json:"refTable"`
+	RefColumns []string `json:"refColumns"`
+}
+
+// Column returns the column with the given name (case-insensitive), or nil.
+func (t *Table) Column(name string) *TableColumn {
+	for i := range t.Columns {
+		if strings.EqualFold(t.Columns[i].Name, name) {
+			return &t.Columns[i]
+		}
+	}
+	return nil
+}
+
+// FullName is schema.name.
+func (t *Table) FullName() string { return t.Schema + "." + t.Name }
 
 // ErrDatabaseNotFound is returned when a database does not exist or the login cannot open it.
 var ErrDatabaseNotFound = errors.New("database not found or not accessible")

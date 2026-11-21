@@ -223,6 +223,7 @@ func (s *ConnectionService) Connect(ctx context.Context, id string) (ConnectResu
 
 // Disconnect closes a profile's pooled connection.
 func (s *ConnectionService) Disconnect(id string) error {
+	s.core.ForgetMetadata(id)
 	return s.core.Pool().Disconnect(id)
 }
 

@@ -40,7 +40,7 @@ func TestAnalyzeFindsNullComparisons(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			a, err := c.Analyze(context.Background(), tc.sql)
+			a, err := c.Analyze(context.Background(), tc.sql, AnalysisTarget{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -66,7 +66,7 @@ func TestAnalyzeFindsNullComparisons(t *testing.T) {
 func TestAnalyzeSkipsBatchesWithSyntaxErrors(t *testing.T) {
 	c := parserCore(t)
 	sql := "SELECT * FROM t WHERE a = NULL\nGO\nSELECT FROM WHERE b = NULL"
-	a, err := c.Analyze(context.Background(), sql)
+	a, err := c.Analyze(context.Background(), sql, AnalysisTarget{})
 	if err != nil {
 		t.Fatal(err)
 	}

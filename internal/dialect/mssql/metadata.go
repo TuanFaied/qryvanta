@@ -3,6 +3,7 @@ package mssql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -216,4 +217,147 @@ func FormatType(name string, maxLength, precision, scale int) string {
 	default:
 		return name
 	}
+}
+
+// Table resolves a table or view the way SQL Server resolves a name in a query run from
+// database: with an empty schema, OBJECT_ID uses the login's default schema and then dbo. It
+// reads the columns, the unique column sets (primary key, unique constraints, unique indexes
+// without a filter) and the foreign keys. Only catalog views are read.
+func (Metadata) Table(ctx context.Context, db *sql.DB, database, schemaName, name string) (schema.Table, error) {
+	q, err := requireDatabase(ctx, db, database)
+	if err != nil {
+		return schema.Table{}, err
+	}
+	qo, err := QuoteIdent(name)
+	if err != nil {
+		return schema.Table{}, fmt.Errorf("%w: %v", schema.ErrObjectNotFound, err)
+	}
+	full := q + ".." + qo
+	if schemaName != "" {
+		qs, err := QuoteIdent(schemaName)
+		if err != nil {
+			return schema.Table{}, fmt.Errorf("%w: %v", schema.ErrObjectNotFound, err)
+		}
+		full = q + "." + qs + "." + qo
+	}
+
+	var (
+		objectID sql.NullInt64
+		t        schema.Table
+		kind     string
+	)
+	if err := db.QueryRowContext(ctx, `SELECT OBJECT_ID(@full)`, sql.Named("full", full)).Scan(&objectID); err != nil {
+		return schema.Table{}, convertError(err)
+	}
+	if !objectID.Valid {
+		return schema.Table{}, schema.ErrObjectNotFound
+	}
+	id := sql.Named("id", objectID.Int64)
+	err = db.QueryRowContext(ctx, `SELECT s.name, o.name, RTRIM(o.type)
+FROM `+q+`.sys.objects AS o JOIN `+q+`.sys.schemas AS s ON s.schema_id = o.schema_id
+WHERE o.object_id = @id`, id).Scan(&t.Schema, &t.Name, &kind)
+	if errors.Is(err, sql.ErrNoRows) {
+		return schema.Table{}, schema.ErrObjectNotFound
+	}
+	if err != nil {
+		return schema.Table{}, convertError(err)
+	}
+	switch kind {
+	case "U":
+		t.Kind = schema.KindTable
+	case "V":
+		t.Kind = schema.KindView
+	default:
+		return schema.Table{}, fmt.Errorf("%w: %s is not a table or view", schema.ErrObjectNotFound, name)
+	}
+
+	rows, err := db.QueryContext(ctx, `SELECT c.name, TYPE_NAME(c.system_type_id), t.name, c.max_length, c.precision, c.scale,
+	c.is_nullable, ISNULL(c.collation_name, N'')
+FROM `+q+`.sys.columns AS c
+JOIN `+q+`.sys.types AS t ON t.user_type_id = c.user_type_id
+WHERE c.object_id = @id
+ORDER BY c.column_id`, id)
+	if err != nil {
+		return schema.Table{}, convertError(err)
+	}
+	t.Columns = []schema.TableColumn{}
+	for rows.Next() {
+		var (
+			c                      schema.TableColumn
+			typeName               string
+			maxLength, prec, scale int
+		)
+		if err := rows.Scan(&c.Name, &c.Type, &typeName, &maxLength, &prec, &scale, &c.Nullable, &c.Collation); err != nil {
+			rows.Close()
+			return schema.Table{}, convertError(err)
+		}
+		c.Type = strings.ToLower(c.Type)
+		c.DataType = FormatType(typeName, maxLength, prec, scale)
+		t.Columns = append(t.Columns, c)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return schema.Table{}, convertError(err)
+	}
+
+	t.Keys = [][]string{}
+	rows, err = db.QueryContext(ctx, `SELECT i.index_id, c.name
+FROM `+q+`.sys.indexes AS i
+JOIN `+q+`.sys.index_columns AS ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+JOIN `+q+`.sys.columns AS c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+WHERE i.object_id = @id AND i.is_unique = 1 AND i.has_filter = 0 AND i.is_disabled = 0 AND ic.is_included_column = 0
+ORDER BY i.index_id, ic.key_ordinal`, id)
+	if err != nil {
+		return schema.Table{}, convertError(err)
+	}
+	last := -1
+	for rows.Next() {
+		var (
+			index  int
+			column string
+		)
+		if err := rows.Scan(&index, &column); err != nil {
+			rows.Close()
+			return schema.Table{}, convertError(err)
+		}
+		if index != last {
+			t.Keys = append(t.Keys, nil)
+			last = index
+		}
+		t.Keys[len(t.Keys)-1] = append(t.Keys[len(t.Keys)-1], column)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return schema.Table{}, convertError(err)
+	}
+
+	t.ForeignKeys = []schema.ForeignKey{}
+	rows, err = db.QueryContext(ctx, `SELECT fk.name, pc.name, rs.name, rt.name, rc.name
+FROM `+q+`.sys.foreign_keys AS fk
+JOIN `+q+`.sys.foreign_key_columns AS fkc ON fkc.constraint_object_id = fk.object_id
+JOIN `+q+`.sys.columns AS pc ON pc.object_id = fkc.parent_object_id AND pc.column_id = fkc.parent_column_id
+JOIN `+q+`.sys.objects AS rt ON rt.object_id = fkc.referenced_object_id
+JOIN `+q+`.sys.schemas AS rs ON rs.schema_id = rt.schema_id
+JOIN `+q+`.sys.columns AS rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id
+WHERE fk.parent_object_id = @id
+ORDER BY fk.name, fkc.constraint_column_id`, id)
+	if err != nil {
+		return schema.Table{}, convertError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var fkName, col, refSchema, refTable, refCol string
+		if err := rows.Scan(&fkName, &col, &refSchema, &refTable, &refCol); err != nil {
+			return schema.Table{}, convertError(err)
+		}
+		n := len(t.ForeignKeys)
+		if n == 0 || t.ForeignKeys[n-1].Name != fkName {
+			t.ForeignKeys = append(t.ForeignKeys, schema.ForeignKey{Name: fkName, RefSchema: refSchema, RefTable: refTable})
+			n++
+		}
+		fk := &t.ForeignKeys[n-1]
+		fk.Columns = append(fk.Columns, col)
+		fk.RefColumns = append(fk.RefColumns, refCol)
+	}
+	return t, convertError(rows.Err())
 }

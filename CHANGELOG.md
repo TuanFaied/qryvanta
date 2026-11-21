@@ -8,6 +8,23 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Metadata for the analysis. With a connected tab, Analyze reads the catalog entries of the
+  tables the query uses: column types, nullability, keys and foreign keys. They are cached per
+  connection, and Refresh clears them. Tables that cannot be read are listed, and never fail the
+  analysis.
+- Metadata rules:
+  - `QRY-JOIN-003`: a join on non-key columns, or one table joined one-to-many to two tables,
+    which can multiply rows.
+  - `QRY-JOIN-004`: join columns of different types (string and number, varchar and nvarchar,
+    date and datetime).
+  - `QRY-JOIN-005`: an INNER JOIN on a nullable column, which drops the rows where it is NULL.
+  - `QRY-JOIN-006`: a join that uses a foreign key's column on one side and another column on the
+    other. It suggests the foreign key column.
+- Metadata confirms or dismisses static findings:
+  - `BETWEEN` on a datetime column is confirmed, and on a `date` column dismissed.
+  - `NOT IN` against a NOT NULL column is dismissed.
+  - `COUNT(col)` on a NOT NULL column is dismissed.
+
 - Static diagnostic rules for predicates, date filters and counting:
   - `QRY-PRED-001`: contradictory conditions on one column (`x = 1 AND x = 2`, `x > 5 AND x < 3`,
     `x IS NULL AND x = 1`). These are confirmed: the AND is never true. Only comparisons with

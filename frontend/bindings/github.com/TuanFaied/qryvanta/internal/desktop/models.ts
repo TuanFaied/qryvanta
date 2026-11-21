@@ -6,6 +6,9 @@
 import * as analyzer$0 from "../analyzer/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as app$0 from "../app/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as config$0 from "../config/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -60,6 +63,11 @@ export interface Analysis {
      * SyntaxErrors counts syntax errors; the batches that have them were not analyzed.
      */
     "syntaxErrors": number;
+
+    /**
+     * Metadata says whether keys, types and nullability were checked, and which tables could not be.
+     */
+    "metadata": app$0.MetadataStatus;
 }
 
 /**

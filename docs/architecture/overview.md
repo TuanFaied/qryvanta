@@ -314,6 +314,38 @@ no evidence fails validation.
   - Clicking a finding selects its span in the editor.
   - A correction is never applied (D4).
 
+**Metadata evidence (#69).**
+
+- **Reading the catalog:** with a connected tab, `app.Core.Analyze` reads the catalog entry of
+  every table and view the script names before the rules run.
+  - Reads go through `schema.Reader.Table` (`dialect/mssql`): columns with base type,
+    nullability and collation; unique column sets (primary key, unique constraints, unique
+    indexes without a filter); and foreign keys.
+  - Names resolve as SQL Server resolves them: through `OBJECT_ID` from the tab's database, so a
+    one-part name uses the login's default schema, then `dbo`. A three-part name reads its own
+    database.
+  - CTEs, temporary tables and table variables are skipped. Linked-server names are reported as
+    not checked.
+  - Rules never query the server. They read an `analyzer.Catalog` built beforehand.
+- **Cache:** results are cached per connection, database and name. Found and not-found results
+  are kept; timeouts and errors are retried. The explorer's Refresh and Disconnect clear a
+  connection's entries.
+- **Safety:** catalog reads are read-only, bounded by a 15-second timeout, and are not probes
+  (D4).
+- **Failures:** an object that cannot be read (missing, no permission, linked server, no
+  database selected) never fails the analysis. The result lists it under `metadata.unresolved`,
+  and rules skip any join that needs it.
+- **What metadata changes:**
+
+  | Rule | With metadata |
+  |---|---|
+  | `QRY-DATE-002` BETWEEN with a date end | Confirmed on `datetime`, `datetime2`, `smalldatetime` and `datetimeoffset` columns; dismissed on `date` |
+  | `QRY-NULL-002` NOT IN with a subquery | Dismissed when the selected column is NOT NULL; stays potential, naming the nullable column, otherwise |
+  | `QRY-COUNT-001` COUNT(column) | Dismissed when the column is NOT NULL (and not on the optional side of an outer join); stays potential, naming the nullable column, otherwise |
+  | `QRY-JOIN-003`–`006` | Run only with metadata |
+
+  The plan (Phase 6) and probes (#70) confirm the rest: fan-out, implicit conversions.
+
 ### D4. Probes versus modifications
 
 These are two different things with two different rules.

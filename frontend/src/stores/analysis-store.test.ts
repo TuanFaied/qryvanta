@@ -9,9 +9,20 @@ const target = (sql: string, extra: Partial<AnalysisTarget> = {}): AnalysisTarge
   tabText: sql,
   startLine: 1,
   startColumn: 1,
+  connectionId: "",
+  database: "",
   ...extra,
 });
-const result = (rules = 1): Analysis => ({ available: true, reason: "", findings: [], failures: [], rules, statements: 1, syntaxErrors: 0 });
+const result = (rules = 1): Analysis => ({
+  available: true,
+  reason: "",
+  findings: [],
+  failures: [],
+  rules,
+  statements: 1,
+  syntaxErrors: 0,
+  metadata: { checked: false, reason: "", unresolved: [] },
+});
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -31,11 +42,11 @@ describe("analysis store", () => {
     let resolveFirst!: (v: Analysis) => void;
     const signals: AbortSignal[] = [];
     vi.spyOn(backend, "analyze")
-      .mockImplementationOnce((_sql, signal) => {
+      .mockImplementationOnce((_sql, _conn, _db, signal) => {
         signals.push(signal!);
         return new Promise((r) => (resolveFirst = r));
       })
-      .mockImplementationOnce((_sql, signal) => {
+      .mockImplementationOnce((_sql, _conn, _db, signal) => {
         signals.push(signal!);
         return Promise.resolve(result(2));
       });
@@ -46,6 +57,12 @@ describe("analysis store", () => {
     await first;
     expect(s().result?.rules).toBe(2);
     expect(s().target?.sql).toBe("SELECT 2");
+  });
+
+  it("passes the tab's connection and database for the metadata rules", async () => {
+    const analyze = vi.spyOn(backend, "analyze").mockResolvedValue(result());
+    await s().analyze(target("SELECT 1", { connectionId: "c1", database: "Sales" }));
+    expect(analyze).toHaveBeenCalledWith("SELECT 1", "c1", "Sales", expect.any(AbortSignal));
   });
 
   it("reports a backend error", async () => {

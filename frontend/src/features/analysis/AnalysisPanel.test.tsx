@@ -42,10 +42,11 @@ const analysis = (extra: Partial<Analysis> = {}): Analysis => ({
   rules: 3,
   statements: 1,
   syntaxErrors: 0,
+  metadata: { checked: true, reason: "", unresolved: [] },
   ...extra,
 });
 
-const target: AnalysisTarget = { tabId: "t1", sql, tabText: sql, startLine: 1, startColumn: 1 };
+const target: AnalysisTarget = { tabId: "t1", sql, tabText: sql, startLine: 1, startColumn: 1, connectionId: "c1", database: "Sales" };
 
 function setup(state: Partial<ReturnType<typeof useAnalysisStore.getState>>, activeTab: { id: string; content: string } | null = { id: "t1", content: sql }) {
   useAnalysisStore.setState({ target: null, running: false, result: null, error: null, ...state });
@@ -127,6 +128,34 @@ describe("AnalysisPanel", () => {
     expect(button).toBeDisabled();
     await userEvent.click(button);
     expect(onRevealRange).not.toHaveBeenCalled();
+  });
+
+  it("says why metadata was not checked, and which tables could not be", () => {
+    setup({ target, result: analysis({ metadata: { checked: false, reason: "Not connected: connect to check keys, types and nullability.", unresolved: [] } }) });
+    expect(screen.getByText("Not connected: connect to check keys, types and nullability.")).toBeInTheDocument();
+    cleanup();
+    setup({
+      target,
+      result: analysis({ metadata: { checked: true, reason: "", unresolved: [{ name: "dbo.Missing", reason: "not found, or no permission to see it" }] } }),
+    });
+    expect(screen.getByText(/Keys, types and nullability were not checked for/)).toBeInTheDocument();
+    expect(screen.getByText("dbo.Missing")).toBeInTheDocument();
+    expect(screen.getByText(/not found, or no permission to see it/)).toBeInTheDocument();
+  });
+
+  it("shows metadata evidence", () => {
+    const meta: Finding = {
+      ...nullFinding,
+      ruleId: "QRY-JOIN-005",
+      title: "INNER JOIN drops dbo.Employees rows where DepartmentID is NULL",
+      classification: Classification.Potential,
+      evidence: [{ kind: EvidenceKind.EvidenceMetadata, summary: "dbo.Employees.DepartmentID allows NULL.",
+        metadata: { object: "dbo.Employees", column: "DepartmentID", property: "nullable", value: "yes" } }],
+      correction: null,
+    };
+    setup({ target, result: analysis({ findings: [meta] }) });
+    expect(screen.getByText("dbo.Employees.DepartmentID allows NULL.")).toBeInTheDocument();
+    expect(screen.getByText("dbo.Employees.DepartmentID: nullable = yes")).toBeInTheDocument();
   });
 
   it("lists failed rules with the findings of the others", () => {

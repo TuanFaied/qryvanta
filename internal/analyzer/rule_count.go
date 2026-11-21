@@ -77,7 +77,7 @@ func (countSkipsNulls) Info() Info {
 		ID:       "QRY-COUNT-001",
 		Title:    "COUNT(column) skips NULLs",
 		Severity: diagnostics.SeverityInformational,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic, diagnostics.EvidenceMetadata},
 	}
 }
 
@@ -92,6 +92,17 @@ func (countSkipsNulls) Check(in *Input) ([]diagnostics.Finding, error) {
 			if col == nil || notNullIn(q, columnKey(col)) {
 				continue
 			}
+			// Metadata: a non-nullable column counts every row; a nullable one is named.
+			var nullable []diagnostics.Evidence
+			if r, ok := in.resolveColumn(q.From, col); ok {
+				if !r.column.Nullable && !outerJoined(q.From, r.source) {
+					continue
+				}
+				if r.column.Nullable {
+					nullable = append(nullable, columnEvidence(r, "nullable", "yes",
+						fmt.Sprintf("%s.%s allows NULL.", r.table.FullName(), r.column.Name)))
+				}
+			}
 			c := in.Text(col.Span)
 			span := SpanOf(agg.Span)
 			out = append(out, diagnostics.Finding{
@@ -101,8 +112,8 @@ func (countSkipsNulls) Check(in *Input) ([]diagnostics.Finding, error) {
 					"values is the intent.", c, c, c),
 				Classification: diagnostics.Potential,
 				Span:           span,
-				Evidence: []diagnostics.Evidence{staticEvidence(in, agg,
-					"The query does not require the column to be non-NULL (no IS NOT NULL, comparison or inner join on it).")},
+				Evidence: append([]diagnostics.Evidence{staticEvidence(in, agg,
+					"The query does not require the column to be non-NULL (no IS NOT NULL, comparison or inner join on it).")}, nullable...),
 				Correction: &diagnostics.Correction{
 					Description: "If the intent is to count rows, use COUNT(*).",
 					Span:        span,
@@ -117,7 +128,33 @@ func (countSkipsNulls) Check(in *Input) ([]diagnostics.Finding, error) {
 // notNullIn reports whether the query only produces rows where the column is not NULL: a WHERE
 // condition rejects NULL in it, or an inner join compares it with = and the FROM has no outer
 // join that could add NULLs back.
-func notNullIn(q *parser.Query, key string) bool {
+func notNullIn(q *parser.Query, key string) bool { return notNullWhere(q.Where, q.From, key) }
+
+// notNullWhere is notNullIn for a WHERE and FROM.
+func notNullWhere(where *parser.Expr, from *parser.Source, key string) bool {
+	if whereRequiresValue(where, key) {
+		return true
+	}
+	js := joins(from)
+	for _, j := range js {
+		switch j.JoinType {
+		case parser.JoinLeft, parser.JoinRight, parser.JoinFull, parser.JoinOuterApply:
+			return false
+		}
+	}
+	for _, j := range js {
+		for _, c := range conjuncts(j.On) {
+			if c.Kind == parser.ExprCompare && c.Op == "=" && (columnKey(c.Left) == key || columnKey(c.Right) == key) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// whereRequiresValue reports whether a WHERE condition (an AND operand) is never true when the
+// column is NULL.
+func whereRequiresValue(where *parser.Expr, key string) bool {
 	rejects := func(c *parser.Expr) bool {
 		switch c.Kind {
 		case parser.ExprIsNull:
@@ -131,23 +168,9 @@ func notNullIn(q *parser.Query, key string) bool {
 		}
 		return false
 	}
-	for _, c := range conjuncts(q.Where) {
+	for _, c := range conjuncts(where) {
 		if rejects(c) {
 			return true
-		}
-	}
-	js := joins(q.From)
-	for _, j := range js {
-		switch j.JoinType {
-		case parser.JoinLeft, parser.JoinRight, parser.JoinFull, parser.JoinOuterApply:
-			return false
-		}
-	}
-	for _, j := range js {
-		for _, c := range conjuncts(j.On) {
-			if c.Kind == parser.ExprCompare && c.Op == "=" && (columnKey(c.Left) == key || columnKey(c.Right) == key) {
-				return true
-			}
 		}
 	}
 	return false

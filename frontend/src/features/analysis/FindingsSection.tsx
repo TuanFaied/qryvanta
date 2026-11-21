@@ -75,11 +75,27 @@ export function FindingsSection({ target, running, result, error, activeTab, onR
   const changed = !otherTab && activeTab?.content !== target.tabText;
   const findings = result.findings ?? [];
   const failures = result.failures ?? [];
+  const unresolved = result.metadata?.unresolved ?? [];
 
   return (
     <div className="space-y-2 px-3 pt-0.5 pb-3 text-xs">
       {otherTab && <p className="px-4 text-muted-foreground">These findings are for another tab.</p>}
       {changed && <p className="px-4 text-warning">The text changed after this analysis. Analyze again for current positions.</p>}
+      {result.metadata && !result.metadata.checked && result.metadata.reason && (
+        <p className="px-4 text-muted-foreground">{result.metadata.reason}</p>
+      )}
+      {unresolved.length > 0 && (
+        <div className="px-4 text-muted-foreground">
+          <p>Keys, types and nullability were not checked for:</p>
+          <ul className="list-disc pl-4">
+            {unresolved.map((u) => (
+              <li key={u.name}>
+                <span className="font-mono">{u.name}</span>: {u.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {result.syntaxErrors > 0 && (
         <p className="px-4 text-warning">
           {result.syntaxErrors === 1 ? "1 syntax error" : `${result.syntaxErrors} syntax errors`}: batches with syntax errors were
