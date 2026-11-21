@@ -116,10 +116,16 @@ func (r *Registry) Rules() []Rule { return slices.Clone(r.rules) }
 func Builtin() []Rule {
 	return []Rule{
 		andOrPrecedence{},
+		betweenDates{},
+		contradiction{},
+		countAtJoinGrain{},
+		countSkipsNulls{},
 		leftJoinCancelled{},
 		missingJoinPredicate{},
 		notInNull{},
+		nonSargableDate{},
 		nullComparison{},
+		redundancy{},
 	}
 }
 

@@ -50,6 +50,9 @@ never reused, so reports and suppressions can rely on it. Areas:
 | `NULL` | NULL comparisons and NULL logic |
 | `LOGIC` | Boolean logic: operator precedence |
 | `JOIN` | Joins: missing predicates, outer joins |
+| `PRED` | Predicates that cannot be true or add nothing |
+| `DATE` | Date and time filters |
+| `COUNT` | Counting |
 
 ## Rules
 
@@ -64,6 +67,12 @@ tables, subqueries, every branch of a set operation, `UPDATE … FROM` and `DELE
 | QRY-LOGIC-001 | AND and OR mixed without parentheses | Medium | Potential |
 | QRY-NULL-001 | Comparison with NULL using = or <> | High | Confirmed |
 | QRY-NULL-002 | NOT IN with a subquery that can return NULL | High | Potential (Confirmed for a NULL in the list) |
+| QRY-PRED-001 | Contradictory conditions | High | Confirmed |
+| QRY-PRED-002 | Redundant condition | Low | Optimization |
+| QRY-DATE-001 | Function on a date column in a filter | Low | Optimization |
+| QRY-DATE-002 | BETWEEN with a date as the end of a datetime range | Medium | Potential |
+| QRY-COUNT-001 | COUNT(column) skips NULLs | Informational | Potential |
+| QRY-COUNT-002 | COUNT over a join may count rows more than once | Medium | Potential |
 
 ### QRY-NULL-001
 
@@ -181,3 +190,142 @@ How it's classified:
   - functions like `ISNULL(d.Active, 1) = 1`;
   - `NOT IN (subquery)`, which is true for NULL when the subquery is empty;
   - FULL JOIN.
+
+### QRY-PRED-001
+
+**Contradictory conditions** · High · Confirmed · static evidence
+
+Two conditions in one AND chain on the same column that no value satisfies:
+
+```sql
+SELECT * FROM dbo.Orders WHERE Status = 1 AND Status = 2;          -- never true
+SELECT * FROM dbo.Orders WHERE Total > 500 AND Total < 100;        -- never true
+SELECT * FROM dbo.Orders WHERE ShippedAt IS NULL AND ShippedAt > 0; -- never true
+```
+
+How it's classified:
+- **Confirmed:** no row can satisfy the AND. In a WHERE without OR, the query returns no rows.
+- **What is analyzed:** only comparisons of a column with a number, written either way round
+  (`=`, `<>`, `<`, `>`, `<=`, `>=`), and `IS [NOT] NULL`. Each pair of conditions on the same
+  column, written the same way, is checked.
+- **Skipped as not provable:**
+  - strings, because collations decide whether `'a'` equals `'A'`;
+  - dates, variables and expressions;
+  - conditions under NOT;
+  - contradictions that need three or more conditions together.
+
+### QRY-PRED-002
+
+**Redundant condition** · Low · Optimization · static evidence
+
+A condition in an AND chain that another one already implies, or the same condition written
+twice:
+
+```sql
+WHERE Total > 500 AND Total > 100     -- Total > 100 adds nothing
+WHERE Status = 4 AND Status <> 2      -- Status <> 2 adds nothing
+WHERE o.CustomerID = c.CustomerID AND o.CustomerID = c.CustomerID
+```
+
+How it's classified:
+- **Optimization:** the query is correct, but the redundant condition may hide a typo (another
+  value was meant). The finding points at the condition that adds nothing.
+- **Not reported:** `IS NOT NULL` next to a comparison, which some people write for clarity.
+  It is implied, but not reported.
+- **What is analyzed:** numbers only, as in QRY-PRED-001. Exact duplicates are found for any
+  condition.
+
+### QRY-DATE-001
+
+**Function on a date column in a filter** · Low · Optimization · static evidence
+
+A filter that applies a date function or a conversion to a column, compared with a value that
+does not depend on any column. SQL Server must compute the function for every row and cannot
+seek an index on the column.
+
+```sql
+WHERE YEAR(OrderDate) = 2024
+WHERE CONVERT(date, OrderDate) = '2024-01-05'
+WHERE DATEADD(day, 30, OrderDate) > GETDATE()
+```
+
+Suggested corrections, each with the same result:
+
+| Filter | Rewrite |
+|---|---|
+| `YEAR(c) = 2024` | `c >= '20240101' AND c < '20250101'` |
+| `CAST(c AS date) = X` | `c >= X AND c < DATEADD(day, 1, X)` |
+| `DATEADD(day, n, c) op X` | `c op DATEADD(day, -n, X)` |
+
+- The `DATEADD` rewrite is offered only for units of fixed length: day, week, hour, minute and
+  second. `c + 1 month` is not the same as `x - 1 month` at month ends.
+- Other functions get the finding without a rewrite.
+
+How it's classified:
+- **Optimization:** the result is correct. A combination with other problems (for example a
+  large scan in the actual plan) can raise it later.
+- **Conversion to `date` is a special case:** SQL Server can still seek with it, but its row
+  estimates are often poor. The finding says so.
+- **Not reported:** functions on both sides (a join condition) and functions only on the value
+  side (`d > DATEADD(day, -30, GETDATE())`).
+
+### QRY-DATE-002
+
+**BETWEEN with a date as the end of a datetime range** · Medium · Potential · static evidence
+
+```sql
+WHERE OrderDate BETWEEN '2026-01-01' AND '2026-01-31'   -- stops at 2026-01-31 00:00:00
+```
+
+When the column has a time of day, `'2026-01-31'` means midnight at the start of that day, so
+the rest of 31 January is missing. An end of `'2026-01-31 23:59:59'` misses fractions of a
+second.
+
+Suggested correction: a half-open range,
+`OrderDate >= '2026-01-01' AND OrderDate < '2026-02-01'`. It works whether the column is `date`
+or `datetime`.
+
+How it's classified:
+- **Potential:** for a `date` column, BETWEEN is correct. Metadata evidence confirms it when the
+  column is `datetime`, `datetime2` or `datetimeoffset` (the metadata rules issue).
+- **Not reported:** an end with another time of day, which is explicit, and `NOT BETWEEN`.
+
+### QRY-COUNT-001
+
+**COUNT(column) skips NULLs** · Informational · Potential · static evidence
+
+`COUNT(Email)` counts the rows where Email has a value, not the rows. When the column can be
+NULL, the two differ.
+
+Suggested correction: `COUNT(*)`, if the intent is to count rows.
+
+How it's classified:
+- **Potential, informational:** counting values is often what was meant. Nullability metadata
+  will raise or silence it.
+- **Silenced when the query already guarantees a value:**
+  - a WHERE condition on the column that is never true for NULL (`IS NOT NULL`, a comparison,
+    `IN`, `LIKE`, `BETWEEN`);
+  - or an `=` on the column in an inner join's ON, when the FROM has no outer join.
+- **Not reported:** `COUNT(DISTINCT …)`, `COUNT(*)` and `COUNT(1)`.
+
+### QRY-COUNT-002
+
+**COUNT over a join may count rows more than once** · Medium · Potential · static evidence
+
+```sql
+SELECT o.CustomerID, COUNT(o.OrderID) AS Orders, SUM(oi.Quantity) AS Units
+FROM dbo.Orders AS o JOIN dbo.OrderItems AS oi ON oi.OrderID = o.OrderID
+GROUP BY o.CustomerID;   -- Orders counts order lines
+```
+
+The query aggregates columns of two tables of a join, so the aggregates run once per joined
+row. `COUNT(o.OrderID)` counts an order once per matching line.
+
+Suggested correction: `COUNT(DISTINCT o.OrderID)`, if `o.OrderID` identifies an order.
+
+How it's classified:
+- **Potential:** the join may match at most one row. The fan-out probe (#70) can measure it.
+- **Reported:** `COUNT(t.column)` without DISTINCT, when another aggregate of the same query uses
+  a different table of the join.
+- **Left to the fan-out probe:** `COUNT(*)` over a join, which says nothing statically (counting
+  joined rows is often intended).
