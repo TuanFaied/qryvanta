@@ -173,7 +173,7 @@ export function SettingsDialog({ open, onOpenChange, config, info, onSave, onLoa
             <Section title="Execution" description="Defaults applied to every query. They can be tightened per connection later.">
               <SwitchRow
                 label="Read-only mode"
-                description="Every query runs inside a transaction that is always rolled back, so changes it makes in the database are undone. Effects outside that transaction (linked servers, e-mail, xp_ procedures) are not."
+                description="Each script is checked before it runs: only queries, and writes to temporary tables (#name) and table variables, are allowed. Anything else (UPDATE on a table, DDL, EXEC, transactions) is refused, and nothing is sent to the server. What runs is inside a transaction that is always rolled back. Effects outside it (linked servers, e-mail, xp_ procedures, functions with side effects) are not undone."
                 checked={draft.execution.readOnly}
                 onChange={(readOnly) => (readOnly ? setSection("execution", { readOnly: true }) : setConfirmWrites(true))}
               />

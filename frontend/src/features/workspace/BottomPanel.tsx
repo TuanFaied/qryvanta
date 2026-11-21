@@ -43,9 +43,20 @@ interface BottomPanelProps {
   maxRows: number;
   timeoutSeconds: number;
   onRevealLine: (line: number) => void;
+  onRevealRange?: (line: number, column: number, length: number) => void;
+  onOpenSettings?: () => void;
 }
 
-export function BottomPanel({ run, tab, onTabChange, maxRows, timeoutSeconds, onRevealLine }: BottomPanelProps) {
+export function BottomPanel({
+  run,
+  tab,
+  onTabChange,
+  maxRows,
+  timeoutSeconds,
+  onRevealLine,
+  onRevealRange,
+  onOpenSettings,
+}: BottomPanelProps) {
   const errors = run?.messages.filter((m) => m.kind === "error").length ?? 0;
   return (
     <section aria-label="Output" className="flex h-full flex-col bg-panel">
@@ -75,7 +86,13 @@ export function BottomPanel({ run, tab, onTabChange, maxRows, timeoutSeconds, on
           <ResultsView run={run} maxRows={maxRows} />
         </TabsContent>
         <TabsContent value="messages" className="min-h-0 flex-1">
-          <MessagesView run={run} timeoutSeconds={timeoutSeconds} onRevealLine={onRevealLine} />
+          <MessagesView
+            run={run}
+            timeoutSeconds={timeoutSeconds}
+            onRevealLine={onRevealLine}
+            onRevealRange={onRevealRange}
+            onOpenSettings={onOpenSettings}
+          />
         </TabsContent>
         {placeholders.map((t) => (
           <TabsContent key={t.value} value={t.value} className="min-h-0 flex-1">

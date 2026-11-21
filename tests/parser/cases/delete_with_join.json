@@ -141,7 +141,22 @@
               "literalType": "string",
               "value": "Cancelled"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "OrderLines"
+              },
+              "span": {
+                "offset": 67,
+                "length": 1,
+                "line": 2,
+                "column": 8
+              }
+            }
+          ]
         },
         {
           "kind": "delete",
@@ -197,7 +212,22 @@
               "literalType": "string",
               "value": "2025-01-01"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Log"
+              },
+              "span": {
+                "offset": 176,
+                "length": 7,
+                "line": 3,
+                "column": 13
+              }
+            }
+          ]
         }
       ]
     }

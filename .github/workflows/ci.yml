@@ -75,7 +75,7 @@ jobs:
           go-version-file: go.mod
       - name: Go client and golden tests against the published sidecar
         shell: bash
-        run: QRYVANTA_PARSER_PATH="$PWD/publish/qryvanta-tsqlparser.exe" go test -tags parser -count=1 ./internal/parser/... ./internal/app/ ./tests/parser/
+        run: QRYVANTA_PARSER_PATH="$PWD/publish/qryvanta-tsqlparser.exe" go test -tags parser -count=1 ./internal/parser/... ./internal/security/ ./internal/app/ ./tests/parser/
 
   desktop:
     name: Desktop build (Wails)

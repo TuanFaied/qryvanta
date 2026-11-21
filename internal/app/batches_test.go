@@ -56,6 +56,9 @@ func coreWith(t *testing.T, p parser.Parser, r executor.Runner) (*Core, string) 
 		Access:         noAccess{},
 		Runner:         r,
 		Parser:         p,
+		// Splitting is tested without read-only mode, whose statement check is tested in
+		// readonly_test.go; read-only mode needs a parser model, which splitParser does not give.
+		AllowWrites: true,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -79,8 +82,8 @@ func TestExecuteSplitsScriptsIntoBatchesWithTheParser(t *testing.T) {
 	if len(got) != 2 || got[0].Repeat != 3 || got[1].SQL != "SELECT * FROM #t;" || got[1].Line != 3 {
 		t.Fatalf("batches = %+v", got)
 	}
-	if !r.got.Policy.ReadOnly {
-		t.Error("the policy must still come from the settings")
+	if r.got.Policy.ReadOnly {
+		t.Error("the policy must come from the core (AllowWrites), not the caller")
 	}
 }
 

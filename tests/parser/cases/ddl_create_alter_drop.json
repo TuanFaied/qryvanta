@@ -21,7 +21,22 @@
             "length": 73,
             "line": 2,
             "column": 1
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "T"
+              },
+              "span": {
+                "offset": 83,
+                "length": 5,
+                "line": 2,
+                "column": 14
+              }
+            }
+          ]
         },
         {
           "kind": "ddl",
@@ -31,7 +46,22 @@
             "length": 71,
             "line": 3,
             "column": 1
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "T"
+              },
+              "span": {
+                "offset": 156,
+                "length": 5,
+                "line": 3,
+                "column": 13
+              }
+            }
+          ]
         },
         {
           "kind": "ddl",
@@ -41,7 +71,22 @@
             "length": 39,
             "line": 4,
             "column": 1
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "T"
+              },
+              "span": {
+                "offset": 242,
+                "length": 5,
+                "line": 4,
+                "column": 27
+              }
+            }
+          ]
         },
         {
           "kind": "ddl",
@@ -61,7 +106,22 @@
             "length": 27,
             "line": 6,
             "column": 1
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "T"
+              },
+              "span": {
+                "offset": 308,
+                "length": 5,
+                "line": 6,
+                "column": 22
+              }
+            }
+          ]
         }
       ]
     }

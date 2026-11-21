@@ -50,7 +50,7 @@ const restoreTimeout = 5 * time.Second
 func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, sink executor.Sink) executor.Summary {
 	start := time.Now()
 	sum := executor.Summary{ResultSets: []executor.ResultSet{}, RowsAffected: []int64{}, Messages: []executor.Message{},
-		Batches: []executor.BatchRun{}}
+		Batches: []executor.BatchRun{}, Refusals: []executor.Refusal{}}
 	var (
 		conn    *sql.Conn
 		discard bool // the session could not be returned to a clean state

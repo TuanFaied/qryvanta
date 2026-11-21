@@ -34,7 +34,22 @@
               "schema": "dbo",
               "name": "Staging"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Staging"
+              },
+              "span": {
+                "offset": 64,
+                "length": 11,
+                "line": 2,
+                "column": 16
+              }
+            }
+          ]
         }
       ]
     }

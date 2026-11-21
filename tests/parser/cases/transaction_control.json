@@ -78,7 +78,22 @@
               "literalType": "integer",
               "value": "1"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Orders"
+              },
+              "span": {
+                "offset": 109,
+                "length": 10,
+                "line": 3,
+                "column": 8
+              }
+            }
+          ]
         },
         {
           "kind": "transaction",
@@ -145,7 +160,22 @@
               "literalType": "integer",
               "value": "2"
             }
-          }
+          },
+          "effects": [
+            {
+              "kind": "write",
+              "object": {
+                "schema": "dbo",
+                "name": "Orders"
+              },
+              "span": {
+                "offset": 203,
+                "length": 10,
+                "line": 5,
+                "column": 13
+              }
+            }
+          ]
         },
         {
           "kind": "transaction",

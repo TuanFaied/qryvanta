@@ -44,6 +44,7 @@ function run(extra: Partial<Run> = {}): Run {
       elapsedMs: 42,
       guard: { active: true, rolledBack: true, endedByBatch: false },
       batches: [],
+      refusals: [],
       error: "",
     },
     error: null,
@@ -130,5 +131,54 @@ describe("MessagesView", () => {
       />,
     );
     expect(screen.queryByText(/^Batch 1/)).not.toBeInTheDocument();
+  });
+
+  function refused(extra: Partial<Run> = {}): Run {
+    const base = run({ lineOffset: 9, columnOffset: 4, ...extra });
+    return {
+      ...base,
+      summary: {
+        ...base.summary!,
+        outcome: Outcome.OutcomeRefused,
+        errorCount: 0,
+        rowsAffected: [],
+        guard: { active: false, rolledBack: false, endedByBatch: false },
+        error: "Read-only mode did not run the script.",
+        refusals: [
+          { batch: 0, line: 1, column: 8, offset: 7, length: 10, statement: "UPDATE", reason: "Writes to dbo.Orders." },
+          { batch: 0, line: 3, column: 1, offset: 40, length: 14, statement: "EXEC", reason: "Runs the procedure dbo.p." },
+        ],
+      },
+    };
+  }
+
+  it("lists what read-only mode refused, and selects it in the editor", async () => {
+    const onRevealRange = vi.fn();
+    const onOpenSettings = vi.fn();
+    render(
+      <MessagesView run={refused()} timeoutSeconds={30} onRevealLine={vi.fn()} onRevealRange={onRevealRange} onOpenSettings={onOpenSettings} />,
+    );
+    expect(screen.getByRole("alert", { name: "Refused by read-only mode" })).toHaveTextContent("Nothing was sent to the server");
+    expect(screen.getByText("Writes to dbo.Orders.")).toBeInTheDocument();
+    // The selection started on editor line 10, column 5: its first line is shifted by both.
+    await userEvent.click(screen.getByRole("button", { name: "Line 10, column 12 · UPDATE" }));
+    expect(onRevealRange).toHaveBeenCalledWith(10, 12, 10);
+    // Later lines are shifted only by the line.
+    await userEvent.click(screen.getByRole("button", { name: "Line 12, column 1 · EXEC" }));
+    expect(onRevealRange).toHaveBeenCalledWith(12, 1, 14);
+
+    await userEvent.click(screen.getByRole("button", { name: "Turn off read-only mode…" }));
+    expect(onOpenSettings).toHaveBeenCalled();
+    expect(screen.getByText(/Not run\./)).toBeInTheDocument();
+    expect(screen.queryByText(/returned\./)).not.toBeInTheDocument();
+    expect(screen.queryByText(/transaction that was rolled back/)).not.toBeInTheDocument();
+  });
+
+  it("explains a refusal without statements, such as an unavailable parser", () => {
+    const r = refused();
+    r.summary = { ...r.summary!, refusals: [], error: "Read-only mode checks every statement with the T-SQL parser…" };
+    render(<MessagesView run={r} timeoutSeconds={30} onRevealLine={vi.fn()} />);
+    expect(screen.getByText(/checks every statement with the T-SQL parser/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Turn off/ })).not.toBeInTheDocument();
   });
 });

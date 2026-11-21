@@ -12,7 +12,7 @@ import {
   SchemaService,
   WindowService,
 } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
-import type { BatchRun, Column as ResultColumn, Message, Summary, Value } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
+import type { BatchRun, Column as ResultColumn, Message, Refusal, Summary, Value } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type { Diagnostic, Scope, ScopeSource } from "../../bindings/github.com/TuanFaied/qryvanta/internal/parser/models";
 import { Outcome } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type {
@@ -44,7 +44,7 @@ import { AccessLevel, AuthMethod, EncryptMode } from "../../bindings/github.com/
 export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, Profile, SaveConfigResult, ServerInfo };
 export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
 export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
-export type { BatchRun, Diagnostic, ExecutionEvent, Message, ResultColumn, Scope, ScopeSource, Summary, SyntaxCheck, Value };
+export type { BatchRun, Diagnostic, ExecutionEvent, Message, Refusal, ResultColumn, Scope, ScopeSource, Summary, SyntaxCheck, Value };
 export type { ParserStatus };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };

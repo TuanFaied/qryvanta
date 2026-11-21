@@ -80,8 +80,10 @@ qryvanta-cli connections add --name fixtures --server localhost --port 14333 --u
 qryvanta-cli run --conn fixtures --file query.sql --format json
 ```
 
-Read-only mode applies unless `--allow-writes` is given. Results go to stdout and messages to
-stderr. Exit codes: 0 success, 1 query error, 2 usage error, 3 timed out or cancelled. See
+Read-only mode applies unless `--allow-writes` is given: each script is checked before it runs,
+and anything other than queries and temporary-table writes is refused. Results go to stdout and
+messages to stderr. Exit codes: 0 success, 1 query error, 2 usage error, 3 timed out or cancelled,
+4 refused by read-only mode. See
 [setup.md](docs/development/setup.md#running-queries-from-the-cli) for every flag.
 
 ## Development

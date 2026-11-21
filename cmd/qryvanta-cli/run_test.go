@@ -15,6 +15,8 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/connection"
 	"github.com/TuanFaied/qryvanta/internal/executor"
+	"github.com/TuanFaied/qryvanta/internal/parser"
+	"github.com/TuanFaied/qryvanta/internal/parser/parsertest"
 	"github.com/TuanFaied/qryvanta/internal/sqlfile"
 )
 
@@ -349,5 +351,40 @@ func TestRunSingleBatchHasNoBatchHeader(t *testing.T) {
 	out, _, _ := runCmd(t, opts, "--query", "SELECT 1")
 	if strings.Contains(out, "-- Batch") {
 		t.Errorf("a single batch needs no header:\n%s", out)
+	}
+}
+
+func TestRunReportsReadOnlyRefusals(t *testing.T) {
+	runner := ordersRunner()
+	opts := runSetup(t, runner, connection.AccessReadOnly)
+	opts.Parser = parsertest.Fake{Statements: func(string) []parser.Statement {
+		return []parser.Statement{{Kind: parser.StmtExec, Type: "ExecuteStatement", Procedure: &parser.ObjectName{Schema: "dbo", Name: "Purge"},
+			Span: parser.Span{Offset: 9, Length: 14, Line: 2, Column: 1}}}
+	}}
+
+	out, errOut, code := runCmd(t, opts, "--query", "SELECT 1;\nEXEC dbo.Purge")
+	if code != exitRefused {
+		t.Errorf("exit = %d, want %d", code, exitRefused)
+	}
+	if out != "" || !strings.Contains(errOut, "nothing was sent to the server") ||
+		!strings.Contains(errOut, "Line 2, column 1, EXEC: Runs the procedure dbo.Purge") || !strings.Contains(errOut, "--allow-writes") {
+		t.Errorf("stdout %q, stderr:\n%s", out, errOut)
+	}
+	if runner.got.SQL != "" {
+		t.Error("a refused script must not reach the runner")
+	}
+
+	out, _, _ = runCmd(t, opts, "--query", "SELECT 1;\nEXEC dbo.Purge", "--format", "json")
+	var res runResult
+	if err := json.Unmarshal([]byte(out), &res); err != nil {
+		t.Fatal(err)
+	}
+	if res.Outcome != executor.OutcomeRefused || len(res.Refusals) != 1 || res.Refusals[0].Statement != "EXEC" {
+		t.Errorf("json = %+v", res)
+	}
+
+	// --allow-writes turns read-only mode off, and with it the check.
+	if _, errOut, code := runCmd(t, opts, "--query", "EXEC dbo.Purge", "--allow-writes"); code != 0 {
+		t.Errorf("--allow-writes: exit %d, stderr %s", code, errOut)
 	}
 }
