@@ -15,6 +15,71 @@ export interface Diagnostic {
 }
 
 /**
+ * ObjectName is up to server.database.schema.name.
+ */
+export interface ObjectName {
+    "server"?: string;
+    "database"?: string;
+    "schema"?: string;
+    "name": string;
+}
+
+/**
+ * Scope is what a query can refer to at a position in the script: the sources of the query
+ * the position is in, then those of the queries around it, and the CTEs of its statement.
+ * Autocomplete uses it to know what "x." means and which columns are available.
+ */
+export interface Scope {
+    /**
+     * Found is false when the position is not inside a statement the model describes.
+     */
+    "found": boolean;
+
+    /**
+     * Sources are visible by name, innermost query first; an inner name shadows an outer one.
+     */
+    "sources": ScopeSource[] | null;
+
+    /**
+     * Ctes are the statement's common table expressions, whether or not FROM uses them yet
+     * (WITH t AS (...) SELECT t. is written before its FROM).
+     */
+    "ctes": ScopeSource[] | null;
+}
+
+/**
+ * ScopeSource is one name a query can qualify columns with.
+ */
+export interface ScopeSource {
+    /**
+     * Name qualifies its columns: the alias, else the table, function or CTE name.
+     */
+    "name": string;
+    "kind": string;
+
+    /**
+     * Object is the table or function, for kinds table and function (its columns come from the
+     * database's metadata).
+     */
+    "object"?: ObjectName | null;
+
+    /**
+     * Columns are the output columns the query defines, for cte, derived and values.
+     */
+    "columns"?: string[] | null;
+
+    /**
+     * Tables are tables whose columns are also output columns, through SELECT * (or t.*).
+     */
+    "tables"?: ObjectName[] | null;
+
+    /**
+     * Depth is 0 for the query at the position and grows for each enclosing query.
+     */
+    "depth": number;
+}
+
+/**
  * Status describes the parser for the UI and logs.
  */
 export interface Status {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ObjectKind, type Column, type SchemaObject } from "@/services/backend";
+import { ObjectKind, type Column, type SchemaObject, type Scope, type ScopeSource } from "@/services/backend";
 import { columnDetail, computeSuggestions, type MetadataSource } from "./suggestions";
 
 const objects: SchemaObject[] = [
@@ -112,6 +112,82 @@ describe("computeSuggestions", () => {
     const r = await suggest("SELECT * FROM |", slow, 30);
     expect(Date.now() - started).toBeLessThan(500);
     expect(r).toEqual({ items: [], incomplete: true });
+  });
+
+  describe("with the parser's scope", () => {
+    const scope = (s: Partial<Scope>): Scope => ({ found: true, sources: [], ctes: [], ...s });
+    const src = (s: Partial<ScopeSource> & Pick<ScopeSource, "name" | "kind">): ScopeSource => ({ depth: 0, ...s });
+    async function suggestIn(sql: string, sc: Scope, metadata: MetadataSource | null = source()) {
+      const cursor = sql.indexOf("|");
+      const text = sql.replace("|", "");
+      return computeSuggestions({
+        textBefore: text.slice(0, cursor),
+        statement: text,
+        database: metadata ? "Sales" : null,
+        source: metadata,
+        budgetMs: 20,
+        scope: sc,
+      });
+    }
+
+    it("completes a CTE's columns, even before FROM uses it", async () => {
+      const sc = scope({ ctes: [src({ name: "t", kind: "cte", columns: ["a", "bee"] })] });
+      const r = await suggestIn("WITH t AS (SELECT a, b AS bee FROM dbo.X) SELECT t.|", sc);
+      expect(labels(r)).toEqual(["a", "bee"]);
+      expect(r.items[0]!.detail).toBe("cte");
+      // Without a connection too: the query itself names the columns.
+      expect(labels(await suggestIn("WITH t AS (SELECT a, b AS bee) SELECT t.|", sc, null))).toEqual(["a", "bee"]);
+    });
+
+    it("expands SELECT * in a CTE with the table's columns from metadata", async () => {
+      const sc = scope({ ctes: [src({ name: "t", kind: "cte", tables: [{ schema: "dbo", name: "Customers" }] })] });
+      expect(labels(await suggestIn("WITH t AS (SELECT * FROM dbo.Customers) SELECT t.|", sc))).toEqual(["CustomerID", "Name"]);
+    });
+
+    it("completes derived tables, and lists every visible source elsewhere", async () => {
+      const derived = src({ name: "d", kind: "derived", columns: ["OrderID", "Customer"] });
+      expect(labels(await suggestIn("SELECT d.| FROM (SELECT ...) AS d", scope({ sources: [derived] })))).toEqual(["OrderID", "Customer"]);
+
+      const r = await suggestIn(
+        "SELECT | FROM (SELECT ...) AS d JOIN dbo.Customers c ON ...",
+        scope({ sources: [derived, src({ name: "c", kind: "table", object: { schema: "dbo", name: "Customers" } })] }),
+      );
+      expect(r.items.find((i) => i.label === "d")?.detail).toBe("derived table");
+      expect(r.items.find((i) => i.label === "c")?.detail).toBe("alias of dbo.Customers");
+      expect(r.items.filter((i) => i.kind === "column").map((i) => i.detail)).toEqual([
+        "d · derived",
+        "d · derived",
+        "c · int · PK",
+        "c · nvarchar(100)",
+      ]);
+    });
+
+    it("ranks the inner query's sources before the outer ones in nested subqueries", async () => {
+      const r = await suggestIn(
+        "SELECT * FROM dbo.Orders o WHERE EXISTS (SELECT 1 FROM dbo.Customers c WHERE c.CustomerID = |)",
+        scope({
+          sources: [
+            src({ name: "c", kind: "table", object: { schema: "dbo", name: "Customers" } }),
+            src({ name: "o", kind: "table", object: { schema: "dbo", name: "Orders" }, depth: 1 }),
+          ],
+        }),
+      );
+      const sort = (label: string, owner: string) => r.items.find((i) => i.label === label && i.detail.startsWith(owner))!.sortText;
+      expect(sort("Name", "c") < sort("OrderID", "o")).toBe(true);
+    });
+
+    it("offers the statement's CTEs where a table goes", async () => {
+      const r = await suggestIn("WITH recent AS (SELECT 1 AS a) SELECT * FROM |", scope({ ctes: [src({ name: "recent", kind: "cte", columns: ["a"] })] }));
+      expect(labels(r)[0]).toBe("recent");
+      expect(labels(r)).toContain("dbo.Orders");
+    });
+
+    it("falls back to the heuristic for names the model does not know", async () => {
+      // The text after the cursor did not parse, so the scope came from the text before it only.
+      expect(labels(await suggestIn("SELECT o.| FROM dbo.Orders o WHERE", scope({})))).toEqual(["OrderID", "CustomerID", "Order Date"]);
+      // A schema is not a source.
+      expect(labels(await suggestIn("SELECT * FROM sales.|", scope({})))).toEqual(["Orders"]);
+    });
   });
 
   it("formats column details like the explorer", () => {

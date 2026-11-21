@@ -613,29 +613,51 @@ form-action 'none'; frame-ancestors 'none'
   holds until the app restarts. With read-only mode on, the session guard (D5) already rolls
   changes back, so there is no prompt.
 
-### D9d. Autocomplete (heuristic until Phase 4)
+### D9d. Autocomplete (query model, with a heuristic fallback)
 
-- **Context comes from a small tokenizer, not a parser** (`features/editor/completion/context.ts`).
-  It skips strings and comments, reads bracketed and quoted identifiers, and answers three
-  questions:
+- **The kind of completion comes from a small tokenizer** (`features/editor/completion/context.ts`).
+  Text being typed rarely parses, so this stays token-based. It skips strings and comments,
+  reads bracketed and quoted identifiers, and answers three questions:
   - Is the cursor after a qualifier (`o.`, `dbo.`, `Sales.dbo.`)?
   - Is it where a table goes (after FROM, JOIN, UPDATE, INTO or APPLY, or after a comma in a
     FROM list)?
   - Otherwise, it is a general position.
-  
-  It also finds the tables the statement around the cursor references, with their aliases. A
-  wrong guess only means a less useful list. The Phase 4 query model replaces it.
+- **What names mean comes from the query model** (#45). On each completion request the editor
+  sends the tab's text and the cursor offset to `QueryService.CompletionScope`.
+  `app.Core.CompletionScope` parses with the model; when the batch at the cursor has syntax
+  errors (`SELECT t.` never parses), it retries with a placeholder identifier at the cursor:
+  with the rest of the text, then with `IS NULL` after it (in WHERE, ON and HAVING a bare name
+  is not a condition), then without the text after the cursor. At most five parses, each a few
+  milliseconds.
+  - `parser.ScopeAt` finds the innermost query around the cursor and returns its sources, then
+    those of the enclosing queries (correlated subqueries see outer aliases; inner names shadow
+    outer ones), the UPDATE/DELETE target and FROM, and the statement's CTEs (usable before a
+    FROM mentions them: `WITH t AS (...) SELECT t.`).
+  - Each source has a kind (table, cte, derived, function, values, variable). CTEs, derived
+    tables and VALUES lists carry their output columns: aliases and plain column names, with
+    `*` and `t.*` expanded through other CTEs and derived tables, and to the tables they cover
+    (whose columns come from metadata). Explicit column lists (`AS d (x, y)`) win. Tables and
+    table-valued functions carry their name, and their columns come from metadata.
+  - The editor does not use the debounced syntax-check parse (D9c) for this: it is usually
+    older than the text at the cursor and has no model. Completion parses on demand instead,
+    within its own budget.
+- **Fallback:** when the parser is unavailable or nothing parses, and for a qualifier the
+  scope does not know, `findTableRefs` reads the tables and aliases of the statement around
+  the cursor from the tokens, as before #45. A wrong guess only means a less useful list.
 - **Suggestions** (`suggestions.ts`):
-  - After FROM/JOIN: the current database's tables, views and functions, schema-qualified,
-    with `dbo` first.
-  - After `alias.` or `table.`: that table's columns, with type and PK/FK details as in the
-    explorer.
+  - After FROM/JOIN: the statement's CTEs, then the current database's tables, views and
+    functions, schema-qualified, with `dbo` first.
+  - After `alias.` or `table.`: that source's columns: metadata columns with type and PK/FK
+    details as in the explorer, or the names a CTE, derived table or VALUES list defines.
   - After `schema.`: that schema's objects.
-  - Elsewhere: the referenced tables' columns and aliases, then keywords and functions.
+  - Elsewhere: the columns and names of every source in scope, the innermost query's first,
+    then keywords and functions.
   - Identifiers that are not regular identifiers (spaces, a leading digit, reserved words) are
     inserted in brackets, with `]` escaped as in `QUOTENAME`.
 - **Metadata comes from the schema store**, the same cache the explorer fills. Missing objects
-  or columns are requested, and completion waits at most 400 ms for them. After that it returns
+  or columns are requested. One 400 ms budget covers the whole request: the scope is awaited
+  for at most 400 ms (then the heuristic is used), and metadata for what remains, at least
+  100 ms. After that it returns
   what it has, marked incomplete so Monaco asks again on the next keystroke. A slow server
   never freezes typing.
 - Monaco's word-based suggestions are off, so the list contains only SQL-aware items.

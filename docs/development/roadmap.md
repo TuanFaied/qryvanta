@@ -57,6 +57,9 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   grouped messages), and parser diagnostics as editor markers with a problems count (#43)
 - Execution policy layer 1 (statement allowlist) on top of the parse tree
 - ✅ Golden test suite: 79 cases, including every sample query (#42)
+- ✅ Autocomplete from the query model: CTEs, derived tables, VALUES lists and table-valued
+  functions, aliases through nested subqueries and set operations, with the heuristic as a
+  fallback (#45)
 
 ## Phase 5: Diagnostic engine ⬜
 

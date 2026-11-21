@@ -125,6 +125,17 @@ func (s *QueryService) CheckSyntax(ctx context.Context, sql string) SyntaxCheck 
 	return SyntaxCheck{Available: true, Batches: len(res.Batches), Diagnostics: diags}
 }
 
+// CompletionScope returns what the query at a UTF-16 offset of sql can refer to, for
+// autocomplete. Found is false when the parser is unavailable or the text around the cursor
+// does not parse even with a placeholder; the editor then uses its heuristic.
+func (s *QueryService) CompletionScope(ctx context.Context, sql string, offset int) parser.Scope {
+	scope, err := s.core.CompletionScope(ctx, sql, offset)
+	if err != nil || !scope.Found {
+		return parser.Scope{Sources: []parser.ScopeSource{}, Ctes: []parser.ScopeSource{}}
+	}
+	return scope
+}
+
 // Cancel stops a run. It reports whether the run was still in progress.
 func (s *QueryService) Cancel(runID string) bool {
 	s.mu.Lock()

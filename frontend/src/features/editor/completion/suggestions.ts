@@ -1,4 +1,4 @@
-import { ObjectKind, type Column, type SchemaObject } from "@/services/backend";
+import { ObjectKind, type Column, type SchemaObject, type Scope, type ScopeSource } from "@/services/backend";
 import { detectContext, findTableRefs, quoteIfNeeded, sameName, type TableRef } from "./context";
 
 export type SuggestionKind = "table" | "view" | "function" | "column" | "alias" | "keyword" | "builtin";
@@ -33,6 +33,12 @@ export interface SuggestRequest {
   statement: string;
   /** The tab's current database; null without a connection. */
   database: string | null;
+  /**
+   * What the query at the cursor can refer to, from the parser's model (CTEs, derived tables,
+   * nested scopes). Null, or found false, when the text does not parse: the heuristic in
+   * context.ts is used instead.
+   */
+  scope?: Scope | null;
   source: MetadataSource | null;
   /** How long to wait for metadata that is not cached yet (ms). */
   budgetMs?: number;
@@ -110,6 +116,36 @@ function resolve(objects: SchemaObject[], ref: Pick<TableRef, "schema" | "name">
   return candidates.find((o) => o.schema === "dbo") ?? (candidates.length === 1 ? candidates[0] : undefined);
 }
 
+/** Columns a CTE, derived table or VALUES list defines by name ("Customer · derived"). */
+function namedColumnItems(src: ScopeSource, owner: string | null, rank: string): Suggestion[] {
+  return (src.columns ?? []).map(
+    (name, i): Suggestion => ({
+      label: name,
+      kind: "column",
+      insertText: quoteIfNeeded(name),
+      detail: owner ? `${owner} · ${src.kind}` : src.kind,
+      sortText: `${rank}${String(i).padStart(4, "0")}`,
+    }),
+  );
+}
+
+const sourceDetail: Record<string, string> = {
+  cte: "common table expression",
+  derived: "derived table",
+  values: "VALUES list",
+  function: "table-valued function",
+  variable: "table variable",
+};
+
+/** "alias of dbo.Orders", "table", "derived table", like the heuristic's labels. */
+function sourceLabel(src: ScopeSource): string {
+  const o = src.object;
+  if (!o) return sourceDetail[src.kind] ?? src.kind;
+  const qualified = `${o.schema ? `${o.schema}.` : ""}${o.name}`;
+  if (src.kind === "function") return `function ${qualified}`;
+  return sameName(src.name, o.name) ? "table" : `alias of ${qualified}`;
+}
+
 /**
  * Builds suggestions for the cursor position. Metadata is taken from the cache; anything
  * missing is requested and waited for up to budgetMs, then the result is returned without it
@@ -144,13 +180,38 @@ export async function computeSuggestions(req: SuggestRequest): Promise<SuggestRe
     return cols ?? [];
   };
 
+  const scope = req.scope?.found ? req.scope : null;
+  const scoped = (name: string | undefined): ScopeSource | undefined =>
+    scope ? (scope.sources ?? []).find((s) => sameName(s.name, name)) ?? (scope.ctes ?? []).find((s) => sameName(s.name, name)) : undefined;
+
   if (!database || !source) {
+    // CTEs, derived tables and VALUES lists name their columns in the query itself.
+    if (ctx.kind === "member" && ctx.qualifier.length === 1) {
+      const src = scoped(ctx.qualifier[0]);
+      return { items: src ? namedColumnItems(src, null, "0") : [], incomplete: false };
+    }
     return { items: ctx.kind === "general" ? generalItems() : [], incomplete: false };
   }
 
+  /** Columns of a source in the model's scope: metadata for tables and functions, names for the rest. */
+  const columnsOfSource = async (src: ScopeSource, owner: string | null, rank: string): Promise<Suggestion[]> => {
+    const items = namedColumnItems(src, owner, rank);
+    const tables = [...(src.tables ?? []), ...(src.object && (src.kind === "table" || src.kind === "function") ? [src.object] : [])];
+    for (const t of tables) {
+      const db = t.database || database;
+      const obj = resolve(await objectsOf(db), { schema: t.schema || null, name: t.name });
+      if (obj) items.push(...(await columnsOf(db, obj)).map((c) => columnItem(c, owner, rank)));
+    }
+    return items;
+  };
+
   if (ctx.kind === "object") {
     const objs = await objectsOf(database);
-    return { items: objs.filter(isQueryable).map((o) => objectItem(o, true)), incomplete };
+    // The statement's CTEs can be used like tables.
+    const ctes = (scope?.ctes ?? []).map(
+      (c): Suggestion => ({ label: c.name, kind: "alias", insertText: quoteIfNeeded(c.name), detail: sourceDetail.cte!, sortText: `0${c.name}` }),
+    );
+    return { items: [...ctes, ...objs.filter(isQueryable).map((o) => objectItem(o, true))], incomplete };
   }
 
   const refs = findTableRefs(req.statement);
@@ -158,6 +219,9 @@ export async function computeSuggestions(req: SuggestRequest): Promise<SuggestRe
   if (ctx.kind === "member") {
     const q = ctx.qualifier;
     if (q.length === 1) {
+      // The model knows what the name means here, including CTEs and derived tables.
+      const src = scoped(q[0]);
+      if (src) return { items: await columnsOfSource(src, null, "0"), incomplete };
       // alias. → columns; schema. → that schema's objects; table. → columns. Aliases win, then
       // schemas, because "FROM dbo." is itself read as a reference to a table named dbo.
       const columnsOfRef = async (ref: TableRef) => {
@@ -192,6 +256,27 @@ export async function computeSuggestions(req: SuggestRequest): Promise<SuggestRe
   // General: columns of the referenced tables, the aliases, then keywords and functions.
   const items: Suggestion[] = [];
   const seen = new Set<string>();
+  const sources = scope?.sources ?? [];
+  if (sources.length > 0) {
+    // From the model: every source visible at the cursor, the innermost query's first.
+    for (const src of sources) {
+      items.push({
+        label: src.name,
+        kind: "alias",
+        insertText: quoteIfNeeded(src.name),
+        detail: sourceLabel(src),
+        sortText: `2${src.depth}${src.name}`,
+      });
+      for (const item of await columnsOfSource(src, src.name, `1${src.depth}`)) {
+        const key = `${src.name}.${item.label}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push(item);
+      }
+    }
+    items.push(...generalItems());
+    return { items, incomplete };
+  }
   for (const ref of refs) {
     const db = ref.database ?? database;
     const obj = resolve(await objectsOf(db), ref);

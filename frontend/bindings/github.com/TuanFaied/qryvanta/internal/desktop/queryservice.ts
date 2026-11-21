@@ -13,6 +13,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as executor$0 from "../executor/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as parser$0 from "../parser/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -31,6 +34,15 @@ export function Cancel(runID: string): $CancellablePromise<boolean> {
  */
 export function CheckSyntax(sql: string): $CancellablePromise<$models.SyntaxCheck> {
     return $Call.ByID(860610513, sql);
+}
+
+/**
+ * CompletionScope returns what the query at a UTF-16 offset of sql can refer to, for
+ * autocomplete. Found is false when the parser is unavailable or the text around the cursor
+ * does not parse even with a placeholder; the editor then uses its heuristic.
+ */
+export function CompletionScope(sql: string, offset: number): $CancellablePromise<parser$0.Scope> {
+    return $Call.ByID(3988191216, sql, offset);
 }
 
 /**
