@@ -22,6 +22,15 @@ All notable changes to this project are documented here. The format follows
 - The parser's QueryModel describes what each statement can affect (`effects`: objects written,
   procedures or dynamic SQL executed, remote rowsets read), collected from the full syntax tree,
   and names the options of SET statements (`options`) and the kind of WAITFOR.
+- Autocomplete understands the query being written, from the parser's query model:
+  - Columns of CTEs (also before FROM uses them: `WITH t AS (...) SELECT t.`), derived tables,
+    VALUES lists and table-valued functions, with `SELECT *` expanded.
+  - Aliases resolve through nested and correlated subqueries and set operations; the
+    innermost query's names come first and shadow outer ones.
+  - The statement's CTEs are offered where a table goes.
+  - Half-typed text is parsed with a placeholder at the cursor. When it still does not parse,
+    or the parser is unavailable, the previous heuristic is used. One 400 ms budget covers
+    the whole request.
 - T-SQL parser sidecar (`sidecar/tsqlparser`, .NET 10 with Microsoft ScriptDom):
   - It reads requests as newline-delimited JSON on stdin and writes responses to stdout.
   - It splits scripts into batches on `GO` (including `GO n`, and ignoring `GO` inside strings

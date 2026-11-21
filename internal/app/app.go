@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -439,4 +440,63 @@ func batchesOf(res *parser.Result) []executor.Batch {
 		batches = append(batches, executor.Batch{SQL: b.Text, Line: b.Line, Repeat: max(b.Repeat, 1)})
 	}
 	return batches
+}
+
+// completionPlaceholder is inserted at the cursor so half-typed SQL ("SELECT t." or
+// "SELECT  FROM t") parses. It is a regular identifier that is not a keyword.
+const completionPlaceholder = "qryvanta_cursor"
+
+// CompletionScope returns what the query at a UTF-16 offset can refer to (tables, CTEs,
+// derived tables and their columns), for autocomplete. Text being typed often does not parse,
+// so when the batch at the cursor has syntax errors it is parsed again with a placeholder
+// identifier at the cursor (alone, or as "IS NULL" where a condition is expected), first keeping
+// the rest of the text and then without it. When none
+// of these parse, Found is false and the editor falls back to its heuristic.
+func (c *Core) CompletionScope(ctx context.Context, sql string, offset int) (parser.Scope, error) {
+	b := parser.ByteOffsets(sql, offset)[0]
+	before, after := sql[:b], sql[b:]
+	ph := completionPlaceholder
+	sep := " "
+	if strings.HasSuffix(before, ".") {
+		sep = "" // "t." + "qryvanta_cursor"
+	}
+	// In a WHERE, ON or HAVING the placeholder alone is not a condition, hence the IS NULL forms.
+	at := offset + len(sep)
+	attempts := []struct {
+		text   string
+		offset int
+	}{
+		{sql, offset},
+		{before + sep + ph + " " + after, at},
+		{before + sep + ph + " IS NULL " + after, at},
+		{before + sep + ph, at},
+		{before + sep + ph + " IS NULL", at},
+	}
+	for _, a := range attempts {
+		res, err := c.parser.Parse(ctx, a.text, parser.Options{Model: true})
+		if err != nil {
+			return parser.Scope{}, err
+		}
+		if batchParsed(res, a.offset) {
+			return parser.ScopeAt(res, a.offset, ph), nil
+		}
+	}
+	return parser.Scope{}, nil
+}
+
+// batchParsed reports whether the batch containing offset parsed without syntax errors.
+func batchParsed(res *parser.Result, offset int) bool {
+	for _, d := range res.Diagnostics {
+		for _, bt := range res.Batches {
+			if offset >= bt.Offset && offset <= bt.Offset+bt.Length && d.Offset >= bt.Offset && d.Offset <= bt.Offset+bt.Length {
+				return false
+			}
+		}
+	}
+	for _, bt := range res.Batches {
+		if offset >= bt.Offset && offset <= bt.Offset+bt.Length {
+			return len(bt.Statements) > 0
+		}
+	}
+	return false
 }

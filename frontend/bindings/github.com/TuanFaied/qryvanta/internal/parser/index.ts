@@ -3,5 +3,8 @@
 
 export type {
     Diagnostic,
+    ObjectName,
+    Scope,
+    ScopeSource,
     Status
 } from "./models.js";

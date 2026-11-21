@@ -13,7 +13,7 @@ import {
   WindowService,
 } from "../../bindings/github.com/TuanFaied/qryvanta/internal/desktop";
 import type { BatchRun, Column as ResultColumn, Message, Refusal, Summary, Value } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
-import type { Diagnostic } from "../../bindings/github.com/TuanFaied/qryvanta/internal/parser/models";
+import type { Diagnostic, Scope, ScopeSource } from "../../bindings/github.com/TuanFaied/qryvanta/internal/parser/models";
 import { Outcome } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type {
   ExecutionEvent,
@@ -44,7 +44,7 @@ import { AccessLevel, AuthMethod, EncryptMode } from "../../bindings/github.com/
 export type { AppInfo, Config, ConnectionDTO, ConnectionError, ConnectionInput, Profile, SaveConfigResult, ServerInfo };
 export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
 export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
-export type { BatchRun, Diagnostic, ExecutionEvent, Message, Refusal, ResultColumn, Summary, SyntaxCheck, Value };
+export type { BatchRun, Diagnostic, ExecutionEvent, Message, Refusal, ResultColumn, Scope, ScopeSource, Summary, SyntaxCheck, Value };
 export type { ParserStatus };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
@@ -226,6 +226,17 @@ export const backend = {
     call("Check syntax", async () => {
       const res = await withSignal(QueryService.CheckSyntax(sql), signal);
       return { ...res, diagnostics: res.diagnostics ?? [] };
+    }),
+
+  /**
+   * What the query at a UTF-16 offset can refer to, from the parser's model, for autocomplete.
+   * found is false when the text does not parse (even with a placeholder at the cursor) or the
+   * parser is unavailable; the editor then uses its heuristic.
+   */
+  completionScope: (sql: string, offset: number, signal?: AbortSignal): Promise<Scope> =>
+    call("Completion scope", async () => {
+      const res = await withSignal(QueryService.CompletionScope(sql, offset), signal);
+      return { ...res, sources: res.sources ?? [], ctes: res.ctes ?? [] };
     }),
 
   /** Cancels a run on the server. Its summary still arrives, with outcome "cancelled". */

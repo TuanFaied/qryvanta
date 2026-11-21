@@ -94,3 +94,12 @@ func TestCheckSyntax(t *testing.T) {
 		t.Errorf("unavailable CheckSyntax = %+v", got)
 	}
 }
+
+func TestCompletionScopeNeverReturnsNullLists(t *testing.T) {
+	// The parser is unavailable: the editor gets found = false and empty lists, and falls back.
+	s := syntaxService(t, fixedParser{err: errors.Join(parser.ErrUnavailable, errors.New("not found"))})
+	got := s.CompletionScope(context.Background(), "SELECT o. FROM dbo.Orders o", 9)
+	if got.Found || got.Sources == nil || got.Ctes == nil {
+		t.Errorf("CompletionScope = %+v", got)
+	}
+}

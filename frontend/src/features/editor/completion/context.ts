@@ -1,13 +1,16 @@
 /**
- * Completion context detection: HEURISTIC, by design.
+ * Completion context detection: HEURISTIC, by design (architecture D9d).
  *
- * Qryvanta has no T-SQL parser until Phase 4. This module tokenizes the text before the cursor
- * just enough to answer three questions: is the cursor inside a string or comment, is it right
- * after a qualifier ("o." or "dbo."), and is it where a table or view name goes (after FROM,
- * JOIN, UPDATE, INTO, or a comma in a FROM list)? It also finds the tables a statement
- * references, with their aliases, from the same tokens. It never decides anything about
- * correctness; a wrong guess only means a less useful suggestion list.
- * Replace it with the parser's query model when Phase 4 lands.
+ * This module tokenizes the text before the cursor just enough to answer three questions: is
+ * the cursor inside a string or comment, is it right after a qualifier ("o." or "dbo."), and
+ * is it where a table or view name goes (after FROM, JOIN, UPDATE, INTO, or a comma in a FROM
+ * list)? Half-typed text rarely parses, so these stay token-based.
+ *
+ * What a qualifier refers to and which columns are in scope come from the parser's query model
+ * (CTEs, derived tables, nested subqueries; see suggestions.ts and parser.ScopeAt in Go).
+ * findTableRefs is the fallback for text the parser cannot read even with a placeholder at
+ * the cursor. It never decides anything about correctness; a wrong guess only means a less
+ * useful suggestion list.
  */
 
 export type Token =

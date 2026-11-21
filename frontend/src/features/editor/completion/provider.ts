@@ -1,7 +1,9 @@
+import type { Scope } from "@/services/backend";
 import { useEditorStore } from "@/stores/editor-store";
 import { dbKey, objectKey, useSchemaStore } from "@/stores/schema-store";
 import { monaco, SQL_LANGUAGE } from "../monaco";
 import { statementAround } from "./context";
+import { SCOPE_BUDGET_MS, scopeFor } from "./scope";
 import { computeSuggestions, type MetadataSource, type SuggestionKind } from "./suggestions";
 
 /** Editor models are named inmemory://qryvanta/<tabId>.sql (see SqlEditor). */
@@ -53,11 +55,24 @@ export function registerSqlCompletion(): void {
       const text = model.getValue();
       const offset = model.getOffsetAt(position);
       const statement = statementAround(text, offset);
+      const abort = new AbortController();
+      const cancelled = token.onCancellationRequested(() => abort.abort());
+      const started = Date.now();
+      let scope: Scope | null;
+      try {
+        scope = await scopeFor(text, offset, abort.signal);
+      } finally {
+        cancelled.dispose();
+      }
+      if (token.isCancellationRequested) return { suggestions: [] };
       const result = await computeSuggestions({
         textBefore: statement.text.slice(0, offset - statement.start),
         statement: statement.text,
         database: connectionId ? tab?.database ?? null : null,
         source: connectionId ? schemaSource(connectionId) : null,
+        scope,
+        // One budget for the whole request: metadata gets what the scope left (at least 100 ms).
+        budgetMs: Math.max(100, SCOPE_BUDGET_MS - (Date.now() - started)),
       });
       if (token.isCancellationRequested) return { suggestions: [] };
 

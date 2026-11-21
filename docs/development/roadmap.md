@@ -45,7 +45,7 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 - ✅ CLI: `qryvanta-cli run --conn X --file query.sql --format table|json|csv`, with exit codes
   and Ctrl+C cancellation (#32)
 
-## Phase 4: SQL parsing ⬜
+## Phase 4: SQL parsing ✅
 
 - ✅ `sidecar/tsqlparser` (.NET 10, ScriptDom 180), published as a self-contained single file:
   protocol, `GO` batches and syntax diagnostics (#39)
@@ -58,6 +58,9 @@ Details: [phase-1-plan.md](phase-1-plan.md)
 - ✅ Execution policy layer 1: read-only statement allowlist on the parse tree, with refusals
   shown in the Messages tab and the CLI (#44)
 - ✅ Golden test suite: 79 cases, including every sample query (#42)
+- ✅ Autocomplete from the query model: CTEs, derived tables, VALUES lists and table-valued
+  functions, aliases through nested subqueries and set operations, with the heuristic as a
+  fallback (#45)
 
 ## Phase 5: Diagnostic engine ⬜
 
