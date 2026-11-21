@@ -3,10 +3,16 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as analyzer$0 from "../analyzer/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as config$0 from "../config/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as connection$0 from "../connection/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as diagnostics$0 from "../diagnostics/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as executor$0 from "../executor/models.js";
@@ -22,6 +28,39 @@ import * as sqlfile$0 from "../sqlfile/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as version$0 from "../version/models.js";
+
+/**
+ * Analysis is the analysis panel's view of a script.
+ */
+export interface Analysis {
+    /**
+     * Available is false when the parser cannot run; Reason says why. Then there are no
+     * findings, which is not the same as "no findings".
+     */
+    "available": boolean;
+    "reason": string;
+    "findings": diagnostics$0.Finding[] | null;
+
+    /**
+     * Failures are rules that failed; the other rules' findings are still listed.
+     */
+    "failures": analyzer$0.RuleFailure[] | null;
+
+    /**
+     * Rules is how many rules ran.
+     */
+    "rules": number;
+
+    /**
+     * Statements is how many top-level statements were analyzed.
+     */
+    "statements": number;
+
+    /**
+     * SyntaxErrors counts syntax errors; the batches that have them were not analyzed.
+     */
+    "syntaxErrors": number;
+}
 
 /**
  * AppInfo describes the running application for the header, status bar and about dialog.

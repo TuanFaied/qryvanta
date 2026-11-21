@@ -8,6 +8,21 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- The analysis panel lists diagnostic findings. Analyze runs on the selection or the whole tab,
+  with no connection, and executes nothing:
+  - Findings are grouped by severity and show their classification (confirmed, potential,
+    optimization), rule ID, position, explanation and evidence.
+  - A suggested correction is shown as a diff and never applied.
+  - Clicking a finding selects it in the editor.
+  - An unavailable parser, "no findings", syntax errors that were skipped, and rules that failed
+    are each shown as such.
+- The diagnostic engine (`internal/diagnostics`, `internal/analyzer`):
+  - Findings are validated in code: a confirmed finding needs evidence, and every position must
+    be inside the analyzed SQL.
+  - Rules have stable IDs, documented in `docs/features/rules.md`.
+  - A failing or crashing rule is reported and does not stop the others.
+- First rule: `QRY-NULL-001` reports `x = NULL` and `x <> NULL`, which are never true, and
+  suggests `IS NULL` / `IS NOT NULL`.
 - Read-only mode checks every script before it runs (execution policy layer 1):
   - Queries are allowed, and so are writes to temporary tables (`#name`) and table variables.
     Writes to tables (also through `OUTPUT INTO`, CTEs and aliases), DDL, `EXEC` and dynamic SQL,

@@ -5,6 +5,7 @@
 import { Events } from "@wailsio/runtime";
 import { QryvantaCloseRequested, QryvantaExecution } from "../../bindings/events";
 import {
+  AnalysisService,
   AppService,
   ConnectionService,
   FileService,
@@ -15,7 +16,11 @@ import {
 import type { BatchRun, Column as ResultColumn, Message, Refusal, Summary, Value } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type { Diagnostic, Scope, ScopeSource } from "../../bindings/github.com/TuanFaied/qryvanta/internal/parser/models";
 import { Outcome } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
+import type { RuleFailure } from "../../bindings/github.com/TuanFaied/qryvanta/internal/analyzer/models";
+import type { Correction, Evidence, Finding, Span } from "../../bindings/github.com/TuanFaied/qryvanta/internal/diagnostics/models";
+import { Classification, EvidenceKind, Severity } from "../../bindings/github.com/TuanFaied/qryvanta/internal/diagnostics/models";
 import type {
+  Analysis,
   ExecutionEvent,
   SyntaxCheck,
   FileDocument,
@@ -46,6 +51,8 @@ export type { Column, Database, MetadataError, SchemaObject, WriteAccess };
 export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
 export type { BatchRun, Diagnostic, ExecutionEvent, Message, Refusal, ResultColumn, Scope, ScopeSource, Summary, SyntaxCheck, Value };
 export type { ParserStatus };
+export type { Analysis, Correction, Evidence, Finding, RuleFailure, Span };
+export { Classification, EvidenceKind, Severity };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
 
@@ -237,6 +244,20 @@ export const backend = {
     call("Completion scope", async () => {
       const res = await withSignal(QueryService.CompletionScope(sql, offset), signal);
       return { ...res, sources: res.sources ?? [], ctes: res.ctes ?? [] };
+    }),
+
+  /**
+   * Runs the diagnostic rules over sql. available is false when the parser cannot run, which is
+   * not the same as "no findings". Nothing is executed and no connection is needed.
+   */
+  analyze: (sql: string, signal?: AbortSignal): Promise<Analysis> =>
+    call("Analyze", async () => {
+      const res = await withSignal(AnalysisService.Analyze(sql), signal);
+      return {
+        ...res,
+        findings: (res.findings ?? []).map((f) => ({ ...f, evidence: f.evidence ?? [] })),
+        failures: res.failures ?? [],
+      };
     }),
 
   /** Cancels a run on the server. Its summary still arrives, with outcome "cancelled". */

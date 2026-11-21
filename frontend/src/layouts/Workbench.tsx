@@ -22,6 +22,7 @@ import { WelcomePage } from "@/features/workspace/WelcomePage";
 import { backend, type AppInfo, type Config, type ParserStatus, type SaveResult, type Theme } from "@/services/backend";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useEditorStore } from "@/stores/editor-store";
+import { useAnalysisStore } from "@/stores/analysis-store";
 import { currentDiagnostics, useSyntaxStore } from "@/stores/syntax-store";
 import { useSchemaStore } from "@/stores/schema-store";
 import { accessKey, useAccessStore } from "@/stores/access-store";
@@ -175,6 +176,19 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
   const syntaxState = useSyntaxStore((s) => (activeTab ? s.byTab[activeTab.id] : undefined));
   const problems = activeTab ? currentDiagnostics(syntaxState, activeTab.content) : [];
 
+  // Analyze runs the rules on what Execute would run: the selection, or the whole tab.
+  const analyze = () => {
+    const target = editorRef.current?.getRunTarget();
+    if (!activeTab || !target) return;
+    void useAnalysisStore.getState().analyze({
+      tabId: activeTab.id,
+      sql: target.sql,
+      tabText: activeTab.content,
+      startLine: target.startLine,
+      startColumn: target.startColumn ?? 1,
+    });
+  };
+
   const disconnect = () => void conn.disconnect();
   const refresh = () => {
     if (activeId) {
@@ -312,7 +326,11 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
           collapsedSize={0}
           onResize={trackVisibility("analysis")}
         >
-          <AnalysisPanel />
+          <AnalysisPanel
+            activeTab={activeTab ? { id: activeTab.id, content: activeTab.content } : null}
+            onAnalyze={analyze}
+            onRevealRange={(line, column, length) => editorRef.current?.selectRange(line, column, length)}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
 
