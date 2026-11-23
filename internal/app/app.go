@@ -77,6 +77,7 @@ type Core struct {
 	pool        *connection.Pool
 	parser      parser.Parser
 	meta        metadataCache
+	analyses    analysisStore
 	allowWrites bool
 
 	mu  sync.RWMutex

@@ -140,7 +140,7 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 				}
 			}
 			began, errorsBefore := time.Now(), sum.ErrorCount
-			stopScript, outcome := runBatch(runCtx, ctx, conn, b, bi, &sum, budget, sink, stop)
+			stopScript, outcome := runBatch(runCtx, ctx, conn, b, req.Args(), bi, &sum, budget, sink, stop)
 			run.ErrorCount = sum.ErrorCount - errorsBefore
 			run.ElapsedMs = time.Since(began).Milliseconds()
 			sum.Batches = append(sum.Batches, run)
@@ -177,7 +177,7 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 
 // runBatch runs one batch execution. It reports whether the script must stop, and how it ended
 // in that case. Server errors are recorded as messages and do not stop the script.
-func runBatch(runCtx, ctx context.Context, conn *sql.Conn, b executor.Batch, batchIndex int, sum *executor.Summary,
+func runBatch(runCtx, ctx context.Context, conn *sql.Conn, b executor.Batch, args []any, batchIndex int, sum *executor.Summary,
 	budget *executor.Budget, sink executor.Sink, stop context.CancelFunc) (bool, executor.Outcome) {
 	var sinkErr error
 	addMessage := func(m executor.Message) {
@@ -195,7 +195,7 @@ func runBatch(runCtx, ctx context.Context, conn *sql.Conn, b executor.Batch, bat
 	}
 
 	retmsg := &sqlexp.ReturnMessage{}
-	rows, err := conn.QueryContext(runCtx, b.SQL, retmsg)
+	rows, err := conn.QueryContext(runCtx, b.SQL, append([]any{retmsg}, args...)...)
 	if err != nil {
 		if ctx.Err() != nil {
 			return true, executor.OutcomeCancelled // refined by the caller

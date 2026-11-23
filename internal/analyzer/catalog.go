@@ -146,5 +146,32 @@ func yesNo(b bool) string {
 	return "no"
 }
 
+// ref names a resolved table for a measurement.
+func ref(t *schema.Table) diagnostics.TableRef {
+	return diagnostics.TableRef{Database: t.Database, Schema: t.Schema, Name: t.Name}
+}
+
+// pairColumns lists the columns one side of join pairs uses.
+func pairColumns(pairs []joinPair, left bool) []string {
+	var out []string
+	for _, p := range pairs {
+		if left {
+			out = append(out, p.left.column.Name)
+		} else {
+			out = append(out, p.right.column.Name)
+		}
+	}
+	return out
+}
+
+func fanOut(t *schema.Table, columns []string) diagnostics.Measurement {
+	return diagnostics.Measurement{Kind: diagnostics.MeasureFanOut, Table: ref(t), Columns: columns}
+}
+
+func unmatched(t *schema.Table, columns []string, other *schema.Table, otherColumns []string) diagnostics.Measurement {
+	o := ref(other)
+	return diagnostics.Measurement{Kind: diagnostics.MeasureUnmatched, Table: ref(t), Columns: columns, Other: &o, OtherColumns: otherColumns}
+}
+
 // dateTimeTypes have a time of day.
 var dateTimeTypes = map[string]bool{"datetime": true, "datetime2": true, "smalldatetime": true, "datetimeoffset": true}

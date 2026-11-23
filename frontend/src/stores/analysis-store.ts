@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { backend, type Analysis } from "@/services/backend";
+import { backend, type Analysis, type Dismissal, type ProbeResult } from "@/services/backend";
 
 /** What was analyzed: the selection or the whole tab, and where it starts in the editor. */
 export interface AnalysisTarget {
@@ -17,12 +17,29 @@ export interface AnalysisTarget {
   database: string;
 }
 
+/** The probe run of the current analysis. */
+export interface ProbeState {
+  running: boolean;
+  results: ProbeResult[];
+  /** Findings the probes showed to be no problem, with the reason. */
+  dismissed: Dismissal[];
+  /** The probes could not run at all, or were cancelled. */
+  error: string | null;
+}
+
+const noProbes: ProbeState = { running: false, results: [], dismissed: [], error: null };
+
 interface AnalysisStoreState {
   target: AnalysisTarget | null;
   running: boolean;
   result: Analysis | null;
   /** The backend could not be reached. */
   error: string | null;
+  probes: ProbeState;
+  /** Runs the approved probes of the current analysis; their results update its findings. */
+  runProbes: (probeIds: string[]) => Promise<void>;
+  /** Cancels the running probes. */
+  cancelProbes: () => void;
   /** Analyzes target; a newer analysis cancels the older one. */
   analyze: (target: AnalysisTarget) => Promise<void>;
   /** Forgets the analysis of a tab (for example when it closes). */
@@ -30,18 +47,21 @@ interface AnalysisStoreState {
 }
 
 let inFlight: AbortController | null = null;
+let probesInFlight: AbortController | null = null;
 
 export const useAnalysisStore = create<AnalysisStoreState>((set, get) => ({
   target: null,
   running: false,
   result: null,
   error: null,
+  probes: noProbes,
 
   analyze: async (target) => {
     inFlight?.abort();
+    probesInFlight?.abort();
     const controller = new AbortController();
     inFlight = controller;
-    set({ target, running: true, result: null, error: null });
+    set({ target, running: true, result: null, error: null, probes: noProbes });
     try {
       const result = await backend.analyze(target.sql, target.connectionId, target.database, controller.signal);
       if (controller.signal.aborted) return;
@@ -58,7 +78,43 @@ export const useAnalysisStore = create<AnalysisStoreState>((set, get) => ({
     if (get().target?.tabId !== tabId) return;
     inFlight?.abort();
     inFlight = null;
-    set({ target: null, running: false, result: null, error: null });
+    probesInFlight?.abort();
+    probesInFlight = null;
+    set({ target: null, running: false, result: null, error: null, probes: noProbes });
+  },
+
+  runProbes: async (probeIds) => {
+    const analysis = get().result;
+    if (!analysis || probeIds.length === 0 || get().probes.running) return;
+    const controller = new AbortController();
+    probesInFlight = controller;
+    set({ probes: { ...noProbes, running: true } });
+    try {
+      const run = await backend.runProbes(analysis.id, probeIds, controller.signal);
+      if (controller.signal.aborted || get().result?.id !== analysis.id) return;
+      if (run.error) {
+        set({ probes: { ...noProbes, error: run.error } });
+        return;
+      }
+      set({
+        result: { ...analysis, findings: run.findings },
+        probes: { running: false, results: run.results ?? [], dismissed: run.dismissed ?? [], error: null },
+      });
+    } catch (err) {
+      if (get().result?.id !== analysis.id) return;
+      set({
+        probes: {
+          ...noProbes,
+          error: controller.signal.aborted ? "Cancelled: no findings were changed." : err instanceof Error ? err.message : String(err),
+        },
+      });
+    } finally {
+      if (probesInFlight === controller) probesInFlight = null;
+    }
+  },
+
+  cancelProbes: () => {
+    probesInFlight?.abort();
   },
 }));
 

@@ -159,7 +159,7 @@ func (joinFanOut) Info() Info {
 		ID:       "QRY-JOIN-003",
 		Title:    "Join on non-key columns (fan-out risk)",
 		Severity: diagnostics.SeverityMedium,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceMetadata},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceMetadata, diagnostics.EvidenceProbe},
 	}
 }
 
@@ -202,6 +202,9 @@ func (joinFanOut) Check(in *Input) ([]diagnostics.Finding, error) {
 						tableEvidence(l.table, fmt.Sprintf("No key of %s is within (%s).", l.table.FullName(), columnList(pairs, true))),
 						tableEvidence(r.table, fmt.Sprintf("No key of %s is within (%s).", r.table.FullName(), columnList(pairs, false))),
 					},
+					Measurements: []diagnostics.Measurement{
+						fanOut(l.table, pairColumns(pairs, true)), fanOut(r.table, pairColumns(pairs, false)),
+					},
 				})
 			case lu && !ru:
 				if children[l.source] == nil {
@@ -238,6 +241,9 @@ func (joinFanOut) Check(in *Input) ([]diagnostics.Finding, error) {
 					tableEvidence(a.parent.table, fmt.Sprintf("The join conditions cover a key of %s.", parent)),
 					tableEvidence(a.child.table, fmt.Sprintf("No key of %s is within (%s), so several rows can match.", a.child.table.FullName(), a.child.column.Name)),
 					tableEvidence(b.child.table, fmt.Sprintf("No key of %s is within (%s), so several rows can match.", b.child.table.FullName(), b.child.column.Name)),
+				},
+				Measurements: []diagnostics.Measurement{
+					fanOut(a.child.table, []string{a.child.column.Name}), fanOut(b.child.table, []string{b.child.column.Name}),
 				},
 			})
 		}
@@ -328,7 +334,7 @@ func (nullableJoinKey) Info() Info {
 		ID:       "QRY-JOIN-005",
 		Title:    "INNER JOIN on a nullable column",
 		Severity: diagnostics.SeverityMedium,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceMetadata},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceMetadata, diagnostics.EvidenceProbe},
 	}
 }
 
@@ -340,7 +346,11 @@ func (nullableJoinKey) Check(in *Input) ([]diagnostics.Finding, error) {
 				continue
 			}
 			for _, p := range in.joinPairs(fc.from, j) {
-				for _, r := range []columnRef{p.left, p.right} {
+				for i, r := range []columnRef{p.left, p.right} {
+					other := p.right
+					if i == 1 {
+						other = p.left
+					}
 					if !r.column.Nullable || outerJoined(fc.from, r.source) || whereRequiresValue(fc.where, columnKey(r.expr)) {
 						continue
 					}
@@ -354,6 +364,9 @@ func (nullableJoinKey) Check(in *Input) ([]diagnostics.Finding, error) {
 						Span:           SpanOf(p.expr.Span),
 						Evidence: []diagnostics.Evidence{columnEvidence(r, "nullable", "yes",
 							fmt.Sprintf("%s.%s allows NULL.", name, r.column.Name))},
+						Measurements: []diagnostics.Measurement{
+							unmatched(r.table, []string{r.column.Name}, other.table, []string{other.column.Name}),
+						},
 					})
 				}
 			}
@@ -372,7 +385,7 @@ func (joinIgnoresForeignKey) Info() Info {
 		ID:       "QRY-JOIN-006",
 		Title:    "Join does not follow the foreign key",
 		Severity: diagnostics.SeverityHigh,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceMetadata},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceMetadata, diagnostics.EvidenceProbe},
 	}
 }
 
@@ -433,6 +446,10 @@ func (in *Input) foreignKeyMismatch(pair *parser.Expr, child, parent columnRef) 
 				Metadata: &diagnostics.MetadataEvidence{Object: child.table.FullName(), Column: fk.Columns[0],
 					Property: "foreign key " + fk.Name, Value: parent.table.FullName() + "." + fk.RefColumns[0]},
 			}},
+			// The rows of the foreign key's table that the join as written drops.
+			Measurements: []diagnostics.Measurement{
+				unmatched(child.table, []string{child.column.Name}, parent.table, []string{parent.column.Name}),
+			},
 		}
 		if replacement, ok := in.replaceColumn(pair, wrong.expr, want); ok {
 			f.Correction = &diagnostics.Correction{

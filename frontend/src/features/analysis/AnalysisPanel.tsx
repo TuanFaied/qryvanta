@@ -6,9 +6,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAnalysisStore } from "@/stores/analysis-store";
 import { FindingsSection } from "./FindingsSection";
+import { ProbesSection } from "./ProbesSection";
 
 const sections = [
   { id: "findings", title: "Findings", empty: "" },
+  { id: "probes", title: "Probes", empty: "" },
   { id: "structure", title: "Query structure", empty: "Sources, joins, filters and grouping of the parsed query." },
   { id: "joins", title: "JOIN analysis", empty: "Join types, predicates, key cardinality and row multiplication." },
   { id: "filters", title: "Filter analysis", empty: "WHERE and HAVING predicates, NULL handling and precedence." },
@@ -29,17 +31,27 @@ export interface AnalysisPanelProps {
 export function AnalysisPanel({ activeTab, onAnalyze, onRevealRange }: AnalysisPanelProps) {
   const [open, setOpen] = useState<Record<SectionId, boolean>>({
     findings: true,
+    probes: true,
     structure: true,
     joins: true,
     filters: true,
     execution: false,
   });
-  const { target, running, result, error } = useAnalysisStore();
+  const { target, running, result, error, probes, runProbes, cancelProbes } = useAnalysisStore();
   const count = result?.available ? (result.findings ?? []).length : 0;
 
   const body: Partial<Record<SectionId, ReactNode>> = {
     findings: (
       <FindingsSection target={target} running={running} result={result} error={error} activeTab={activeTab} onRevealRange={onRevealRange} />
+    ),
+    probes: (
+      <ProbesSection
+        result={running ? null : result}
+        probes={probes}
+        current={!!target && activeTab?.id === target.tabId}
+        onRun={(ids) => void runProbes(ids)}
+        onCancel={cancelProbes}
+      />
     ),
   };
 

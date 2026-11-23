@@ -336,6 +336,26 @@ How it's classified:
 - **Left to the fan-out probe:** `COUNT(*)` over a join, which says nothing statically (counting
   joined rows is often intended).
 
+## Probes: measured evidence
+
+With a connection, the analysis also proposes **probes**: read-only queries, generated from fixed
+templates, that measure what a finding claims. Every probe is listed in the analysis panel with
+its SQL and what it would prove, and nothing runs until you click **Run N probes**. Probes run
+under the read-only guard with the probe timeout, two at a time, and **Cancel** stops them.
+
+| Rule | Probe | Result |
+|---|---|---|
+| QRY-JOIN-003 | Rows per value of the join columns | Values that repeat → *Confirmed* (for example "up to 4 rows per value, 1.75 on average"); none → dismissed |
+| QRY-JOIN-005 | Rows without a match on the join columns | Rows dropped → *Confirmed* ("3 of 12 rows, 2 with NULL"); none → dismissed |
+| QRY-JOIN-006 | Rows without a match on the join as written | Rows dropped → *Confirmed*; none → dismissed |
+| QRY-NULL-002 | NULLs in the subquery's column | NULLs → *Confirmed*; none → dismissed (the column still allows NULL) |
+| QRY-DATE-002 | Rows after the BETWEEN end and before the next day | Rows missed → *Confirmed*; none → dismissed |
+
+A dismissed finding is listed under the probes with the measurement that dismissed it. A
+measurement describes today's data: a key, a NOT NULL constraint or a corrected query guarantees
+it for good. The probe budget is in Settings ("Maximum probe queries per run", "Probe query
+timeout").
+
 ## Metadata: confirmations and dismissals
 
 When the analyzed tab is connected, Qryvanta reads the catalog entries of the tables and views

@@ -31,3 +31,11 @@ export function Analyze(sql: string, connectionID: string, database: string): $C
 export function ForgetMetadata(connectionID: string): $CancellablePromise<void> {
     return $Call.ByID(1136559118, connectionID);
 }
+
+/**
+ * RunProbes runs the probes the user approved, by ID, for an analysis. The SQL comes from the
+ * analysis kept on the server, never from the caller. Cancelling the call cancels every probe.
+ */
+export function RunProbes(analysisID: string, probeIDs: string[] | null): $CancellablePromise<$models.ProbeRun> {
+    return $Call.ByID(1670960844, analysisID, probeIDs);
+}

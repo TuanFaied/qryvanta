@@ -68,10 +68,12 @@ type Reader interface {
 // Table describes a table or view for query analysis: its columns with their types, and the
 // column sets that are unique and the foreign keys it declares.
 type Table struct {
-	Schema  string        `json:"schema"`
-	Name    string        `json:"name"`
-	Kind    ObjectKind    `json:"kind"`
-	Columns []TableColumn `json:"columns"`
+	// Database is the database the table was resolved in.
+	Database string        `json:"database"`
+	Schema   string        `json:"schema"`
+	Name     string        `json:"name"`
+	Kind     ObjectKind    `json:"kind"`
+	Columns  []TableColumn `json:"columns"`
 	// Keys are the column sets that identify a row: the primary key, unique constraints and
 	// unique indexes without a filter. A view has none.
 	Keys        [][]string   `json:"keys"`
