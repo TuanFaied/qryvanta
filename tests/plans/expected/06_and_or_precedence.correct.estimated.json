@@ -1,0 +1,86 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": false,
+  "statements": [
+    {
+      "id": 1,
+      "text": "-- Fix: group the OR explicitly (or use IN).\nSELECT OrderID, Status, ShipCountry\nFROM dbo.Orders\nWHERE Status IN ('Shipped', 'Delivered') AND ShipCountry = 'LK'\nORDER BY OrderID",
+      "type": "SELECT",
+      "estimatedRows": 2.80624,
+      "subtreeCost": 0.0032908,
+      "degreeOfParallelism": 1,
+      "elapsedMs": null,
+      "cpuMs": null,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Clustered Index Scan",
+        "logicalOp": "Clustered Index Scan",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 2.80624,
+          "rowsRead": 8,
+          "executions": 1,
+          "rowSize": 25,
+          "cpu": 0.0001658,
+          "io": 0.003125,
+          "subtreeCost": 0.0032908
+        },
+        "actual": null,
+        "objects": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "index": "PK_Orders",
+            "indexKind": "Clustered"
+          }
+        ],
+        "predicates": [
+          {
+            "kind": "residual",
+            "text": "[QryvantaSample].[dbo].[Orders].[ShipCountry]='LK' AND ([QryvantaSample].[dbo].[Orders].[Status]='Delivered' OR [QryvantaSample].[dbo].[Orders].[Status]='Shipped')",
+            "columns": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Orders",
+                "name": "ShipCountry"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Orders",
+                "name": "Status"
+              }
+            ]
+          }
+        ],
+        "output": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "name": "OrderID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "name": "Status"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "name": "ShipCountry"
+          }
+        ],
+        "warnings": [],
+        "children": []
+      }
+    }
+  ]
+}

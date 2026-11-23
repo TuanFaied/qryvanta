@@ -1,0 +1,167 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": false,
+  "statements": [
+    {
+      "id": 1,
+      "text": "-- Question: the customer for each order placed in January 2026.\n-- Bug: the old-style comma join has no join predicate, so every order is paired with every\n-- customer (a cartesian product).\nSELECT o.OrderID, c.Name AS Customer\nFROM dbo.Orders AS o, dbo.Customers AS c\nWHERE o.OrderDate >= '2026-01-01' AND o.OrderDate < '2026-02-01'\nORDER BY o.OrderID, c.CustomerID",
+      "type": "SELECT",
+      "estimatedRows": 32,
+      "subtreeCost": 0.0072198,
+      "degreeOfParallelism": 1,
+      "elapsedMs": null,
+      "cpuMs": null,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Nested Loops",
+        "logicalOp": "Inner Join",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 32,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 119,
+          "cpu": 0.00013376,
+          "io": 0,
+          "subtreeCost": 0.0072198
+        },
+        "actual": null,
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "alias": "o",
+            "name": "OrderID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Customers",
+            "alias": "c",
+            "name": "CustomerID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Customers",
+            "alias": "c",
+            "name": "Name"
+          }
+        ],
+        "warnings": [
+          {
+            "kind": "noJoinPredicate",
+            "text": "No join predicate: every row of one input is joined with every row of the other."
+          }
+        ],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Clustered Index Scan",
+            "logicalOp": "Clustered Index Scan",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 4,
+              "rowsRead": 8,
+              "executions": 1,
+              "rowSize": 17,
+              "cpu": 0.0001658,
+              "io": 0.003125,
+              "subtreeCost": 0.0032908
+            },
+            "actual": null,
+            "objects": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Orders",
+                "index": "PK_Orders",
+                "alias": "o",
+                "indexKind": "Clustered"
+              }
+            ],
+            "predicates": [
+              {
+                "kind": "residual",
+                "text": "[QryvantaSample].[dbo].[Orders].[OrderDate] as [o].[OrderDate]>='2026-01-01 00:00:00.0000000' AND [QryvantaSample].[dbo].[Orders].[OrderDate] as [o].[OrderDate]<'2026-02-01 00:00:00.0000000'",
+                "columns": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Orders",
+                    "alias": "o",
+                    "name": "OrderDate"
+                  }
+                ]
+              }
+            ],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Orders",
+                "alias": "o",
+                "name": "OrderID"
+              }
+            ],
+            "warnings": [],
+            "children": []
+          },
+          {
+            "nodeId": 2,
+            "physicalOp": "Clustered Index Scan",
+            "logicalOp": "Clustered Index Scan",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 8,
+              "rowsRead": 8,
+              "executions": 4,
+              "rowSize": 115,
+              "cpu": 0.0001658,
+              "io": 0.003125,
+              "subtreeCost": 0.0037882
+            },
+            "actual": null,
+            "objects": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Customers",
+                "index": "PK_Customers",
+                "alias": "c",
+                "indexKind": "Clustered"
+              }
+            ],
+            "predicates": [],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Customers",
+                "alias": "c",
+                "name": "CustomerID"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Customers",
+                "alias": "c",
+                "name": "Name"
+              }
+            ],
+            "warnings": [],
+            "children": []
+          }
+        ]
+      }
+    }
+  ]
+}

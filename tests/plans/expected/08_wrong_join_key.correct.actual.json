@@ -1,0 +1,214 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": true,
+  "statements": [
+    {
+      "id": 1,
+      "text": "SELECT oi.OrderItemID, p.Name AS Product, oi.Quantity\nFROM dbo.OrderItems AS oi\nJOIN dbo.Products AS p ON p.ProductID = oi.ProductID\nWHERE oi.OrderID = 103\nORDER BY oi.OrderItemID",
+      "type": "SELECT",
+      "estimatedRows": 3,
+      "subtreeCost": 0.0069128,
+      "degreeOfParallelism": 1,
+      "elapsedMs": 0,
+      "cpuMs": 0,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Nested Loops",
+        "logicalOp": "Inner Join",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 3,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 119,
+          "cpu": 0.00001254,
+          "io": 0,
+          "subtreeCost": 0.0069128
+        },
+        "actual": {
+          "rows": 3,
+          "rowsRead": null,
+          "executions": 1,
+          "elapsedMs": 0,
+          "cpuMs": 0,
+          "logicalReads": null,
+          "threads": 1
+        },
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "OrderItems",
+            "alias": "oi",
+            "name": "OrderItemID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "OrderItems",
+            "alias": "oi",
+            "name": "Quantity"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Products",
+            "alias": "p",
+            "name": "Name"
+          }
+        ],
+        "warnings": [],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Clustered Index Scan",
+            "logicalOp": "Clustered Index Scan",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 3,
+              "rowsRead": 12,
+              "executions": 1,
+              "rowSize": 23,
+              "cpu": 0.0001702,
+              "io": 0.003125,
+              "subtreeCost": 0.0032952
+            },
+            "actual": {
+              "rows": 3,
+              "rowsRead": 12,
+              "executions": 1,
+              "elapsedMs": 0,
+              "cpuMs": 0,
+              "logicalReads": 2,
+              "threads": 1
+            },
+            "objects": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "OrderItems",
+                "index": "PK_OrderItems",
+                "alias": "oi",
+                "indexKind": "Clustered"
+              }
+            ],
+            "predicates": [
+              {
+                "kind": "residual",
+                "text": "[QryvantaSample].[dbo].[OrderItems].[OrderID] as [oi].[OrderID]=(103)",
+                "columns": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "OrderItems",
+                    "alias": "oi",
+                    "name": "OrderID"
+                  }
+                ]
+              }
+            ],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "OrderItems",
+                "alias": "oi",
+                "name": "OrderItemID"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "OrderItems",
+                "alias": "oi",
+                "name": "ProductID"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "OrderItems",
+                "alias": "oi",
+                "name": "Quantity"
+              }
+            ],
+            "warnings": [],
+            "children": []
+          },
+          {
+            "nodeId": 2,
+            "physicalOp": "Clustered Index Seek",
+            "logicalOp": "Clustered Index Seek",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 1,
+              "rowsRead": 1,
+              "executions": 3.0000039999999997,
+              "rowSize": 111,
+              "cpu": 0.0001581,
+              "io": 0.003125,
+              "subtreeCost": 0.0035993
+            },
+            "actual": {
+              "rows": 3,
+              "rowsRead": 3,
+              "executions": 3,
+              "elapsedMs": 0,
+              "cpuMs": 0,
+              "logicalReads": 6,
+              "threads": 1
+            },
+            "objects": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Products",
+                "index": "PK_Products",
+                "alias": "p",
+                "indexKind": "Clustered"
+              }
+            ],
+            "predicates": [
+              {
+                "kind": "seek",
+                "text": "p.ProductID = [QryvantaSample].[dbo].[OrderItems].[ProductID] as [oi].[ProductID]",
+                "columns": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Products",
+                    "alias": "p",
+                    "name": "ProductID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "OrderItems",
+                    "alias": "oi",
+                    "name": "ProductID"
+                  }
+                ]
+              }
+            ],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Products",
+                "alias": "p",
+                "name": "Name"
+              }
+            ],
+            "warnings": [],
+            "children": []
+          }
+        ]
+      }
+    }
+  ]
+}

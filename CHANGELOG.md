@@ -8,6 +8,21 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- A showplan XML parser (`internal/plan`):
+  - **What it produces:** statements and a tree of operators, with:
+    - estimated rows, executions, costs and row size;
+    - actual rows, executions and times summed over threads (actual plans only);
+    - the objects and indexes each operator touches;
+    - its predicates (seek, residual, join, hash keys) with their columns;
+    - output columns and warnings: implicit conversions, no join predicate, spills, memory
+      grants, missing indexes.
+  - **Absent values are absent (`null`), never zero.**
+  - **Versions:** SQL Server 2016 to 2022 and Azure SQL schema versions are supported; others are
+    reported as unsupported.
+  - **Bounded:** parsing is streaming and limited in size and depth.
+  - **Linking:** plan statements are linked to their statements in the script by text or
+    position.
+
 - Execution plans (architecture D6):
   - **Show estimated plan** (Ctrl+L) compiles the query without running it (`SHOWPLAN_XML`).
   - **Include actual plan** (Ctrl+M) makes Execute capture each statement's actual plan

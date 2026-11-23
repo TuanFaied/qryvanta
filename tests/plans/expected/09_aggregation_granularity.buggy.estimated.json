@@ -1,0 +1,175 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": false,
+  "statements": [
+    {
+      "id": 1,
+      "text": "-- Question: what is the average order value?\n-- Bug: AVG runs over order lines, so this is the average line value, not the average order.\nSELECT CAST(AVG(oi.Quantity * oi.UnitPrice) AS decimal(10,2)) AS AvgOrderValue\nFROM dbo.OrderItems AS oi",
+      "type": "SELECT",
+      "estimatedRows": 1,
+      "subtreeCost": 0.0033042,
+      "degreeOfParallelism": 1,
+      "elapsedMs": null,
+      "cpuMs": null,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Compute Scalar",
+        "logicalOp": "Compute Scalar",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 1,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 16,
+          "cpu": 1e-7,
+          "io": 0,
+          "subtreeCost": 0.0033042
+        },
+        "actual": null,
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "name": "Expr1002"
+          }
+        ],
+        "warnings": [],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Compute Scalar",
+            "logicalOp": "Compute Scalar",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 1,
+              "rowsRead": null,
+              "executions": 1,
+              "rowSize": 24,
+              "cpu": 0,
+              "io": 0,
+              "subtreeCost": 0.0033041
+            },
+            "actual": null,
+            "objects": [],
+            "predicates": [],
+            "output": [
+              {
+                "name": "Expr1001"
+              }
+            ],
+            "warnings": [],
+            "children": [
+              {
+                "nodeId": 2,
+                "physicalOp": "Stream Aggregate",
+                "logicalOp": "Aggregate",
+                "parallel": false,
+                "executionMode": "Row",
+                "estimated": {
+                  "rows": 1,
+                  "rowsRead": null,
+                  "executions": 1,
+                  "rowSize": 24,
+                  "cpu": 0.0000077,
+                  "io": 0,
+                  "subtreeCost": 0.0033041
+                },
+                "actual": null,
+                "objects": [],
+                "predicates": [],
+                "output": [
+                  {
+                    "name": "Expr1004"
+                  },
+                  {
+                    "name": "Expr1005"
+                  }
+                ],
+                "warnings": [],
+                "children": [
+                  {
+                    "nodeId": 3,
+                    "physicalOp": "Compute Scalar",
+                    "logicalOp": "Compute Scalar",
+                    "parallel": false,
+                    "executionMode": "Row",
+                    "estimated": {
+                      "rows": 12,
+                      "rowsRead": null,
+                      "executions": 1,
+                      "rowSize": 20,
+                      "cpu": 0.0000012,
+                      "io": 0,
+                      "subtreeCost": 0.0032964
+                    },
+                    "actual": null,
+                    "objects": [],
+                    "predicates": [],
+                    "output": [
+                      {
+                        "name": "Expr1003"
+                      }
+                    ],
+                    "warnings": [],
+                    "children": [
+                      {
+                        "nodeId": 4,
+                        "physicalOp": "Clustered Index Scan",
+                        "logicalOp": "Clustered Index Scan",
+                        "parallel": false,
+                        "executionMode": "Row",
+                        "estimated": {
+                          "rows": 12,
+                          "rowsRead": 12,
+                          "executions": 1,
+                          "rowSize": 20,
+                          "cpu": 0.0001702,
+                          "io": 0.003125,
+                          "subtreeCost": 0.0032952
+                        },
+                        "actual": null,
+                        "objects": [
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "OrderItems",
+                            "index": "PK_OrderItems",
+                            "alias": "oi",
+                            "indexKind": "Clustered"
+                          }
+                        ],
+                        "predicates": [],
+                        "output": [
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "OrderItems",
+                            "alias": "oi",
+                            "name": "Quantity"
+                          },
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "OrderItems",
+                            "alias": "oi",
+                            "name": "UnitPrice"
+                          }
+                        ],
+                        "warnings": [],
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,198 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": true,
+  "statements": [
+    {
+      "id": 1,
+      "text": "SELECT COUNT(DISTINCT COALESCE(LOWER(TRIM(Email)), N'id:' + CAST(CustomerID AS nvarchar(10)))) AS Customers\nFROM dbo.Customers",
+      "type": "SELECT",
+      "estimatedRows": 1,
+      "subtreeCost": 0.0146958,
+      "degreeOfParallelism": 1,
+      "elapsedMs": 0,
+      "cpuMs": 0,
+      "warnings": [
+        {
+          "kind": "implicitConversion",
+          "text": "Type conversion in expression (CONVERT(nvarchar(10),[QryvantaSample].[dbo].[Customers].[CustomerID],0)) may affect \"Cardinality Estimate\" in query plan choice."
+        }
+      ],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Compute Scalar",
+        "logicalOp": "Compute Scalar",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 1,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 11,
+          "cpu": 0,
+          "io": 0,
+          "subtreeCost": 0.0146958
+        },
+        "actual": null,
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "name": "Expr1002"
+          }
+        ],
+        "warnings": [],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Stream Aggregate",
+            "logicalOp": "Aggregate",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 1,
+              "rowsRead": null,
+              "executions": 1,
+              "rowSize": 11,
+              "cpu": 0.0000053,
+              "io": 0,
+              "subtreeCost": 0.0146958
+            },
+            "actual": {
+              "rows": 1,
+              "rowsRead": null,
+              "executions": 1,
+              "elapsedMs": 0,
+              "cpuMs": 0,
+              "logicalReads": null,
+              "threads": 1
+            },
+            "objects": [],
+            "predicates": [],
+            "output": [
+              {
+                "name": "Expr1006"
+              }
+            ],
+            "warnings": [],
+            "children": [
+              {
+                "nodeId": 2,
+                "physicalOp": "Sort",
+                "logicalOp": "Distinct Sort",
+                "parallel": false,
+                "executionMode": "Row",
+                "estimated": {
+                  "rows": 8,
+                  "rowsRead": null,
+                  "executions": 1,
+                  "rowSize": 211,
+                  "cpu": 0.000137651,
+                  "io": 0.0112613,
+                  "subtreeCost": 0.0146905
+                },
+                "actual": {
+                  "rows": 6,
+                  "rowsRead": null,
+                  "executions": 1,
+                  "elapsedMs": 0,
+                  "cpuMs": 0,
+                  "logicalReads": 0,
+                  "threads": 1
+                },
+                "objects": [],
+                "predicates": [],
+                "output": [
+                  {
+                    "name": "Expr1003"
+                  }
+                ],
+                "warnings": [],
+                "children": [
+                  {
+                    "nodeId": 3,
+                    "physicalOp": "Compute Scalar",
+                    "logicalOp": "Compute Scalar",
+                    "parallel": false,
+                    "executionMode": "Row",
+                    "estimated": {
+                      "rows": 8,
+                      "rowsRead": null,
+                      "executions": 1,
+                      "rowSize": 211,
+                      "cpu": 8e-7,
+                      "io": 0,
+                      "subtreeCost": 0.0032916
+                    },
+                    "actual": null,
+                    "objects": [],
+                    "predicates": [],
+                    "output": [
+                      {
+                        "name": "Expr1003"
+                      }
+                    ],
+                    "warnings": [],
+                    "children": [
+                      {
+                        "nodeId": 4,
+                        "physicalOp": "Clustered Index Scan",
+                        "logicalOp": "Clustered Index Scan",
+                        "parallel": false,
+                        "executionMode": "Row",
+                        "estimated": {
+                          "rows": 8,
+                          "rowsRead": 8,
+                          "executions": 1,
+                          "rowSize": 215,
+                          "cpu": 0.0001658,
+                          "io": 0.003125,
+                          "subtreeCost": 0.0032908
+                        },
+                        "actual": {
+                          "rows": 8,
+                          "rowsRead": 8,
+                          "executions": 1,
+                          "elapsedMs": 0,
+                          "cpuMs": 0,
+                          "logicalReads": 2,
+                          "threads": 1
+                        },
+                        "objects": [
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "Customers",
+                            "index": "PK_Customers",
+                            "indexKind": "Clustered"
+                          }
+                        ],
+                        "predicates": [],
+                        "output": [
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "Customers",
+                            "name": "CustomerID"
+                          },
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "Customers",
+                            "name": "Email"
+                          }
+                        ],
+                        "warnings": [],
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

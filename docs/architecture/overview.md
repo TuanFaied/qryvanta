@@ -79,7 +79,7 @@ internal/
   analyzer/            Rule interface, registry and engine that turn the QueryModel into findings
   diagnostics/         Finding, Evidence, Severity, Classification and their validation
   instrumentation/     Probe query templates and the interpretation of their results
-  plan/                (Phase 6) Showplan XML parsing into an operator graph
+  plan/                Showplan XML parsing into an operator graph, linked to the script
   compare/             (Phase 7) Deterministic result comparison
   session/             (Phase 8) Debugging sessions and history
   report/              (Phase 8) JSON / Markdown / HTML report rendering
@@ -530,7 +530,40 @@ documentation states clearly which guarantees are hard and which are best effort
   runs). It announces each plan as a `plan` event without its XML, and `PlanXML` returns the
   XML on request.
 - **CLI:** `qryvanta-cli plan --estimated|--actual` writes the XML, or JSON, or `.sqlplan` files.
-- Parsing the XML and the plan view are the next issues.
+- The plan view is the next issue.
+
+**The operator graph (#73).** `internal/plan` turns showplan XML into a product-neutral model, and
+nothing else reads the XML.
+
+- **Shape:** `Plan{Version, Build, Actual, Statements}`. Each `Statement` has its text, type,
+  estimates, DOP and measured times, its warnings, and a tree of `Operator`s.
+- **Each operator** has:
+  - physical and logical operation, node ID, parallelism and execution mode;
+  - `Estimated` values: rows, rows read, executions (1 + rebinds + rewinds), row size, CPU, I/O,
+    subtree cost;
+  - `Actual` values summed over threads: rows, rows read, executions, elapsed and CPU ms,
+    logical reads, thread count;
+  - the objects and indexes it touches, and its predicates (`seek`, `residual`, `join`,
+    `hashBuild`, `hashProbe`) as SQL Server writes them, with their columns;
+  - output columns and warnings.
+- **Absent is not zero:** every value is a pointer and absent values are `null`. An estimated
+  plan's operators have no `actual` at all. In actual plans, SQL Server reports no counters for
+  some operators (Compute Scalar, typically), and their `actual` stays `null` too.
+- **Warnings:** implicit conversions affecting cardinality or seeks, no join predicate, spills to
+  tempdb (`SpillToTempDb`, sort/hash/exchange spill details), memory grant warnings, missing
+  indexes (with their impact and column groups), columns without statistics, unmatched filtered
+  indexes. Unknown warning elements are kept as `other` with their element name.
+- **Versions:** schema versions 1.5 and later of major version 1 are supported: SQL Server 2016
+  (1.5), 2017 (1.6), 2019 (1.539), 2022 (1.564) and Azure SQL. Any other version is
+  `ErrUnsupportedVersion`, not a guess. Unknown elements and attributes are ignored.
+- **Bounded:** parsing streams tokens with `encoding/xml`. It is bounded by the plan size limit
+  (32 MB, `ErrTooLarge`) and 2000 levels of nesting. A fuzz test (`FuzzParse`) guards against
+  panics.
+- **Statement mapping:** `plan.Link` connects plan statements to the top-level statements of the
+  parsed batch. It matches by normalised text (whitespace, a trailing semicolon and leading
+  comments ignored) when exactly one statement matches. Otherwise it matches by position when
+  both have the same number of statements, which covers auto-parameterized plans (literals
+  become `@1`). Anything else stays unlinked.
 
 ### D7. Local storage and credentials
 
@@ -900,6 +933,7 @@ line, but never the connection string.
 | parser | Golden tests (`tests/parser`, 79 cases including every sample query): SQL file → expected batches, diagnostics and `QueryModel` JSON, run against the real sidecar in CI; plus sidecar unit tests and Go client tests with a fake sidecar |
 | executor, connection, dialect | Integration tests against a real SQL Server (build tag `integration`, configured through `QRYVANTA_TEST_MSSQL_*` variables). CI runs them on Linux against `docker-compose.yml`, as the read-only `qryvanta_reader` login. |
 | fixture data | `tests/integration` runs the 10 scenario queries in `tests/sample_queries` and checks the documented wrong and correct results |
+| plan parser | `tests/plans` pins the operator graph of the estimated and actual plans of all 20 sample queries (captured from the fixture database into `fixtures/`, expected JSON in `expected/`; `-update` rewrites them), links each plan to its parsed query, and `internal/plan` fuzzes the parser |
 | diagnostics end to end (Phase 5) | `TestScenarioSuite` runs `Diagnose` with every probe approved on each scenario: the buggy query must produce the finding listed in `manifest.json` (rule ID and classification), and the corrected query must not. Scenarios no rule detects yet (03, 09) say why in `undetected` |
 | architecture | `internal/archtest` checks that core packages do not import Wails |
 | frontend | Vitest + Testing Library for components and stores |

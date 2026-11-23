@@ -1,0 +1,102 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": false,
+  "statements": [
+    {
+      "id": 1,
+      "text": "-- Question: how many distinct customers do we have?\n-- Bug: the same person was entered several times with different capitalisation and spacing.\nSELECT COUNT(*) AS Customers\nFROM dbo.Customers",
+      "type": "SELECT",
+      "estimatedRows": 1,
+      "subtreeCost": 0.0032961,
+      "degreeOfParallelism": 1,
+      "elapsedMs": null,
+      "cpuMs": null,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Compute Scalar",
+        "logicalOp": "Compute Scalar",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 1,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 11,
+          "cpu": 0,
+          "io": 0,
+          "subtreeCost": 0.0032961
+        },
+        "actual": null,
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "name": "Expr1002"
+          }
+        ],
+        "warnings": [],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Stream Aggregate",
+            "logicalOp": "Aggregate",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 1,
+              "rowsRead": null,
+              "executions": 1,
+              "rowSize": 11,
+              "cpu": 0.0000053,
+              "io": 0,
+              "subtreeCost": 0.0032961
+            },
+            "actual": null,
+            "objects": [],
+            "predicates": [],
+            "output": [
+              {
+                "name": "Expr1003"
+              }
+            ],
+            "warnings": [],
+            "children": [
+              {
+                "nodeId": 2,
+                "physicalOp": "Clustered Index Scan",
+                "logicalOp": "Clustered Index Scan",
+                "parallel": false,
+                "executionMode": "Row",
+                "estimated": {
+                  "rows": 8,
+                  "rowsRead": 8,
+                  "executions": 1,
+                  "rowSize": 9,
+                  "cpu": 0.0001658,
+                  "io": 0.003125,
+                  "subtreeCost": 0.0032908
+                },
+                "actual": null,
+                "objects": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Customers",
+                    "index": "PK_Customers",
+                    "indexKind": "Clustered"
+                  }
+                ],
+                "predicates": [],
+                "output": [],
+                "warnings": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

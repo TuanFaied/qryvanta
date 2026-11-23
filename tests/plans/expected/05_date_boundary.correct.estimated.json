@@ -1,0 +1,86 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": false,
+  "statements": [
+    {
+      "id": 1,
+      "text": "-- Fix: use a half-open range: from the first instant of the month up to, not including, the next.\nSELECT OrderID, OrderDate\nFROM dbo.Orders\nWHERE OrderDate >= '2026-01-01' AND OrderDate < '2026-02-01'\nORDER BY OrderID",
+      "type": "SELECT",
+      "estimatedRows": 4,
+      "subtreeCost": 0.0032908,
+      "degreeOfParallelism": 1,
+      "elapsedMs": null,
+      "cpuMs": null,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Clustered Index Scan",
+        "logicalOp": "Clustered Index Scan",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 4,
+          "rowsRead": 8,
+          "executions": 1,
+          "rowSize": 17,
+          "cpu": 0.0001658,
+          "io": 0.003125,
+          "subtreeCost": 0.0032908
+        },
+        "actual": null,
+        "objects": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "index": "PK_Orders",
+            "indexKind": "Clustered"
+          }
+        ],
+        "predicates": [
+          {
+            "kind": "residual",
+            "text": "[QryvantaSample].[dbo].[Orders].[OrderDate]>=CONVERT_IMPLICIT(datetime2(7),[@1],0) AND [QryvantaSample].[dbo].[Orders].[OrderDate]<CONVERT_IMPLICIT(datetime2(7),[@2],0)",
+            "columns": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Orders",
+                "name": "OrderDate"
+              },
+              {
+                "name": "ConstExpr1002"
+              },
+              {
+                "name": "@1"
+              },
+              {
+                "name": "ConstExpr1003"
+              },
+              {
+                "name": "@2"
+              }
+            ]
+          }
+        ],
+        "output": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "name": "OrderID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Orders",
+            "name": "OrderDate"
+          }
+        ],
+        "warnings": [],
+        "children": []
+      }
+    }
+  ]
+}

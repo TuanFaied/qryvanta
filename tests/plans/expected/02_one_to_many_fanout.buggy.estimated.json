@@ -1,0 +1,503 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": false,
+  "statements": [
+    {
+      "id": 1,
+      "text": "-- Question: total paid and items bought per customer.\n-- Bug: joining OrderItems and Payments to the same order multiplies rows (items x payments),\n-- so both sums are inflated, and the inner join to Payments drops customers with unpaid orders.\nSELECT c.CustomerID, c.Name, SUM(p.Amount) AS TotalPaid, SUM(oi.Quantity) AS ItemsBought\nFROM dbo.Customers AS c\nJOIN dbo.Orders AS o ON o.CustomerID = c.CustomerID\nJOIN dbo.OrderItems AS oi ON oi.OrderID = o.OrderID\nJOIN dbo.Payments AS p ON p.OrderID = o.OrderID\nGROUP BY c.CustomerID, c.Name\nORDER BY c.CustomerID",
+      "type": "SELECT",
+      "estimatedRows": 3.59103,
+      "subtreeCost": 0.0278327,
+      "degreeOfParallelism": 1,
+      "elapsedMs": null,
+      "cpuMs": null,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Stream Aggregate",
+        "logicalOp": "Aggregate",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 3.59103,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 136,
+          "cpu": 0.00000839551,
+          "io": 0,
+          "subtreeCost": 0.0278327
+        },
+        "actual": null,
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Customers",
+            "alias": "c",
+            "name": "CustomerID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Customers",
+            "alias": "c",
+            "name": "Name"
+          },
+          {
+            "name": "Expr1004"
+          },
+          {
+            "name": "Expr1005"
+          }
+        ],
+        "warnings": [],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Nested Loops",
+            "logicalOp": "Inner Join",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 11,
+              "rowsRead": null,
+              "executions": 1,
+              "rowSize": 128,
+              "cpu": 0.00035112,
+              "io": 0,
+              "subtreeCost": 0.0278243
+            },
+            "actual": null,
+            "objects": [],
+            "predicates": [
+              {
+                "kind": "join",
+                "text": "[QryvantaSample].[dbo].[Payments].[OrderID] as [p].[OrderID]=[QryvantaSample].[dbo].[OrderItems].[OrderID] as [oi].[OrderID]",
+                "columns": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Payments",
+                    "alias": "p",
+                    "name": "OrderID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "OrderItems",
+                    "alias": "oi",
+                    "name": "OrderID"
+                  }
+                ]
+              }
+            ],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Customers",
+                "alias": "c",
+                "name": "CustomerID"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Customers",
+                "alias": "c",
+                "name": "Name"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "OrderItems",
+                "alias": "oi",
+                "name": "Quantity"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Payments",
+                "alias": "p",
+                "name": "Amount"
+              }
+            ],
+            "warnings": [],
+            "children": [
+              {
+                "nodeId": 2,
+                "physicalOp": "Nested Loops",
+                "logicalOp": "Inner Join",
+                "parallel": false,
+                "executionMode": "Row",
+                "estimated": {
+                  "rows": 10.5,
+                  "rowsRead": null,
+                  "executions": 1,
+                  "rowSize": 123,
+                  "cpu": 0.00035112,
+                  "io": 0,
+                  "subtreeCost": 0.0233278
+                },
+                "actual": null,
+                "objects": [],
+                "predicates": [
+                  {
+                    "kind": "join",
+                    "text": "[QryvantaSample].[dbo].[OrderItems].[OrderID] as [oi].[OrderID]=[QryvantaSample].[dbo].[Orders].[OrderID] as [o].[OrderID]",
+                    "columns": [
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "OrderItems",
+                        "alias": "oi",
+                        "name": "OrderID"
+                      },
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "Orders",
+                        "alias": "o",
+                        "name": "OrderID"
+                      }
+                    ]
+                  }
+                ],
+                "output": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Customers",
+                    "alias": "c",
+                    "name": "CustomerID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Customers",
+                    "alias": "c",
+                    "name": "Name"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "OrderItems",
+                    "alias": "oi",
+                    "name": "OrderID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "OrderItems",
+                    "alias": "oi",
+                    "name": "Quantity"
+                  }
+                ],
+                "warnings": [],
+                "children": [
+                  {
+                    "nodeId": 3,
+                    "physicalOp": "Sort",
+                    "logicalOp": "Sort",
+                    "parallel": false,
+                    "executionMode": "Row",
+                    "estimated": {
+                      "rows": 7,
+                      "rowsRead": null,
+                      "executions": 1,
+                      "rowSize": 119,
+                      "cpu": 0.000130775,
+                      "io": 0.0112613,
+                      "subtreeCost": 0.0191061
+                    },
+                    "actual": null,
+                    "objects": [],
+                    "predicates": [],
+                    "output": [
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "Customers",
+                        "alias": "c",
+                        "name": "CustomerID"
+                      },
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "Customers",
+                        "alias": "c",
+                        "name": "Name"
+                      },
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "Orders",
+                        "alias": "o",
+                        "name": "OrderID"
+                      }
+                    ],
+                    "warnings": [],
+                    "children": [
+                      {
+                        "nodeId": 4,
+                        "physicalOp": "Nested Loops",
+                        "logicalOp": "Inner Join",
+                        "parallel": false,
+                        "executionMode": "Row",
+                        "estimated": {
+                          "rows": 7,
+                          "rowsRead": null,
+                          "executions": 1,
+                          "rowSize": 119,
+                          "cpu": 0.00003344,
+                          "io": 0,
+                          "subtreeCost": 0.00771404
+                        },
+                        "actual": null,
+                        "objects": [],
+                        "predicates": [],
+                        "output": [
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "Customers",
+                            "alias": "c",
+                            "name": "CustomerID"
+                          },
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "Customers",
+                            "alias": "c",
+                            "name": "Name"
+                          },
+                          {
+                            "database": "QryvantaSample",
+                            "schema": "dbo",
+                            "table": "Orders",
+                            "alias": "o",
+                            "name": "OrderID"
+                          }
+                        ],
+                        "warnings": [],
+                        "children": [
+                          {
+                            "nodeId": 5,
+                            "physicalOp": "Clustered Index Scan",
+                            "logicalOp": "Clustered Index Scan",
+                            "parallel": false,
+                            "executionMode": "Row",
+                            "estimated": {
+                              "rows": 8,
+                              "rowsRead": 8,
+                              "executions": 1,
+                              "rowSize": 15,
+                              "cpu": 0.0001658,
+                              "io": 0.003125,
+                              "subtreeCost": 0.0032908
+                            },
+                            "actual": null,
+                            "objects": [
+                              {
+                                "database": "QryvantaSample",
+                                "schema": "dbo",
+                                "table": "Orders",
+                                "index": "PK_Orders",
+                                "alias": "o",
+                                "indexKind": "Clustered"
+                              }
+                            ],
+                            "predicates": [],
+                            "output": [
+                              {
+                                "database": "QryvantaSample",
+                                "schema": "dbo",
+                                "table": "Orders",
+                                "alias": "o",
+                                "name": "OrderID"
+                              },
+                              {
+                                "database": "QryvantaSample",
+                                "schema": "dbo",
+                                "table": "Orders",
+                                "alias": "o",
+                                "name": "CustomerID"
+                              }
+                            ],
+                            "warnings": [],
+                            "children": []
+                          },
+                          {
+                            "nodeId": 6,
+                            "physicalOp": "Clustered Index Seek",
+                            "logicalOp": "Clustered Index Seek",
+                            "parallel": false,
+                            "executionMode": "Row",
+                            "estimated": {
+                              "rows": 1,
+                              "rowsRead": 1,
+                              "executions": 8,
+                              "rowSize": 115,
+                              "cpu": 0.0001581,
+                              "io": 0.003125,
+                              "subtreeCost": 0.0043898
+                            },
+                            "actual": null,
+                            "objects": [
+                              {
+                                "database": "QryvantaSample",
+                                "schema": "dbo",
+                                "table": "Customers",
+                                "index": "PK_Customers",
+                                "alias": "c",
+                                "indexKind": "Clustered"
+                              }
+                            ],
+                            "predicates": [
+                              {
+                                "kind": "seek",
+                                "text": "c.CustomerID = [QryvantaSample].[dbo].[Orders].[CustomerID] as [o].[CustomerID]",
+                                "columns": [
+                                  {
+                                    "database": "QryvantaSample",
+                                    "schema": "dbo",
+                                    "table": "Customers",
+                                    "alias": "c",
+                                    "name": "CustomerID"
+                                  },
+                                  {
+                                    "database": "QryvantaSample",
+                                    "schema": "dbo",
+                                    "table": "Orders",
+                                    "alias": "o",
+                                    "name": "CustomerID"
+                                  }
+                                ]
+                              }
+                            ],
+                            "output": [
+                              {
+                                "database": "QryvantaSample",
+                                "schema": "dbo",
+                                "table": "Customers",
+                                "alias": "c",
+                                "name": "CustomerID"
+                              },
+                              {
+                                "database": "QryvantaSample",
+                                "schema": "dbo",
+                                "table": "Customers",
+                                "alias": "c",
+                                "name": "Name"
+                              }
+                            ],
+                            "warnings": [],
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "nodeId": 7,
+                    "physicalOp": "Clustered Index Scan",
+                    "logicalOp": "Clustered Index Scan",
+                    "parallel": false,
+                    "executionMode": "Row",
+                    "estimated": {
+                      "rows": 12,
+                      "rowsRead": 12,
+                      "executions": 7,
+                      "rowSize": 15,
+                      "cpu": 0.0000917,
+                      "io": 0.0032035,
+                      "subtreeCost": 0.0038454
+                    },
+                    "actual": null,
+                    "objects": [
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "OrderItems",
+                        "index": "PK_OrderItems",
+                        "alias": "oi",
+                        "indexKind": "Clustered"
+                      }
+                    ],
+                    "predicates": [],
+                    "output": [
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "OrderItems",
+                        "alias": "oi",
+                        "name": "OrderID"
+                      },
+                      {
+                        "database": "QryvantaSample",
+                        "schema": "dbo",
+                        "table": "OrderItems",
+                        "alias": "oi",
+                        "name": "Quantity"
+                      }
+                    ],
+                    "warnings": [],
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "nodeId": 8,
+                "physicalOp": "Clustered Index Scan",
+                "logicalOp": "Clustered Index Scan",
+                "parallel": false,
+                "executionMode": "Row",
+                "estimated": {
+                  "rows": 8,
+                  "rowsRead": 8,
+                  "executions": 10.5,
+                  "rowSize": 20,
+                  "cpu": 0.0000873,
+                  "io": 0.0032035,
+                  "subtreeCost": 0.00412015
+                },
+                "actual": null,
+                "objects": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Payments",
+                    "index": "PK_Payments",
+                    "alias": "p",
+                    "indexKind": "Clustered"
+                  }
+                ],
+                "predicates": [],
+                "output": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Payments",
+                    "alias": "p",
+                    "name": "OrderID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Payments",
+                    "alias": "p",
+                    "name": "Amount"
+                  }
+                ],
+                "warnings": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

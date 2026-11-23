@@ -1,0 +1,248 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": true,
+  "statements": [
+    {
+      "id": 1,
+      "text": "SELECT e.EmployeeID, e.Name, COALESCE(d.Name, N'(no department)') AS Department\nFROM dbo.Employees AS e\nLEFT JOIN dbo.Departments AS d ON d.DepartmentID = e.DepartmentID\nORDER BY e.EmployeeID",
+      "type": "SELECT",
+      "estimatedRows": 12,
+      "subtreeCost": 0.0077767,
+      "degreeOfParallelism": 1,
+      "elapsedMs": 0,
+      "cpuMs": 0,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Compute Scalar",
+        "logicalOp": "Compute Scalar",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 12,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 167,
+          "cpu": 0.0000012,
+          "io": 0,
+          "subtreeCost": 0.0077767
+        },
+        "actual": null,
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Employees",
+            "alias": "e",
+            "name": "EmployeeID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Employees",
+            "alias": "e",
+            "name": "Name"
+          },
+          {
+            "name": "Expr1002"
+          }
+        ],
+        "warnings": [],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Nested Loops",
+            "logicalOp": "Left Outer Join",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 12,
+              "rowsRead": null,
+              "executions": 1,
+              "rowSize": 167,
+              "cpu": 0.0002508,
+              "io": 0,
+              "subtreeCost": 0.0077755
+            },
+            "actual": {
+              "rows": 12,
+              "rowsRead": null,
+              "executions": 1,
+              "elapsedMs": 0,
+              "cpuMs": 0,
+              "logicalReads": null,
+              "threads": 1
+            },
+            "objects": [],
+            "predicates": [
+              {
+                "kind": "join",
+                "text": "[QryvantaSample].[dbo].[Departments].[DepartmentID] as [d].[DepartmentID]=[QryvantaSample].[dbo].[Employees].[DepartmentID] as [e].[DepartmentID]",
+                "columns": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Departments",
+                    "alias": "d",
+                    "name": "DepartmentID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Employees",
+                    "alias": "e",
+                    "name": "DepartmentID"
+                  }
+                ]
+              }
+            ],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Employees",
+                "alias": "e",
+                "name": "EmployeeID"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Employees",
+                "alias": "e",
+                "name": "Name"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Departments",
+                "alias": "d",
+                "name": "Name"
+              }
+            ],
+            "warnings": [],
+            "children": [
+              {
+                "nodeId": 2,
+                "physicalOp": "Clustered Index Scan",
+                "logicalOp": "Clustered Index Scan",
+                "parallel": false,
+                "executionMode": "Row",
+                "estimated": {
+                  "rows": 12,
+                  "rowsRead": 12,
+                  "executions": 1,
+                  "rowSize": 119,
+                  "cpu": 0.0001702,
+                  "io": 0.003125,
+                  "subtreeCost": 0.0032952
+                },
+                "actual": {
+                  "rows": 12,
+                  "rowsRead": 12,
+                  "executions": 1,
+                  "elapsedMs": 0,
+                  "cpuMs": 0,
+                  "logicalReads": 2,
+                  "threads": 1
+                },
+                "objects": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Employees",
+                    "index": "PK_Employees",
+                    "alias": "e",
+                    "indexKind": "Clustered"
+                  }
+                ],
+                "predicates": [],
+                "output": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Employees",
+                    "alias": "e",
+                    "name": "EmployeeID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Employees",
+                    "alias": "e",
+                    "name": "Name"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Employees",
+                    "alias": "e",
+                    "name": "DepartmentID"
+                  }
+                ],
+                "warnings": [],
+                "children": []
+              },
+              {
+                "nodeId": 3,
+                "physicalOp": "Clustered Index Scan",
+                "logicalOp": "Clustered Index Scan",
+                "parallel": false,
+                "executionMode": "Row",
+                "estimated": {
+                  "rows": 5,
+                  "rowsRead": 5,
+                  "executions": 12,
+                  "rowSize": 65,
+                  "cpu": 0.000084,
+                  "io": 0.0032035,
+                  "subtreeCost": 0.0042115
+                },
+                "actual": {
+                  "rows": 60,
+                  "rowsRead": 60,
+                  "executions": 12,
+                  "elapsedMs": 0,
+                  "cpuMs": 0,
+                  "logicalReads": 25,
+                  "threads": 1
+                },
+                "objects": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Departments",
+                    "index": "PK_Departments",
+                    "alias": "d",
+                    "indexKind": "Clustered"
+                  }
+                ],
+                "predicates": [],
+                "output": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Departments",
+                    "alias": "d",
+                    "name": "DepartmentID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Departments",
+                    "alias": "d",
+                    "name": "Name"
+                  }
+                ],
+                "warnings": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
