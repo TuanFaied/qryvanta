@@ -119,6 +119,53 @@ export enum Outcome {
 };
 
 /**
+ * PlanMode asks the server for execution plans (architecture D6).
+ */
+export enum PlanMode {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * PlanNone runs the script normally.
+     */
+    PlanNone = "",
+
+    /**
+     * PlanEstimated compiles the script without running it (SET SHOWPLAN_XML ON) and returns one
+     * estimated plan per statement. Nothing is executed, so no session guard is needed.
+     */
+    PlanEstimated = "estimated",
+
+    /**
+     * PlanActual runs the script (under the policy and limits as usual) with SET STATISTICS XML
+     * ON, and returns the actual plan of each statement after its results.
+     */
+    PlanActual = "actual",
+};
+
+/**
+ * PlanSummary reports the plans of a run.
+ */
+export interface PlanSummary {
+    "mode": PlanMode;
+
+    /**
+     * Count is the number of plans delivered; TooLarge the number dropped for MaxPlanBytes.
+     */
+    "count": number;
+    "tooLarge": number;
+
+    /**
+     * Complete is false when the run stopped early (truncated, timed out, cancelled, failed) or a
+     * plan was too large: the plans are those received so far. Reason says why.
+     */
+    "complete": boolean;
+    "reason": string;
+}
+
+/**
  * Refusal is one reason read-only mode refused a script: a statement, or the part of one,
  * that it does not allow. Positions are in the script that was submitted: Line and Column are
  * 1-based, Offset and Length are UTF-16 code units (what the editor uses).
@@ -193,6 +240,11 @@ export interface Summary {
      * Refusals explains OutcomeRefused, in script order.
      */
     "refusals": Refusal[] | null;
+
+    /**
+     * Plan reports the plans when Request.Plan asked for them.
+     */
+    "plan"?: PlanSummary | null;
 
     /**
      * Error explains OutcomeFailed and OutcomeRefused. Server errors during the batch are in

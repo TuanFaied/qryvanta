@@ -166,6 +166,19 @@ export default function SqlEditor(props: SqlEditorProps) {
       keybindings: [KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Enter],
       run: () => latest.current.onCommand("executeDebug"),
     });
+    // Plans, with SSMS's shortcuts (they replace Monaco's expand-line-selection and tab-focus mode).
+    editor.addAction({
+      id: "qryvanta.estimatedPlan",
+      label: "Show Estimated Plan",
+      keybindings: [KeyMod.CtrlCmd | KeyCode.KeyL],
+      run: () => latest.current.onCommand("estimatedPlan"),
+    });
+    editor.addAction({
+      id: "qryvanta.toggleActualPlan",
+      label: "Include Actual Plan",
+      keybindings: [KeyMod.CtrlCmd | KeyCode.KeyM],
+      run: () => latest.current.onCommand("toggleActualPlan"),
+    });
     // Esc cancels only while a query runs, so it still closes the find widget and suggestions.
     editor.addCommand(KeyCode.Escape, () => latest.current.onCommand("cancel"), "qryvanta.executing");
 

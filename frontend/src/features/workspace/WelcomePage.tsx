@@ -29,6 +29,8 @@ const shortcuts: [string, string][] = [
   ["Format document", "Shift+Alt+F"],
   ["Execute", "Ctrl+Enter"],
   ["Execute with debugging", "Ctrl+Shift+Enter"],
+  ["Show estimated plan", "Ctrl+L"],
+  ["Include actual plan", "Ctrl+M"],
   ["Cancel execution", "Esc"],
   ["Save query", "Ctrl+S"],
 ];

@@ -81,9 +81,10 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   the wrong grain). Neither is visible in the query or the catalog. See `undetected` in
   `tests/sample_queries/manifest.json`.
 
-## Phase 6: Execution plans ⬜
+## Phase 6: Execution plans 🚧
 
-- Estimated (`SHOWPLAN_XML`) and actual (`STATISTICS XML`) plans
+- ✅ Estimated (`SHOWPLAN_XML`) and actual (`STATISTICS XML`) plans: captured apart from the results,
+  session restored, size limit, desktop commands and `qryvanta-cli plan` (#72)
 - Showplan XML parser into an operator graph (operators, estimated and actual rows, costs, warnings)
 - React Flow plan view; estimated and actual values always labelled
 - Plan-based findings: large estimate/actual gaps, implicit conversions, spills, missing-join warnings

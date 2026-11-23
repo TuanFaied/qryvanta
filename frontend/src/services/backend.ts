@@ -29,6 +29,7 @@ import { Classification, EvidenceKind, Severity } from "../../bindings/github.co
 import type {
   Analysis,
   DiagnosisEvent,
+  PlanInfo,
   ProbeRun,
   ExecutionEvent,
   SyntaxCheck,
@@ -63,6 +64,9 @@ export type { ParserStatus };
 export type { Analysis, Correction, Evidence, Finding, MetadataStatus, RuleFailure, Span, UnresolvedTable };
 export type { Dismissal, Probe, ProbeParam, ProbeResult, ProbeRun };
 export type { DiagnosisEvent, StepEvent };
+export type { PlanInfo };
+/** Execution plans a run asks for: none, estimated (compile only) or actual (run and capture). */
+export type PlanMode = "" | "estimated" | "actual";
 export { Classification, EvidenceKind, Severity };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
@@ -252,8 +256,11 @@ export const backend = {
    * Runs sql on a connection. Results arrive as execution events tagged with runId (see
    * onExecutionEvent); the promise resolves with the summary when the run has ended.
    */
-  execute: (runId: string, connectionId: string, database: string, sql: string): Promise<Summary> =>
-    call("Execute", () => QueryService.Execute(runId, connectionId, database, sql)),
+  execute: (runId: string, connectionId: string, database: string, sql: string, plan: PlanMode = ""): Promise<Summary> =>
+    call("Execute", () => QueryService.Execute(runId, connectionId, database, sql, plan)),
+
+  /** The showplan XML of a plan of a recent run (SSMS opens it as a .sqlplan file). */
+  planXml: (runId: string, index: number): Promise<string> => call("Read the plan", () => QueryService.PlanXML(runId, index)),
 
   /** Parses a script for the editor's syntax markers. Aborting the signal abandons the check. */
   checkSyntax: (sql: string, signal?: AbortSignal): Promise<SyntaxCheck> =>

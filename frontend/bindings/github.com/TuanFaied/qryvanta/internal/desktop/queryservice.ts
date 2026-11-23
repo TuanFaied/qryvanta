@@ -51,7 +51,19 @@ export function CompletionScope(sql: string, offset: number): $CancellablePromis
  * "qryvanta:execution" events tagged with runID, which the caller chooses so it can match
  * events that arrive before this call returns. The call returns the summary when the run has
  * ended; cancelling the call (or calling Cancel) cancels the query on the server.
+ * 
+ * plan asks for execution plans: "" (none), "estimated" (the script is compiled, not run) or
+ * "actual" (the script runs and each statement's plan follows its results). Plans never appear as
+ * result sets: they arrive as "plan" events and are kept in memory with the run (PlanXML).
  */
-export function Execute(runID: string, connectionID: string, database: string, sql: string): $CancellablePromise<executor$0.Summary> {
-    return $Call.ByID(4147582565, runID, connectionID, database, sql);
+export function Execute(runID: string, connectionID: string, database: string, sql: string, plan: string): $CancellablePromise<executor$0.Summary> {
+    return $Call.ByID(4147582565, runID, connectionID, database, sql, plan);
+}
+
+/**
+ * PlanXML returns a plan document of a recent run: the showplan XML, which SSMS can open as a
+ * .sqlplan file.
+ */
+export function PlanXML(runID: string, index: number): $CancellablePromise<string> {
+    return $Call.ByID(3447124014, runID, index);
 }

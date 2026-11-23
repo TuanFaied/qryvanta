@@ -1,5 +1,7 @@
 import {
   Bug,
+  FileSearch,
+  GitFork,
   Check,
   Monitor,
   Moon,
@@ -56,6 +58,11 @@ export interface ExecutionControls {
   onExecuteDebug: () => void;
   /** Why Execute with debugging is unavailable (no tab), or null. */
   debugBlockedReason: string | null;
+  /** Show estimated plan: compiles the query without running it. */
+  onEstimatedPlan: () => void;
+  /** Include actual plan: Execute also captures the actual plans. */
+  includeActualPlan: boolean;
+  onToggleActualPlan: () => void;
   onStop: () => void;
 }
 
@@ -101,6 +108,20 @@ export function Header({
           }
           disabled={!!execution.debugBlockedReason}
           onClick={execution.onExecuteDebug}
+        />
+        <IconButton
+          icon={FileSearch}
+          label="Show estimated plan"
+          hint={execution.blockedReason ? `Ctrl+L · ${execution.blockedReason}` : "Ctrl+L · compiles the query without running it"}
+          disabled={!!execution.blockedReason}
+          onClick={execution.onEstimatedPlan}
+        />
+        <IconButton
+          icon={GitFork}
+          label="Include actual plan"
+          hint={execution.includeActualPlan ? "Ctrl+M · on: Execute also captures the actual plans" : "Ctrl+M · off"}
+          active={execution.includeActualPlan}
+          onClick={execution.onToggleActualPlan}
         />
         <IconButton
           icon={Square}

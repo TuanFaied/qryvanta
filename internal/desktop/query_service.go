@@ -25,8 +25,24 @@ const (
 	KindResultSet = "resultSet"
 	KindRows      = "rows"
 	KindMessage   = "message"
-	KindDone      = "done"
+	// KindPlan: a plan document arrived (Plan describes it; fetch its XML with PlanXML).
+	KindPlan = "plan"
+	KindDone = "done"
 )
+
+// keptPlanRuns is how many runs keep their plans in memory.
+const keptPlanRuns = 20
+
+// PlanInfo describes a plan of a run, without its XML.
+type PlanInfo struct {
+	// Index is the plan's position in the run, for PlanXML.
+	Index     int               `json:"index"`
+	Mode      executor.PlanMode `json:"mode"`
+	Batch     int               `json:"batch"`
+	Execution int               `json:"execution"`
+	Statement int               `json:"statement"`
+	Bytes     int               `json:"bytes"`
+}
 
 // ExecutionEvent is one piece of a run's output. Events of one run arrive in server order,
 // and "done" is always last. The frontend drops events whose RunID is not the run it is
@@ -44,6 +60,8 @@ type ExecutionEvent struct {
 	Message *executor.Message  `json:"message"`
 	Run     *executor.BatchRun `json:"run"`
 	Summary *executor.Summary  `json:"summary"`
+	// Plan describes a plan document (kind "plan").
+	Plan *PlanInfo `json:"plan"`
 }
 
 // SyntaxCheck is the editor's view of a script: its syntax errors, or why it could not be
@@ -63,6 +81,10 @@ type QueryService struct {
 
 	mu   sync.Mutex
 	runs map[string]context.CancelFunc
+
+	plansMu  sync.Mutex
+	plans    map[string][]executor.Plan // plan documents of recent runs, by run ID
+	planRuns []string                   // run IDs in arrival order, to forget the oldest
 }
 
 // NewQueryService creates the service. Events go to every window of the running app.
@@ -75,7 +97,7 @@ func NewQueryService(core *app.Core) *QueryService {
 }
 
 func newQueryService(core *app.Core, emit func(ExecutionEvent)) *QueryService {
-	return &QueryService{core: core, emit: emit, runs: map[string]context.CancelFunc{}}
+	return &QueryService{core: core, emit: emit, runs: map[string]context.CancelFunc{}, plans: map[string][]executor.Plan{}}
 }
 
 // MaxRunIDLength bounds the frontend-chosen run ID.
@@ -86,9 +108,17 @@ const MaxRunIDLength = 64
 // "qryvanta:execution" events tagged with runID, which the caller chooses so it can match
 // events that arrive before this call returns. The call returns the summary when the run has
 // ended; cancelling the call (or calling Cancel) cancels the query on the server.
-func (s *QueryService) Execute(ctx context.Context, runID, connectionID, database, sql string) (executor.Summary, error) {
+//
+// plan asks for execution plans: "" (none), "estimated" (the script is compiled, not run) or
+// "actual" (the script runs and each statement's plan follows its results). Plans never appear as
+// result sets: they arrive as "plan" events and are kept in memory with the run (PlanXML).
+func (s *QueryService) Execute(ctx context.Context, runID, connectionID, database, sql, plan string) (executor.Summary, error) {
 	if runID == "" || len(runID) > MaxRunIDLength {
 		return executor.Summary{}, errors.New("invalid run ID")
+	}
+	mode := executor.PlanMode(plan)
+	if mode != executor.PlanNone && mode != executor.PlanEstimated && mode != executor.PlanActual {
+		return executor.Summary{}, errors.New("plan must be empty, estimated or actual")
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -105,8 +135,8 @@ func (s *QueryService) Execute(ctx context.Context, runID, connectionID, databas
 		s.mu.Unlock()
 	}()
 
-	req := executor.Request{SQL: sql, Database: database, Limits: s.core.ExecutionLimits()}
-	sum := s.core.Execute(ctx, connectionID, req, &eventSink{runID: runID, emit: s.emit})
+	req := executor.Request{SQL: sql, Database: database, Limits: s.core.ExecutionLimits(), Plan: mode}
+	sum := s.core.Execute(ctx, connectionID, req, &eventSink{runID: runID, emit: s.emit, keep: s.keepPlan})
 	s.emit(ExecutionEvent{RunID: runID, Kind: KindDone, Summary: &sum})
 	return sum, nil
 }
@@ -153,6 +183,16 @@ type eventSink struct {
 	runID string
 	emit  func(ExecutionEvent)
 	batch int
+	// keep stores a plan document and returns its index.
+	keep func(runID string, p executor.Plan) int
+}
+
+// Plan keeps the document with the run and announces it without its XML (plans can be large).
+func (k *eventSink) Plan(p executor.Plan) error {
+	index := k.keep(k.runID, p)
+	k.emit(ExecutionEvent{RunID: k.runID, Kind: KindPlan, Plan: &PlanInfo{Index: index, Mode: p.Mode, Batch: p.Batch,
+		Execution: p.Execution, Statement: p.Statement, Bytes: len(p.XML)}})
+	return nil
 }
 
 func (k *eventSink) BatchStart(run executor.BatchRun) error {
@@ -174,4 +214,35 @@ func (k *eventSink) Rows(index int, rows [][]executor.Value) error {
 func (k *eventSink) Message(m executor.Message) error {
 	k.emit(ExecutionEvent{RunID: k.runID, Kind: KindMessage, Message: &m})
 	return nil
+}
+
+// keepPlan stores a plan document of a run and returns its index. The plans of the oldest runs
+// are forgotten beyond keptPlanRuns.
+func (s *QueryService) keepPlan(runID string, p executor.Plan) int {
+	s.plansMu.Lock()
+	defer s.plansMu.Unlock()
+	if _, ok := s.plans[runID]; !ok {
+		s.planRuns = append(s.planRuns, runID)
+		if len(s.planRuns) > keptPlanRuns {
+			delete(s.plans, s.planRuns[0])
+			s.planRuns = s.planRuns[1:]
+		}
+	}
+	s.plans[runID] = append(s.plans[runID], p)
+	return len(s.plans[runID]) - 1
+}
+
+// PlanXML returns a plan document of a recent run: the showplan XML, which SSMS can open as a
+// .sqlplan file.
+func (s *QueryService) PlanXML(runID string, index int) (string, error) {
+	s.plansMu.Lock()
+	defer s.plansMu.Unlock()
+	plans, ok := s.plans[runID]
+	if !ok {
+		return "", errors.New("the plans of this run are no longer kept; run it again")
+	}
+	if index < 0 || index >= len(plans) {
+		return "", errors.New("no such plan")
+	}
+	return plans[index].XML, nil
 }

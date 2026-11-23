@@ -1,5 +1,5 @@
 /** Commands the editor raises for the workbench to handle. */
-export type EditorCommand = "execute" | "executeDebug" | "cancel";
+export type EditorCommand = "execute" | "executeDebug" | "estimatedPlan" | "toggleActualPlan" | "cancel";
 
 /** What Execute runs: the selection if there is one, otherwise the whole document. */
 export interface RunTarget {

@@ -59,6 +59,15 @@ Commands:
                  them (the default otherwise). Exit codes: 0 no findings at or above
                  --fail-on (default high), 1 such findings, 2 usage error, 3 timed
                  out or cancelled, 4 the diagnosis could not run.
+  plan --estimated|--actual [--conn NAME|ID] [--database DB]
+       [--file query.sql | --query SQL] [--format xml|json] [--out DIR] [--timeout SECONDS]
+                 Capture execution plans. --estimated compiles the query without
+                 running it (SET SHOWPLAN_XML); --actual runs it under read-only
+                 mode and the limits (SET STATISTICS XML) and prints only the plans,
+                 never its results. xml (default) writes the showplan XML, which SSMS
+                 opens; with several plans use --out DIR to save each as a .sqlplan
+                 file. json lists every plan with its batch and statement. Exit codes
+                 as for run.
   parse [--file query.sql | --query SQL] [--compat LEVEL] [--json] [--model]
                  Split a script into GO batches and report syntax errors with the
                  T-SQL parser (qryvanta-tsqlparser next to this program, or at
@@ -134,6 +143,8 @@ func dispatch(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 		return cmdRun(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
 	case "diagnose":
 		return cmdDiagnose(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
+	case "plan":
+		return cmdPlan(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
 	case "parse":
 		return cmdParse(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
 	case "help":

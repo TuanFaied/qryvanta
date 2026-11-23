@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { BatchRun, ExecutionEvent, Message, ResultColumn, Summary, Value } from "@/services/backend";
+import type { BatchRun, ExecutionEvent, Message, PlanInfo, PlanMode, ResultColumn, Summary, Value } from "@/services/backend";
 
 export interface ResultSetData {
   index: number;
@@ -26,6 +26,9 @@ export interface Run {
   batches: BatchRun[];
   resultSets: ResultSetData[];
   messages: Message[];
+  /** The plans the run asked for, in arrival order (their XML is fetched with backend.planXml). */
+  plan: PlanMode;
+  plans: PlanInfo[];
   summary: Summary | null;
   /** A failure to reach the backend at all; server errors are in messages or summary.error. */
   error: string | null;
@@ -38,11 +41,15 @@ export interface StartRun {
   database: string;
   lineOffset: number;
   columnOffset?: number;
+  plan?: PlanMode;
 }
 
 interface ExecutionState {
   /** The latest run of each tab, by tab ID. */
   runs: Record<string, Run>;
+  /** "Include actual plan" (Ctrl+M): Execute captures the actual plans. Kept for the session. */
+  includeActualPlan: boolean;
+  toggleActualPlan: () => void;
   start: (run: StartRun) => void;
   /** Applies a streamed event. Events of runs that are not a tab's latest run are dropped. */
   apply: (event: ExecutionEvent) => void;
@@ -65,6 +72,8 @@ function finished(run: Run, summary: Summary | null, error: string | null): Run 
 
 export const useExecutionStore = create<ExecutionState>((set) => ({
   runs: {},
+  includeActualPlan: false,
+  toggleActualPlan: () => set((s) => ({ includeActualPlan: !s.includeActualPlan })),
 
   start: (r) =>
     set((s) => ({
@@ -78,6 +87,8 @@ export const useExecutionStore = create<ExecutionState>((set) => ({
           batches: [],
           resultSets: [],
           messages: [],
+          plan: r.plan ?? "",
+          plans: [],
           summary: null,
           error: null,
         },
@@ -104,6 +115,8 @@ export const useExecutionStore = create<ExecutionState>((set) => ({
           }
           case "message":
             return event.message ? { ...run, messages: [...run.messages, event.message] } : run;
+          case "plan":
+            return event.plan ? { ...run, plans: [...run.plans, event.plan] } : run;
           case "done":
             return finished(run, event.summary, null);
           default:

@@ -86,6 +86,14 @@ messages to stderr. Exit codes: 0 success, 1 query error, 2 usage error, 3 timed
 4 refused by read-only mode. See
 [setup.md](docs/development/setup.md#running-queries-from-the-cli) for every flag.
 
+To capture SQL Server's execution plans, use `plan`. `--estimated` compiles the query without
+running it, and `--actual` runs it and prints only the plans. The output is showplan XML that SSMS
+opens, or JSON. See [setup.md](docs/development/setup.md#execution-plans).
+
+```bash
+qryvanta-cli plan --conn fixtures --file query.sql --estimated > query.sqlplan
+```
+
 To find bugs in a query without running it, use `diagnose`. It runs the same steps as "Execute
 with debugging" in the desktop app:
 

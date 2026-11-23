@@ -32,6 +32,8 @@ function run(extra: Partial<Run> = {}): Run {
     batches: [],
     resultSets: [],
     messages: [],
+    plan: "",
+    plans: [],
     summary: {
       outcome: Outcome.OutcomeSucceeded,
       resultSets: [],

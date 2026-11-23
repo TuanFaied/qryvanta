@@ -54,10 +54,19 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 	var (
 		conn    *sql.Conn
 		discard bool // the session could not be returned to a clean state
+		planOn  executor.PlanMode
 	)
-	// finish ends the session guard and records the outcome. It is used on every return path
-	// after the connection is acquired.
+	// finish turns plans off, ends the session guard and records the outcome. It is used on every
+	// return path after the connection is acquired.
 	finish := func(o executor.Outcome) executor.Summary {
+		if planOn != executor.PlanNone && conn != nil {
+			if !planOff(conn, planOn) {
+				discard = true // the session would keep returning plans instead of results
+			}
+		}
+		if sum.Plan != nil {
+			completePlans(sum.Plan, o, req.Limits.MaxPlanBytes)
+		}
 		if sum.Guard.Active && conn != nil {
 			if !endGuard(conn, &sum.Guard) {
 				discard = true
@@ -117,7 +126,9 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 		}
 	}
 
-	if req.Policy.ReadOnly {
+	// An estimated plan compiles the script without running it, so it needs no guard (the policy
+	// check before the executor still applies).
+	if req.Policy.ReadOnly && req.Plan != executor.PlanEstimated {
 		if err := beginGuard(runCtx, conn, req.Policy.LockTimeout); err != nil {
 			discard = true
 			sum.Error = "could not start the read-only session guard: " + clean(convertError(err))
@@ -126,8 +137,18 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 		sum.Guard.Active = true
 	}
 
+	if req.Plan != executor.PlanNone {
+		if err := planOnFor(runCtx, conn, req.Plan); err != nil {
+			sum.Error = "could not turn on execution plans: " + clean(convertError(err))
+			return finish(outcomeFor(err))
+		}
+		planOn = req.Plan
+		sum.Plan = &executor.PlanSummary{Mode: req.Plan}
+	}
+
 	budget := executor.NewBudget(req.Limits)
 	batchSink, _ := sink.(executor.BatchSink)
+	planSink, _ := sink.(executor.PlanSink)
 	batches := req.BatchesOf()
 	for bi, b := range batches {
 		executions := max(b.Repeat, 1)
@@ -140,7 +161,11 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 				}
 			}
 			began, errorsBefore := time.Now(), sum.ErrorCount
-			stopScript, outcome := runBatch(runCtx, ctx, conn, b, req.Args(), bi, &sum, budget, sink, stop)
+			var plans *planCapture
+			if planOn != executor.PlanNone {
+				plans = &planCapture{mode: planOn, max: maxPlanBytes(req.Limits), batch: bi, execution: e, sink: planSink, sum: sum.Plan}
+			}
+			stopScript, outcome := runBatch(runCtx, ctx, conn, b, req.Args(), bi, &sum, budget, sink, stop, plans)
 			run.ErrorCount = sum.ErrorCount - errorsBefore
 			run.ElapsedMs = time.Since(began).Milliseconds()
 			sum.Batches = append(sum.Batches, run)
@@ -178,7 +203,7 @@ func (Executor) Execute(ctx context.Context, db *sql.DB, req executor.Request, s
 // runBatch runs one batch execution. It reports whether the script must stop, and how it ended
 // in that case. Server errors are recorded as messages and do not stop the script.
 func runBatch(runCtx, ctx context.Context, conn *sql.Conn, b executor.Batch, args []any, batchIndex int, sum *executor.Summary,
-	budget *executor.Budget, sink executor.Sink, stop context.CancelFunc) (bool, executor.Outcome) {
+	budget *executor.Budget, sink executor.Sink, stop context.CancelFunc, plans *planCapture) (bool, executor.Outcome) {
 	var sinkErr error
 	addMessage := func(m executor.Message) {
 		m.Batch = batchIndex
@@ -229,7 +254,7 @@ loop:
 		case sqlexp.MsgRowsAffected:
 			sum.RowsAffected = append(sum.RowsAffected, m.Count)
 		case sqlexp.MsgNext:
-			truncatedBy, err := readResultSet(rows, sum, budget, sink, batchIndex)
+			truncatedBy, err := readResultSet(rows, sum, budget, sink, batchIndex, plans)
 			if err != nil {
 				sinkErr = err
 				break loop
@@ -277,10 +302,15 @@ func transactionOpen(ctx context.Context, conn *sql.Conn) (bool, error) {
 }
 
 // readResultSet streams one result set. It returns the limit that stopped reading, if any.
-func readResultSet(rows *sql.Rows, sum *executor.Summary, budget *executor.Budget, sink executor.Sink, batchIndex int) (string, error) {
+func readResultSet(rows *sql.Rows, sum *executor.Summary, budget *executor.Budget, sink executor.Sink, batchIndex int,
+	plans *planCapture) (string, error) {
 	types, err := rows.ColumnTypes()
 	if err != nil {
 		return "", err
+	}
+	// A plan document: kept apart from the results, so the grid and the CLI never show it.
+	if plans != nil && len(types) == 1 && types[0].Name() == showplanColumn {
+		return "", plans.read(rows)
 	}
 	cols := make([]executor.Column, len(types))
 	for i, ct := range types {
@@ -485,4 +515,95 @@ func releaseConn(conn *sql.Conn, original string, discard bool) {
 		_ = conn.Raw(func(any) error { return driver.ErrBadConn })
 	}
 	_ = conn.Close()
+}
+
+// showplanColumn names the single column of the result sets that carry showplan XML, with
+// SHOWPLAN_XML and with STATISTICS XML alike.
+const showplanColumn = "Microsoft SQL Server 2005 XML Showplan"
+
+func maxPlanBytes(l executor.Limits) int64 {
+	if l.MaxPlanBytes > 0 {
+		return l.MaxPlanBytes
+	}
+	return executor.DefaultMaxPlanBytes
+}
+
+// planOnFor turns plans on for the session. SET SHOWPLAN_XML must be alone in its batch.
+func planOnFor(ctx context.Context, conn *sql.Conn, mode executor.PlanMode) error {
+	stmt := "SET STATISTICS XML ON"
+	if mode == executor.PlanEstimated {
+		stmt = "SET SHOWPLAN_XML ON"
+	}
+	_, err := conn.ExecContext(ctx, stmt)
+	return err
+}
+
+// planOff turns plans off again with its own short deadline (the run may have been cancelled),
+// and reports whether it succeeded.
+func planOff(conn *sql.Conn, mode executor.PlanMode) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), restoreTimeout)
+	defer cancel()
+	stmt := "SET STATISTICS XML OFF"
+	if mode == executor.PlanEstimated {
+		stmt = "SET SHOWPLAN_XML OFF"
+	}
+	_, err := conn.ExecContext(ctx, stmt)
+	return err == nil
+}
+
+// completePlans records whether the plans are complete, and why not.
+func completePlans(p *executor.PlanSummary, o executor.Outcome, maxBytes int64) {
+	p.Complete = o == executor.OutcomeSucceeded && p.TooLarge == 0
+	switch {
+	case o != executor.OutcomeSucceeded:
+		p.Reason = fmt.Sprintf("The run ended early (%s): these are the plans received before it stopped.", o)
+	case p.TooLarge > 0:
+		limit := maxBytes
+		if limit <= 0 {
+			limit = executor.DefaultMaxPlanBytes
+		}
+		p.Reason = fmt.Sprintf("%d plan(s) were larger than the %d MB plan limit and were not kept.", p.TooLarge, limit>>20)
+	}
+}
+
+// planCapture receives the plan documents of one batch execution.
+type planCapture struct {
+	mode      executor.PlanMode
+	max       int64
+	batch     int
+	execution int
+	statement int
+	sink      executor.PlanSink
+	sum       *executor.PlanSummary
+}
+
+// read takes the plan documents of a showplan result set. Plans are never logged.
+func (c *planCapture) read(rows *sql.Rows) error {
+	for rows.Next() {
+		var raw any
+		if err := rows.Scan(&raw); err != nil {
+			return err
+		}
+		var xml string
+		switch v := raw.(type) {
+		case string:
+			xml = v
+		case []byte:
+			xml = string(v)
+		default:
+			continue
+		}
+		c.statement++
+		if int64(len(xml)) > c.max {
+			c.sum.TooLarge++
+			continue
+		}
+		c.sum.Count++
+		if c.sink != nil {
+			if err := c.sink.Plan(executor.Plan{Mode: c.mode, Batch: c.batch, Execution: c.execution, Statement: c.statement, XML: xml}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -1,4 +1,4 @@
-import { backend } from "@/services/backend";
+import { backend, type PlanMode } from "@/services/backend";
 import { useExecutionStore } from "@/stores/execution-store";
 
 export interface RunRequest {
@@ -10,6 +10,8 @@ export interface RunRequest {
   startLine: number;
   /** Editor column where sql starts on startLine (1-based); 1 when omitted. */
   startColumn?: number;
+  /** Execution plans to capture with the run. */
+  plan?: PlanMode;
 }
 
 function newRunId(): string {
@@ -34,9 +36,10 @@ export function executeQuery(req: RunRequest): string {
     database: req.database ?? "",
     lineOffset: Math.max(0, req.startLine - 1),
     columnOffset: Math.max(0, (req.startColumn ?? 1) - 1),
+    plan: req.plan ?? "",
   });
   backend
-    .execute(runId, req.connectionId, req.database ?? "", req.sql)
+    .execute(runId, req.connectionId, req.database ?? "", req.sql, req.plan ?? "")
     // The "done" event normally finishes the run first; this covers a lost event.
     .then((summary) => useExecutionStore.getState().finish(runId, summary))
     .catch((err: unknown) => useExecutionStore.getState().fail(runId, err instanceof Error ? err.message : String(err)));
