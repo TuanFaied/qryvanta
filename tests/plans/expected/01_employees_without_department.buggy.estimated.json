@@ -1,0 +1,176 @@
+{
+  "version": "1.564",
+  "build": "16.0.4305.5",
+  "actual": false,
+  "statements": [
+    {
+      "id": 1,
+      "text": "-- Question: list every employee with their department.\n-- Bug: INNER JOIN drops employees whose DepartmentID is NULL or points to a missing department.\nSELECT e.EmployeeID, e.Name, d.Name AS Department\nFROM dbo.Employees AS e\nINNER JOIN dbo.Departments AS d ON d.DepartmentID = e.DepartmentID\nORDER BY e.EmployeeID",
+      "type": "SELECT",
+      "estimatedRows": 9,
+      "subtreeCost": 0.00836756,
+      "degreeOfParallelism": 1,
+      "elapsedMs": null,
+      "cpuMs": null,
+      "warnings": [],
+      "root": {
+        "nodeId": 0,
+        "physicalOp": "Nested Loops",
+        "logicalOp": "Inner Join",
+        "parallel": false,
+        "executionMode": "Row",
+        "estimated": {
+          "rows": 9,
+          "rowsRead": null,
+          "executions": 1,
+          "rowSize": 167,
+          "cpu": 0.00005016,
+          "io": 0,
+          "subtreeCost": 0.00836756
+        },
+        "actual": null,
+        "objects": [],
+        "predicates": [],
+        "output": [
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Employees",
+            "alias": "e",
+            "name": "EmployeeID"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Employees",
+            "alias": "e",
+            "name": "Name"
+          },
+          {
+            "database": "QryvantaSample",
+            "schema": "dbo",
+            "table": "Departments",
+            "alias": "d",
+            "name": "Name"
+          }
+        ],
+        "warnings": [],
+        "children": [
+          {
+            "nodeId": 1,
+            "physicalOp": "Clustered Index Scan",
+            "logicalOp": "Clustered Index Scan",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 12,
+              "rowsRead": 12,
+              "executions": 1,
+              "rowSize": 119,
+              "cpu": 0.0001702,
+              "io": 0.003125,
+              "subtreeCost": 0.0032952
+            },
+            "actual": null,
+            "objects": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Employees",
+                "index": "PK_Employees",
+                "alias": "e",
+                "indexKind": "Clustered"
+              }
+            ],
+            "predicates": [],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Employees",
+                "alias": "e",
+                "name": "EmployeeID"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Employees",
+                "alias": "e",
+                "name": "Name"
+              },
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Employees",
+                "alias": "e",
+                "name": "DepartmentID"
+              }
+            ],
+            "warnings": [],
+            "children": []
+          },
+          {
+            "nodeId": 2,
+            "physicalOp": "Clustered Index Seek",
+            "logicalOp": "Clustered Index Seek",
+            "parallel": false,
+            "executionMode": "Row",
+            "estimated": {
+              "rows": 1,
+              "rowsRead": 1,
+              "executions": 12,
+              "rowSize": 61,
+              "cpu": 0.0001581,
+              "io": 0.003125,
+              "subtreeCost": 0.0050222
+            },
+            "actual": null,
+            "objects": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Departments",
+                "index": "PK_Departments",
+                "alias": "d",
+                "indexKind": "Clustered"
+              }
+            ],
+            "predicates": [
+              {
+                "kind": "seek",
+                "text": "d.DepartmentID = [QryvantaSample].[dbo].[Employees].[DepartmentID] as [e].[DepartmentID]",
+                "columns": [
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Departments",
+                    "alias": "d",
+                    "name": "DepartmentID"
+                  },
+                  {
+                    "database": "QryvantaSample",
+                    "schema": "dbo",
+                    "table": "Employees",
+                    "alias": "e",
+                    "name": "DepartmentID"
+                  }
+                ]
+              }
+            ],
+            "output": [
+              {
+                "database": "QryvantaSample",
+                "schema": "dbo",
+                "table": "Departments",
+                "alias": "d",
+                "name": "Name"
+              }
+            ],
+            "warnings": [],
+            "children": []
+          }
+        ]
+      }
+    }
+  ]
+}
