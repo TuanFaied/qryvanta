@@ -52,6 +52,10 @@ export interface ExecutionControls {
   blockedReason: string | null;
   running: boolean;
   onExecute: () => void;
+  /** Execute with debugging: runs the query and the diagnostic engine. */
+  onExecuteDebug: () => void;
+  /** Why Execute with debugging is unavailable (no tab), or null. */
+  debugBlockedReason: string | null;
   onStop: () => void;
 }
 
@@ -87,7 +91,17 @@ export function Header({
           onClick={execution.onExecute}
           className="text-success"
         />
-        <IconButton icon={Bug} label="Execute with debugging" hint="Ctrl+Shift+Enter · arrives with the diagnostic engine (Phase 5)" disabled />
+        <IconButton
+          icon={Bug}
+          label="Execute with debugging"
+          hint={
+            execution.debugBlockedReason
+              ? `Ctrl+Shift+Enter · ${execution.debugBlockedReason}`
+              : "Ctrl+Shift+Enter · runs the query and finds bugs in it, step by step"
+          }
+          disabled={!!execution.debugBlockedReason}
+          onClick={execution.onExecuteDebug}
+        />
         <IconButton
           icon={Square}
           label="Stop execution"

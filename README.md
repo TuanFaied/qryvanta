@@ -86,6 +86,21 @@ messages to stderr. Exit codes: 0 success, 1 query error, 2 usage error, 3 timed
 4 refused by read-only mode. See
 [setup.md](docs/development/setup.md#running-queries-from-the-cli) for every flag.
 
+To find bugs in a query without running it, use `diagnose`. It runs the same steps as "Execute
+with debugging" in the desktop app:
+
+```bash
+qryvanta-cli diagnose --conn fixtures --file query.sql
+```
+
+- Without `--conn`, only the static rules run, which works as a lint step.
+- With a connection, the metadata rules also run, and probes are proposed.
+- `--probes ask` (the default on a terminal) shows each probe's SQL and asks before running it.
+- `--format json` prints the findings with their evidence.
+- Exit codes: 0 no findings at or above `--fail-on` (default `high`), 1 such findings, 2 usage
+  error, 3 timed out or cancelled, 4 the diagnosis could not run. See
+  [setup.md](docs/development/setup.md#diagnosing-queries-from-the-cli).
+
 ## Development
 
 Requirements: Go 1.26+, Node.js 22+, pnpm 10+, the Wails v3 CLI, the .NET 10 SDK (for the T-SQL

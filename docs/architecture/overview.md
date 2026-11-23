@@ -829,6 +829,30 @@ UI ──► desktop.Debug(connID, sql, options)
 
 Each step is cancellable through one `context.Context`. Results stream to the UI as events.
 
+**Implementation (#71).** `app.Core.Diagnose(ctx, sql, DiagnoseOptions)` runs the flow in five
+steps. Each step emits `running`, then `done`, `skipped` (with the reason), `failed`, or
+`waiting`:
+
+1. **`parse`:** the QueryModel, and the read-only allowlist. Statements read-only mode would
+   refuse are reported; the query is not executed here.
+2. **`static`:** the rules that need only the query.
+3. **`metadata`:** the catalog of the tables, and every rule again with it (metadata rules,
+   confirmations and dismissals). It is skipped without a connection.
+4. **`probes`:** proposed from the findings' measurements (D4). It is skipped when nothing can be
+   measured.
+5. **`runProbes`:** the probes the caller's `Approve` returns, run as in `RunProbes`. A nil
+   `Approve` leaves probes `waiting`: the desktop app approves later from the panel.
+
+- **Cancelling:** cancelling the context stops the flow. The steps not reached are reported as
+  skipped ("Cancelled."), and the findings so far are returned with the context's error.
+- **Analyze** is `Diagnose` without approval.
+- **Desktop:** "Execute with debugging" (Ctrl+Shift+Enter, or the header button) runs the query as
+  Execute does and `AnalysisService.Diagnose` alongside it. The step statuses stream as
+  `qryvanta:diagnosis` events, and the analysis panel shows them above the findings. Stop cancels
+  both.
+- **CLI:** `qryvanta-cli diagnose` runs the same flow, approving through `--probes`.
+- **Not yet:** plans (Phase 6) and saving the session (Phase 8).
+
 ## 7. Concurrency
 
 - One `*sql.DB` pool per connection profile, with bounded `SetMaxOpenConns`.
@@ -851,7 +875,7 @@ line, but never the connection string.
 | parser | Golden tests (`tests/parser`, 79 cases including every sample query): SQL file → expected batches, diagnostics and `QueryModel` JSON, run against the real sidecar in CI; plus sidecar unit tests and Go client tests with a fake sidecar |
 | executor, connection, dialect | Integration tests against a real SQL Server (build tag `integration`, configured through `QRYVANTA_TEST_MSSQL_*` variables). CI runs them on Linux against `docker-compose.yml`, as the read-only `qryvanta_reader` login. |
 | fixture data | `tests/integration` runs the 10 scenario queries in `tests/sample_queries` and checks the documented wrong and correct results |
-| diagnostics end to end (Phase 5) | Each buggy scenario query must produce its finding, and each corrected query must not |
+| diagnostics end to end (Phase 5) | `TestScenarioSuite` runs `Diagnose` with every probe approved on each scenario: the buggy query must produce the finding listed in `manifest.json` (rule ID and classification), and the corrected query must not. Scenarios no rule detects yet (03, 09) say why in `undetected` |
 | architecture | `internal/archtest` checks that core packages do not import Wails |
 | frontend | Vitest + Testing Library for components and stores |
 

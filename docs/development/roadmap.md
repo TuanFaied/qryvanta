@@ -62,7 +62,7 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   functions, aliases through nested subqueries and set operations, with the heuristic as a
   fallback (#45)
 
-## Phase 5: Diagnostic engine 🚧
+## Phase 5: Diagnostic engine ✅
 
 - ✅ Finding / Evidence / Severity / Classification model with validation, the rule registry and
   engine, and findings in the analysis panel (D3, #66)
@@ -74,7 +74,12 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   joins that do not follow the foreign key; metadata confirms or dismisses static findings (#69)
 - ✅ Probes (D4): fan-out per join, unmatched rows per INNER JOIN, rows missed by a BETWEEN end,
   NULLs in a NOT IN subquery; approval list, budget and cancellation (#70)
-- CLI: `qryvanta-cli diagnose query.sql --conn X`
+- ✅ The debugging flow (`app.Core.Diagnose`): Execute with debugging in the desktop app (step statuses,
+  cancellable), `qryvanta-cli diagnose --conn X --file query.sql` (text/json, `--probes none|ask|all`,
+  `--fail-on`), and the scenario suite over all 10 sample queries (#71)
+- Not detected yet: scenario 03 (duplicate rows that differ only in spelling) and 09 (averaging at
+  the wrong grain). Neither is visible in the query or the catalog. See `undetected` in
+  `tests/sample_queries/manifest.json`.
 
 ## Phase 6: Execution plans ⬜
 

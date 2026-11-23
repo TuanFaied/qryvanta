@@ -37,12 +37,20 @@ export function AnalysisPanel({ activeTab, onAnalyze, onRevealRange }: AnalysisP
     filters: true,
     execution: false,
   });
-  const { target, running, result, error, probes, runProbes, cancelProbes } = useAnalysisStore();
+  const { target, running, result, error, probes, runProbes, cancelProbes, steps } = useAnalysisStore();
   const count = result?.available ? (result.findings ?? []).length : 0;
 
   const body: Partial<Record<SectionId, ReactNode>> = {
     findings: (
-      <FindingsSection target={target} running={running} result={result} error={error} activeTab={activeTab} onRevealRange={onRevealRange} />
+      <FindingsSection
+        target={target}
+        running={running}
+        result={result}
+        error={error}
+        activeTab={activeTab}
+        onRevealRange={onRevealRange}
+        steps={steps}
+      />
     ),
     probes: (
       <ProbesSection

@@ -1,5 +1,5 @@
 import { Classification, EvidenceKind, Severity, type Analysis, type Evidence, type Finding } from "@/services/backend";
-import { editorPosition, type AnalysisTarget } from "@/stores/analysis-store";
+import { editorPosition, type AnalysisTarget, type StepState } from "@/stores/analysis-store";
 import { cn } from "@/lib/utils";
 
 const severityOrder: Severity[] = [
@@ -47,12 +47,71 @@ export interface FindingsSectionProps {
   /** The active tab, to tell whether the analysis belongs to it and is current. */
   activeTab: { id: string; content: string } | null;
   onRevealRange: (line: number, column: number, length: number) => void;
+  /** Step statuses of Execute with debugging; null or absent for Analyze. */
+  steps?: StepState[] | null;
+}
+
+const stepLabel: Record<StepState["step"], string> = {
+  parse: "Parse and check the policy",
+  static: "Static rules",
+  metadata: "Metadata rules",
+  probes: "Propose probes",
+  runProbes: "Run approved probes",
+};
+
+const statusLabel: Record<StepState["status"], string> = {
+  pending: "pending",
+  running: "running…",
+  done: "done",
+  skipped: "skipped",
+  failed: "failed",
+  waiting: "waiting for approval",
+};
+
+const statusClass: Record<StepState["status"], string> = {
+  pending: "text-muted-foreground",
+  running: "text-info",
+  done: "text-success",
+  skipped: "text-muted-foreground",
+  failed: "text-destructive",
+  waiting: "text-warning",
+};
+
+/** The steps of Execute with debugging, with their status and why a step was skipped or failed. */
+export function StepList({ steps }: { steps: StepState[] }) {
+  return (
+    <ol aria-label="Debugging steps" className="space-y-0.5 px-7 pt-0.5 pb-2 text-xs">
+      {steps.map((s) => (
+        <li key={s.step} aria-label={`${stepLabel[s.step]}: ${statusLabel[s.status]}`}>
+          <span>{stepLabel[s.step]}</span>
+          <span className={cn("ml-1.5", statusClass[s.status])}>· {statusLabel[s.status]}</span>
+          {s.reason && <span className="block pl-3 text-muted-foreground">{s.reason}</span>}
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 const note = "px-7 pt-0.5 pb-3 text-xs leading-relaxed text-muted-foreground";
 
-/** The Findings section of the analysis panel. */
-export function FindingsSection({ target, running, result, error, activeTab, onRevealRange }: FindingsSectionProps) {
+/** The Findings section of the analysis panel: the debugging steps (when there are any), then the findings. */
+export function FindingsSection(props: FindingsSectionProps) {
+  const { steps, running, result } = props;
+  if (!steps) return <FindingsBody {...props} />;
+  return (
+    <div>
+      <StepList steps={steps} />
+      {result?.stopped && !running && (
+        <p role="status" className="px-7 pb-2 text-xs text-warning">
+          Stopped part-way: these are the findings of the steps that finished.
+        </p>
+      )}
+      {!running && <FindingsBody {...props} />}
+    </div>
+  );
+}
+
+function FindingsBody({ target, running, result, error, activeTab, onRevealRange }: FindingsSectionProps) {
   if (running) return <p className={note}>Analyzing…</p>;
   if (error) return <p className={cn(note, "text-destructive")}>Could not analyze the query: {error}</p>;
   if (!target || !result) {

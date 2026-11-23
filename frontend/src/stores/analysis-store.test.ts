@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { backend, type Analysis, type ProbeRun } from "@/services/backend";
+import { backend, type Analysis, type DiagnosisEvent, type ProbeRun } from "@/services/backend";
 import { editorPosition, useAnalysisStore, type AnalysisTarget } from "./analysis-store";
 
 const s = () => useAnalysisStore.getState();
@@ -16,6 +16,8 @@ const target = (sql: string, extra: Partial<AnalysisTarget> = {}): AnalysisTarge
 const result = (rules = 1): Analysis => ({
   id: "a1",
   probes: [],
+  steps: [],
+  stopped: false,
   available: true,
   reason: "",
   findings: [],
@@ -28,7 +30,7 @@ const result = (rules = 1): Analysis => ({
 
 beforeEach(() => {
   vi.restoreAllMocks();
-  useAnalysisStore.setState({ target: null, running: false, result: null, error: null, probes: { running: false, results: [], dismissed: [], error: null } });
+  useAnalysisStore.setState({ target: null, running: false, result: null, error: null, steps: null, probes: { running: false, results: [], dismissed: [], error: null } });
 });
 
 describe("analysis store", () => {
@@ -139,5 +141,73 @@ describe("probes", () => {
     vi.spyOn(backend, "runProbes").mockResolvedValue(run({ error: "probe p3 is over the probe budget" }));
     await s().runProbes(["p3"]);
     expect(s().probes.error).toBe("probe p3 is over the probe budget");
+  });
+});
+
+describe("Execute with debugging", () => {
+  const steps = () => s().steps?.map((st) => `${st.step}:${st.status}`).join(" ");
+
+  it("shows the steps as their events arrive, and the final statuses when it ends", async () => {
+    let finish!: (a: Analysis) => void;
+    let runId = "";
+    vi.spyOn(backend, "diagnose").mockImplementation((id) => {
+      runId = id;
+      return new Promise((r) => (finish = r));
+    });
+    const pending = s().diagnose(target("SELECT 1"));
+    expect(steps()).toBe("parse:pending static:pending metadata:pending probes:pending runProbes:pending");
+    s().applyStep({ runId, step: "parse", status: "done", reason: "1 batch(es).", findings: -1 } as unknown as DiagnosisEvent);
+    s().applyStep({ runId: "an-older-run", step: "static", status: "failed", reason: "", findings: -1 } as unknown as DiagnosisEvent);
+    s().applyStep({ runId, step: "static", status: "running", reason: "", findings: -1 } as unknown as DiagnosisEvent);
+    expect(steps()).toBe("parse:done static:running metadata:pending probes:pending runProbes:pending");
+    expect(s().running).toBe(true);
+    finish({
+      ...result(),
+      steps: [
+        { step: "parse", status: "done", reason: "1 batch(es)." },
+        { step: "static", status: "done", reason: "0 findings." },
+        { step: "metadata", status: "skipped", reason: "Not connected." },
+        { step: "probes", status: "skipped", reason: "Probes need a connection." },
+        { step: "runProbes", status: "skipped", reason: "No probes were proposed." },
+      ] as unknown as Analysis["steps"],
+    });
+    await pending;
+    expect(steps()).toBe("parse:done static:done metadata:skipped probes:skipped runProbes:skipped");
+    expect(s().steps?.[2]?.reason).toBe("Not connected.");
+    expect(s().running).toBe(false);
+  });
+
+  it("marks the steps not reached as cancelled when stopped part-way", async () => {
+    let runId = "";
+    vi.spyOn(backend, "diagnose").mockImplementation(
+      (id, _sql, _conn, _db, signal) =>
+        new Promise((_r, reject) => {
+          runId = id;
+          signal!.addEventListener("abort", () => reject(new Error("cancelled")));
+        }),
+    );
+    const pending = s().diagnose(target("SELECT 1"));
+    s().applyStep({ runId, step: "parse", status: "done", reason: "", findings: -1 } as unknown as DiagnosisEvent);
+    s().applyStep({ runId, step: "static", status: "running", reason: "", findings: -1 } as unknown as DiagnosisEvent);
+    s().cancelDiagnosis();
+    await pending;
+    expect(steps()).toBe("parse:done static:skipped metadata:skipped probes:skipped runProbes:skipped");
+    expect(s().steps?.[1]?.reason).toBe("Cancelled.");
+    expect(s().error).toBeNull();
+  });
+
+  it("passes the tab's connection and a fresh run ID", async () => {
+    const diagnose = vi.spyOn(backend, "diagnose").mockResolvedValue(result());
+    await s().diagnose(target("SELECT 1", { connectionId: "c1", database: "Sales" }));
+    await s().diagnose(target("SELECT 1", { connectionId: "c1", database: "Sales" }));
+    const [first, second] = diagnose.mock.calls;
+    expect(first?.slice(1, 4)).toEqual(["SELECT 1", "c1", "Sales"]);
+    expect(first?.[0]).not.toBe(second?.[0]);
+  });
+
+  it("a plain Analyze has no steps", async () => {
+    vi.spyOn(backend, "analyze").mockResolvedValue(result());
+    await s().analyze(target("SELECT 1"));
+    expect(s().steps).toBeNull();
   });
 });

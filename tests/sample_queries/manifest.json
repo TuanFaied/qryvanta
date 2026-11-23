@@ -6,6 +6,7 @@
       "title": "Employees without matching departments",
       "question": "List every employee with their department.",
       "cause": "INNER JOIN drops 2 employees with a NULL DepartmentID and 1 whose department no longer exists.",
+      "findings": [{ "rule": "QRY-JOIN-005", "classification": "confirmed" }],
       "buggy": {
         "file": "01_employees_without_department.buggy.sql",
         "rows": 9,
@@ -25,6 +26,7 @@
       "title": "One-to-many fan-out",
       "question": "Total paid and items bought per customer.",
       "cause": "Joining OrderItems and Payments to the same order multiplies rows; the inner join to Payments also drops a customer with an unpaid order.",
+      "findings": [{ "rule": "QRY-JOIN-003", "classification": "confirmed" }],
       "buggy": {
         "file": "02_one_to_many_fanout.buggy.sql",
         "rows": 3,
@@ -50,6 +52,8 @@
       "title": "Duplicate records",
       "question": "How many distinct customers do we have?",
       "cause": "Two people were entered twice with different capitalisation and spacing in their email.",
+      "findings": [],
+      "undetected": "Duplicate customers entered with different spelling are a data problem: no rule, catalog entry or probe template can see them yet.",
       "buggy": {
         "file": "03_duplicate_customers.buggy.sql",
         "rows": 1,
@@ -66,6 +70,7 @@
       "title": "NOT IN with a NULL",
       "question": "Which customers have never placed an order?",
       "cause": "Orders contains a NULL CustomerID, so NOT IN is never true and the query returns nothing.",
+      "findings": [{ "rule": "QRY-NULL-002", "classification": "confirmed" }],
       "buggy": {
         "file": "04_not_in_with_null.buggy.sql",
         "rows": 0,
@@ -85,6 +90,7 @@
       "title": "Date boundary filtering",
       "question": "Orders placed in January 2026.",
       "cause": "BETWEEN ... AND '2026-01-31' ends at midnight, missing an order placed on 31 January at 16:45.",
+      "findings": [{ "rule": "QRY-DATE-002", "classification": "confirmed" }],
       "buggy": {
         "file": "05_date_boundary.buggy.sql",
         "rows": 3,
@@ -101,6 +107,7 @@
       "title": "AND/OR precedence",
       "question": "Shipped or delivered orders going to Sri Lanka.",
       "cause": "AND binds tighter than OR, so shipped orders to every country are included.",
+      "findings": [{ "rule": "QRY-LOGIC-001", "classification": "potential" }],
       "buggy": {
         "file": "06_and_or_precedence.buggy.sql",
         "rows": 5,
@@ -117,6 +124,7 @@
       "title": "COUNT versus COUNT DISTINCT",
       "question": "Number of orders and units bought per customer.",
       "cause": "After joining OrderItems there is one row per order line, so COUNT counts lines.",
+      "findings": [{ "rule": "QRY-COUNT-002", "classification": "potential" }],
       "buggy": {
         "file": "07_count_vs_count_distinct.buggy.sql",
         "rows": 4,
@@ -141,6 +149,7 @@
       "title": "Incorrect join key",
       "question": "The lines of order 103 with their product names.",
       "cause": "ProductID is compared with OrderItemID: the names are wrong and one line disappears.",
+      "findings": [{ "rule": "QRY-JOIN-006", "classification": "confirmed" }],
       "buggy": {
         "file": "08_wrong_join_key.buggy.sql",
         "rows": 2,
@@ -160,6 +169,8 @@
       "title": "Unexpected aggregation granularity",
       "question": "What is the average order value?",
       "cause": "AVG runs over order lines (610 / 12) instead of orders (610 / 8).",
+      "findings": [],
+      "undetected": "Averaging at the wrong grain depends on the question asked, which the query does not state: no rule detects it yet.",
       "buggy": {
         "file": "09_aggregation_granularity.buggy.sql",
         "rows": 1,
@@ -176,6 +187,7 @@
       "title": "Missing join predicate",
       "question": "The customer for each order placed in January 2026.",
       "cause": "A comma join without a join predicate pairs each of the 4 orders with all 8 customers.",
+      "findings": [{ "rule": "QRY-JOIN-001", "classification": "potential" }],
       "buggy": {
         "file": "10_missing_join_predicate.buggy.sql",
         "rows": 32,

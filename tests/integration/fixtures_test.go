@@ -25,12 +25,21 @@ type manifest struct {
 }
 
 type scenario struct {
-	ID       string      `json:"id"`
-	Title    string      `json:"title"`
-	Question string      `json:"question"`
-	Cause    string      `json:"cause"`
-	Buggy    expectation `json:"buggy"`
-	Correct  expectation `json:"correct"`
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Question string `json:"question"`
+	Cause    string `json:"cause"`
+	// Findings are what the buggy query must produce (with probes) and the corrected one must
+	// not; Undetected says why a scenario has none yet.
+	Findings   []expectedFinding `json:"findings"`
+	Undetected string            `json:"undetected"`
+	Buggy      expectation       `json:"buggy"`
+	Correct    expectation       `json:"correct"`
+}
+
+type expectedFinding struct {
+	Rule           string `json:"rule"`
+	Classification string `json:"classification"`
 }
 
 type expectation struct {

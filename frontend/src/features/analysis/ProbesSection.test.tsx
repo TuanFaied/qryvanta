@@ -30,6 +30,8 @@ const analysis = (probes: Probe[]): Analysis =>
     syntaxErrors: 0,
     metadata: { checked: true, reason: "", unresolved: [] },
     probes,
+    steps: [],
+    stopped: false,
   }) as Analysis;
 
 const idle: ProbeState = { running: false, results: [], dismissed: [], error: null };

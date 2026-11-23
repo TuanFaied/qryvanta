@@ -61,32 +61,11 @@ type UnresolvedTable struct {
 // executes nothing. A parser that cannot run is an error (wrapping parser.ErrUnavailable); rule
 // failures and unresolved tables are part of the result.
 func (c *Core) Analyze(ctx context.Context, sql string, target AnalysisTarget) (Analysis, error) {
-	res, err := c.parser.Parse(ctx, sql, parser.Options{Model: true})
+	d, err := c.Diagnose(ctx, sql, DiagnoseOptions{Target: target})
 	if err != nil {
 		return Analysis{}, err
 	}
-	in := &analyzer.Input{SQL: sql, Result: res}
-	var status MetadataStatus
-	in.Catalog, status = c.catalog(ctx, res, target)
-	rep, err := analyzer.NewEngine(analyzer.Default()).Analyze(ctx, in)
-	if err != nil {
-		return Analysis{}, err
-	}
-	a := Analysis{ID: newID(), Report: rep, SyntaxErrors: len(res.Diagnostics), Metadata: status, Probes: []instrumentation.Probe{}}
-	if status.Checked {
-		a.Probes = c.planProbes(ctx, rep.Findings)
-	}
-	c.analyses.add(&analysisRecord{id: a.ID, target: target, sql: sql, findings: rep.Findings, probes: a.Probes})
-	for _, b := range res.Batches {
-		a.Statements += len(b.Statements)
-	}
-	for _, f := range rep.Failures {
-		c.log.Warn("a diagnostic rule failed", "rule", f.RuleID, "error", f.Message)
-	}
-	c.log.Debug("query analyzed", "statements", a.Statements, "findings", len(rep.Findings),
-		"rule_failures", len(rep.Failures), "syntax_errors", a.SyntaxErrors, "metadata", status.Checked,
-		"unresolved_tables", len(status.Unresolved))
-	return a, nil
+	return d.Analysis, nil
 }
 
 // catalog reads the metadata of every table the script uses. Problems are reported per table and

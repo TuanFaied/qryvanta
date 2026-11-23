@@ -3,7 +3,7 @@
  * never from ../bindings directly, so the transport can change without touching the UI.
  */
 import { Events } from "@wailsio/runtime";
-import { QryvantaCloseRequested, QryvantaExecution } from "../../bindings/events";
+import { QryvantaCloseRequested, QryvantaDiagnosis, QryvantaExecution } from "../../bindings/events";
 import {
   AnalysisService,
   AppService,
@@ -17,7 +17,7 @@ import type { BatchRun, Column as ResultColumn, Message, Refusal, Summary, Value
 import type { Diagnostic, Scope, ScopeSource } from "../../bindings/github.com/TuanFaied/qryvanta/internal/parser/models";
 import { Outcome } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type { RuleFailure } from "../../bindings/github.com/TuanFaied/qryvanta/internal/analyzer/models";
-import type { MetadataStatus, UnresolvedTable } from "../../bindings/github.com/TuanFaied/qryvanta/internal/app/models";
+import type { MetadataStatus, StepEvent, UnresolvedTable } from "../../bindings/github.com/TuanFaied/qryvanta/internal/app/models";
 import type {
   Dismissal,
   Param as ProbeParam,
@@ -28,6 +28,7 @@ import type { Correction, Evidence, Finding, Span } from "../../bindings/github.
 import { Classification, EvidenceKind, Severity } from "../../bindings/github.com/TuanFaied/qryvanta/internal/diagnostics/models";
 import type {
   Analysis,
+  DiagnosisEvent,
   ProbeRun,
   ExecutionEvent,
   SyntaxCheck,
@@ -61,6 +62,7 @@ export type { BatchRun, Diagnostic, ExecutionEvent, Message, Refusal, ResultColu
 export type { ParserStatus };
 export type { Analysis, Correction, Evidence, Finding, MetadataStatus, RuleFailure, Span, UnresolvedTable };
 export type { Dismissal, Probe, ProbeParam, ProbeResult, ProbeRun };
+export type { DiagnosisEvent, StepEvent };
 export { Classification, EvidenceKind, Severity };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
@@ -69,6 +71,22 @@ export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase,
 export interface MetadataResult<T> {
   data: T;
   error: MetadataError | null;
+}
+
+/** Replaces the nulls Go sends for empty lists. */
+function normalizeAnalysis(res: Analysis): Analysis {
+  return {
+    ...res,
+    findings: (res.findings ?? []).map((f) => ({ ...f, evidence: f.evidence ?? [] })),
+    failures: res.failures ?? [],
+    metadata: {
+      checked: res.metadata?.checked ?? false,
+      reason: res.metadata?.reason ?? "",
+      unresolved: res.metadata?.unresolved ?? [],
+    },
+    probes: (res.probes ?? []).map((p) => ({ ...p, params: p.params ?? [], findings: p.findings ?? [] })),
+    steps: res.steps ?? [],
+  };
 }
 
 /** Normalised result of saving settings. */
@@ -262,20 +280,20 @@ export const backend = {
    * skipped and metadata.reason says why.
    */
   analyze: (sql: string, connectionId: string, database: string, signal?: AbortSignal): Promise<Analysis> =>
-    call("Analyze", async () => {
-      const res = await withSignal(AnalysisService.Analyze(sql, connectionId, database), signal);
-      return {
-        ...res,
-        findings: (res.findings ?? []).map((f) => ({ ...f, evidence: f.evidence ?? [] })),
-        failures: res.failures ?? [],
-        metadata: {
-          checked: res.metadata?.checked ?? false,
-          reason: res.metadata?.reason ?? "",
-          unresolved: res.metadata?.unresolved ?? [],
-        },
-        probes: (res.probes ?? []).map((p) => ({ ...p, params: p.params ?? [], findings: p.findings ?? [] })),
-      };
-    }),
+    call("Analyze", async () => normalizeAnalysis(await withSignal(AnalysisService.Analyze(sql, connectionId, database), signal))),
+
+  /**
+   * Execute with debugging: the debugging flow (parse and policy, static rules, metadata rules,
+   * proposed probes). Each step's status arrives as an onDiagnosisEvent with runId as it happens.
+   * Aborting the signal stops the flow; the result then has stopped set and the findings so far.
+   */
+  diagnose: (runId: string, sql: string, connectionId: string, database: string, signal?: AbortSignal): Promise<Analysis> =>
+    call("Execute with debugging", async () =>
+      normalizeAnalysis(await withSignal(AnalysisService.Diagnose(runId, sql, connectionId, database), signal)),
+    ),
+
+  /** Subscribes to diagnosis step statuses. Returns an unsubscribe function. */
+  onDiagnosisEvent: (handler: (event: DiagnosisEvent) => void): (() => void) => Events.On(QryvantaDiagnosis, (e) => handler(e.data)),
 
   /**
    * Runs the probes the user approved, by ID. The backend runs the SQL it generated for the
