@@ -23,6 +23,7 @@ import { backend, type AppInfo, type Config, type ParserStatus, type SaveResult,
 import { useConnectionStore } from "@/stores/connection-store";
 import { useEditorStore } from "@/stores/editor-store";
 import { useAnalysisStore } from "@/stores/analysis-store";
+import { useExecutionStore } from "@/stores/execution-store";
 import { currentDiagnostics, useSyntaxStore } from "@/stores/syntax-store";
 import { useSchemaStore } from "@/stores/schema-store";
 import { accessKey, useAccessStore } from "@/stores/access-store";
@@ -149,14 +150,17 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
     activeConnectionId: activeId,
     editorRef,
     onStarted: showOutput,
-    // A batch that returned no rows has only messages to show.
+    // An estimated plan has only plans to show; a batch that returned no rows only messages.
     onFinished: (run) => {
-      if (run.resultSets.length === 0) setOutputTab("messages");
+      if (run.plan === "estimated" && run.plans.length > 0) setOutputTab("plan");
+      else if (run.resultSets.length === 0) setOutputTab("messages");
     },
   });
   const onEditorCommand = (command: EditorCommand) => {
     if (command === "execute") exec.execute();
     else if (command === "executeDebug") executeDebug();
+    else if (command === "estimatedPlan") exec.execute("estimated");
+    else if (command === "toggleActualPlan") toggleActualPlan();
     else if (command === "cancel") stopAll();
   };
 
@@ -179,6 +183,10 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
   const activeTab = useEditorStore((s) => s.tabs.find((t) => t.id === s.activeId) ?? null);
   const syntaxState = useSyntaxStore((s) => (activeTab ? s.byTab[activeTab.id] : undefined));
   const problems = activeTab ? currentDiagnostics(syntaxState, activeTab.content) : [];
+
+  // "Include actual plan" (Ctrl+M) applies to every Execute until turned off.
+  const includeActualPlan = useExecutionStore((s) => s.includeActualPlan);
+  const toggleActualPlan = useExecutionStore((s) => s.toggleActualPlan);
 
   // A running Execute with debugging can be stopped like a query.
   const analysisRunning = useAnalysisStore((s) => s.running && s.steps !== null);
@@ -238,8 +246,11 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         execution={{
           blockedReason: exec.blockedReason,
           running: exec.running || analysisRunning,
-          onExecute: exec.execute,
+          onExecute: () => exec.execute(),
           onExecuteDebug: executeDebug,
+          onEstimatedPlan: () => exec.execute("estimated"),
+          includeActualPlan,
+          onToggleActualPlan: toggleActualPlan,
           debugBlockedReason: activeTab ? null : "open a query tab first",
           onStop: stopAll,
         }}

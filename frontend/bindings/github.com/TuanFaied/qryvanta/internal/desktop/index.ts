@@ -38,6 +38,7 @@ export type {
     MetadataError,
     ObjectsResult,
     OpenFileResult,
+    PlanInfo,
     ProbeRun,
     SaveConfigResult,
     SaveConnectionResult,

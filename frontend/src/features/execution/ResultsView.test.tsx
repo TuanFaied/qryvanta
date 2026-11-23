@@ -20,6 +20,8 @@ function run(batches: number[]): Run {
     batches: [...new Set(batches)].map(batch),
     resultSets: batches.map((b, i) => ({ index: i, batch: b, columns: [], rows: [[1]] })),
     messages: [],
+    plan: "",
+    plans: [],
     summary: null,
     error: null,
   };

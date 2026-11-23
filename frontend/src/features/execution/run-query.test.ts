@@ -37,9 +37,23 @@ describe("run-query", () => {
   it("starts a run with a fresh ID on the tab's connection and database", async () => {
     api.execute.mockResolvedValue({ outcome: Outcome.OutcomeSucceeded });
     const id = executeQuery(request);
-    expect(api.execute).toHaveBeenCalledWith(id, "c1", "Sales", "SELECT 1");
-    expect(useExecutionStore.getState().runs.t1).toMatchObject({ runId: id, status: "running", lineOffset: 2 });
+    expect(api.execute).toHaveBeenCalledWith(id, "c1", "Sales", "SELECT 1", "");
+    expect(useExecutionStore.getState().runs.t1).toMatchObject({ runId: id, status: "running", lineOffset: 2, plan: "", plans: [] });
     await vi.waitFor(() => expect(useExecutionStore.getState().runs.t1!.status).toBe("finished"));
+  });
+
+  it("asks for plans, and keeps the plan events with the run", async () => {
+    api.execute.mockReturnValue(new Promise(() => {}));
+    const id = executeQuery({ ...request, plan: "estimated" });
+    expect(api.execute).toHaveBeenCalledWith(id, "c1", "Sales", "SELECT 1", "estimated");
+    useExecutionStore.getState().apply({
+      runId: id,
+      kind: "plan",
+      plan: { index: 0, mode: "estimated", batch: 0, execution: 1, statement: 1, bytes: 2048 },
+    } as never);
+    // Plans never become result sets.
+    expect(useExecutionStore.getState().runs.t1).toMatchObject({ plan: "estimated", resultSets: [] });
+    expect(useExecutionStore.getState().runs.t1!.plans).toHaveLength(1);
   });
 
   it("cancels the tab's previous run when a new one starts", () => {

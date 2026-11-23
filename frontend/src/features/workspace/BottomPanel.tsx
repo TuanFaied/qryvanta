@@ -1,7 +1,8 @@
-import { BarChart3, GitFork, ListChecks } from "lucide-react";
+import { BarChart3, ListChecks } from "lucide-react";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessagesView } from "@/features/execution/MessagesView";
+import { PlansView } from "@/features/execution/PlansView";
 import { ResultsView } from "@/features/execution/ResultsView";
 import { RunStatus } from "@/features/execution/RunStatus";
 import type { Run } from "@/stores/execution-store";
@@ -15,13 +16,6 @@ const placeholders = [
     icon: ListChecks,
     title: "No diagnostics",
     body: "Findings from Execute with debugging (Ctrl+Shift+Enter) and Analyze appear in the Analysis panel, each with its evidence, step by step.",
-  },
-  {
-    value: "plan",
-    label: "Execution plan",
-    icon: GitFork,
-    title: "No execution plan",
-    body: "The estimated or actual plan appears here. Estimated and measured values are always labelled.",
   },
   {
     value: "stats",
@@ -74,7 +68,20 @@ export function BottomPanel({
                 </span>
               )}
             </TabsTrigger>
-            {placeholders.map((t) => (
+            {placeholders.slice(0, 1).map((t) => (
+              <TabsTrigger key={t.value} value={t.value} className={triggerClass}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+            <TabsTrigger value="plan" className={triggerClass}>
+              Execution plan
+              {run && run.plans.length > 0 && (
+                <span className="ml-1.5 rounded-sm bg-accent px-1 text-[10px]" aria-label={`${run.plans.length} plans`}>
+                  {run.plans.length}
+                </span>
+              )}
+            </TabsTrigger>
+            {placeholders.slice(1).map((t) => (
               <TabsTrigger key={t.value} value={t.value} className={triggerClass}>
                 {t.label}
               </TabsTrigger>
@@ -93,6 +100,9 @@ export function BottomPanel({
             onRevealRange={onRevealRange}
             onOpenSettings={onOpenSettings}
           />
+        </TabsContent>
+        <TabsContent value="plan" className="min-h-0 flex-1">
+          <PlansView run={run} />
         </TabsContent>
         {placeholders.map((t) => (
           <TabsContent key={t.value} value={t.value} className="min-h-0 flex-1">

@@ -28,7 +28,7 @@ func (twoBatchRunner) Execute(_ context.Context, _ *sql.DB, _ executor.Request, 
 
 func TestQueryServiceReportsBatches(t *testing.T) {
 	s, log, id := newQueryTestService(t, twoBatchRunner{})
-	if _, err := s.Execute(context.Background(), "run-b", id, "", "SELECT 0; SELECT 1"); err != nil {
+	if _, err := s.Execute(context.Background(), "run-b", id, "", "SELECT 0; SELECT 1", ""); err != nil {
 		t.Fatal(err)
 	}
 	var batches, sets []ExecutionEvent

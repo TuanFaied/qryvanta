@@ -223,6 +223,11 @@ export interface ExecutionEvent {
     "message": executor$0.Message | null;
     "run": executor$0.BatchRun | null;
     "summary": executor$0.Summary | null;
+
+    /**
+     * Plan describes a plan document (kind "plan").
+     */
+    "plan": PlanInfo | null;
 }
 
 /**
@@ -288,6 +293,21 @@ export enum PasswordAction {
      */
     PasswordClear = "clear",
 };
+
+/**
+ * PlanInfo describes a plan of a run, without its XML.
+ */
+export interface PlanInfo {
+    /**
+     * Index is the plan's position in the run, for PlanXML.
+     */
+    "index": number;
+    "mode": executor$0.PlanMode;
+    "batch": number;
+    "execution": number;
+    "statement": number;
+    "bytes": number;
+}
 
 /**
  * ProbeRun is the result of running approved probes.

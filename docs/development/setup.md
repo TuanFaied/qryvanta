@@ -299,6 +299,43 @@ cat report.sql | qryvanta-cli run --conn fixtures --database QryvantaSample --fo
 - Exit codes: `0` success, `1` query error or failed batch, `2` usage error, `3` timed out or
   cancelled, `4` refused by read-only mode. Ctrl+C cancels the query on the server.
 
+## Execution plans
+
+The desktop app captures SQL Server's showplan XML:
+
+- **Show estimated plan** (Ctrl+L, or the header button) compiles the query without running it
+  (`SET SHOWPLAN_XML ON`). Nothing executes, so no session guard is needed, but read-only mode
+  still checks the script first.
+- **Include actual plan** (Ctrl+M, a toggle) makes every Execute capture the actual plans too
+  (`SET STATISTICS XML ON`). The query runs as usual, under read-only mode and the limits.
+- **Where plans appear:** never in the result grid. They are listed in the **Execution plan**
+  tab by batch and statement, with their size, and **Copy XML** copies one. Save it as a
+  `.sqlplan` file to open it in SSMS.
+- **Incomplete plans:** a run that times out, is cancelled or reaches the row limit keeps the
+  plans received so far, marked incomplete. A single plan larger than 32 MB is not kept, and
+  the tab says so.
+- **Memory:** plans are kept in memory for the last 20 runs.
+
+From the command line:
+
+```bash
+qryvanta-cli plan --conn fixtures --file query.sql --estimated > query.sqlplan
+```
+
+```bash
+qryvanta-cli plan --conn fixtures --file script.sql --actual --out plans/
+```
+
+| Flag | Meaning |
+|---|---|
+| `--estimated` / `--actual` | Which plans (one of the two is required). `--actual` runs the query and prints only the plans, never its results. |
+| `--format xml\|json` | `xml` (default) writes the showplan XML. `json` lists every plan with its batch, statement, size and XML, and whether the set is complete. |
+| `--out DIR` | Writes each plan to `DIR/plan-<batch>-<run>-<statement>.sqlplan` and prints the file names. With several plans and `xml`, use it: SSMS opens one document per file. |
+| `--conn`, `--database`, `--file`, `--query`, `--timeout` | As for `run`. |
+
+Exit codes are those of `run`: `0`, `1` query error, `2` usage error, `3` timed out or
+cancelled, `4` refused by read-only mode.
+
 ## Diagnosing queries from the CLI
 
 `qryvanta-cli diagnose` runs the diagnostic engine's flow, the same as "Execute with debugging"

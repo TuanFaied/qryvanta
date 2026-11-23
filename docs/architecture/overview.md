@@ -507,6 +507,31 @@ documentation states clearly which guarantees are hard and which are best effort
 - Physical operator order is not logical clause order. Mapping operators back to clauses is
   done only where the plan's predicate and object references make it unambiguous.
 
+**Capturing plans (#72).** `executor.Request.Plan` asks the runner for plans:
+
+- **Estimated:** `SET SHOWPLAN_XML ON` alone in its batch, then the script's batches, which are
+  compiled and not run. Nothing executes, so there is no session guard. The script still passes
+  the read-only allowlist (D5 layer 1) in `app.Core.Execute`.
+- **Actual:** `SET STATISTICS XML ON` inside the session guard, under the usual limits. The plan
+  of each statement follows its results.
+- **Keeping plans apart from results:** the runner recognises plan documents by their single
+  column, `Microsoft SQL Server 2005 XML Showplan`, and sends them to `executor.PlanSink`
+  (batch, run of the batch, statement), never to `Sink.ResultSet`. So the grid, the CLI's
+  results and the row limits never see them.
+- **Restoring the session:** the setting is turned off on every return path, with its own
+  5-second deadline. If that fails, the connection is discarded instead of returned to the
+  pool, so the next run cannot receive plans.
+- **Limits:** one plan may be up to `Limits.MaxPlanBytes` (default 32 MB); a larger one is
+  counted as too large and not kept. `Summary.Plan` reports the count, the too-large count, and
+  whether the set is complete. It is incomplete when the run was truncated, timed out, was
+  cancelled or failed: the plans received so far are kept.
+- **Logging:** plan XML is never logged.
+- **Desktop:** `QueryService.Execute(..., plan)` keeps a run's plans in memory (the last 20
+  runs). It announces each plan as a `plan` event without its XML, and `PlanXML` returns the
+  XML on request.
+- **CLI:** `qryvanta-cli plan --estimated|--actual` writes the XML, or JSON, or `.sqlplan` files.
+- Parsing the XML and the plan view are the next issues.
+
 ### D7. Local storage and credentials
 
 - Config: JSON at `%AppData%\Qryvanta\config.json` (the OS user config directory), written atomically.

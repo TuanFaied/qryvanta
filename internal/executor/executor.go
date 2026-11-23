@@ -18,6 +18,55 @@ type Limits struct {
 	Timeout  time.Duration
 	MaxRows  int   // across all result sets
 	MaxBytes int64 // approximate size of the converted values, across all result sets
+	// MaxPlanBytes caps one plan document (Request.Plan); a larger plan is counted as too large
+	// and not kept. Zero uses DefaultMaxPlanBytes.
+	MaxPlanBytes int64
+}
+
+// DefaultMaxPlanBytes is the default size limit of one plan document.
+const DefaultMaxPlanBytes = 32 << 20
+
+// PlanMode asks the server for execution plans (architecture D6).
+type PlanMode string
+
+const (
+	// PlanNone runs the script normally.
+	PlanNone PlanMode = ""
+	// PlanEstimated compiles the script without running it (SET SHOWPLAN_XML ON) and returns one
+	// estimated plan per statement. Nothing is executed, so no session guard is needed.
+	PlanEstimated PlanMode = "estimated"
+	// PlanActual runs the script (under the policy and limits as usual) with SET STATISTICS XML
+	// ON, and returns the actual plan of each statement after its results.
+	PlanActual PlanMode = "actual"
+)
+
+// Plan is one showplan XML document. Plan documents never reach Sink.ResultSet.
+type Plan struct {
+	Mode PlanMode `json:"mode"`
+	// Batch and Execution locate the batch run that produced it (as BatchRun does); Statement is
+	// the plan's position in that run (1-based).
+	Batch     int    `json:"batch"`
+	Execution int    `json:"execution"`
+	Statement int    `json:"statement"`
+	XML       string `json:"xml"`
+}
+
+// PlanSink is implemented by sinks that keep plans. Plans for other sinks are dropped (and
+// still counted in Summary.Plan).
+type PlanSink interface {
+	Plan(p Plan) error
+}
+
+// PlanSummary reports the plans of a run.
+type PlanSummary struct {
+	Mode PlanMode `json:"mode"`
+	// Count is the number of plans delivered; TooLarge the number dropped for MaxPlanBytes.
+	Count    int `json:"count"`
+	TooLarge int `json:"tooLarge"`
+	// Complete is false when the run stopped early (truncated, timed out, cancelled, failed) or a
+	// plan was too large: the plans are those received so far. Reason says why.
+	Complete bool   `json:"complete"`
+	Reason   string `json:"reason"`
 }
 
 // Request is a script to execute: one batch, or several separated by GO.
@@ -32,6 +81,8 @@ type Request struct {
 	Database string
 	Limits   Limits
 	Policy   Policy
+	// Plan asks for estimated or actual execution plans.
+	Plan PlanMode
 	// Params are sent with every batch as named parameters (@Name), never spliced into the SQL.
 	// Generated probe queries use them for values copied from the user's query.
 	Params []Param
@@ -198,6 +249,8 @@ type Summary struct {
 	Batches []BatchRun `json:"batches"`
 	// Refusals explains OutcomeRefused, in script order.
 	Refusals []Refusal `json:"refusals"`
+	// Plan reports the plans when Request.Plan asked for them.
+	Plan *PlanSummary `json:"plan,omitempty"`
 	// Error explains OutcomeFailed and OutcomeRefused. Server errors during the batch are in
 	// Messages instead.
 	Error string `json:"error"`
@@ -263,6 +316,12 @@ type Collector struct {
 	Columns  [][]Column
 	Data     [][][]Value
 	Messages []Message
+	Plans    []Plan
+}
+
+func (c *Collector) Plan(p Plan) error {
+	c.Plans = append(c.Plans, p)
+	return nil
 }
 
 func (c *Collector) ResultSet(index int, columns []Column) error {

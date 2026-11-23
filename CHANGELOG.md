@@ -8,6 +8,19 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Execution plans (architecture D6):
+  - **Show estimated plan** (Ctrl+L) compiles the query without running it (`SHOWPLAN_XML`).
+  - **Include actual plan** (Ctrl+M) makes Execute capture each statement's actual plan
+    (`STATISTICS XML`), under read-only mode and the limits.
+  - Plans never reach the result grid. The Execution plan tab lists them by batch and
+    statement, and copies their XML for SSMS.
+  - The session's plan setting is always turned off afterwards; the connection is discarded if
+    that fails.
+  - Runs that stop early keep the plans so far, marked incomplete.
+  - Plans over 32 MB are reported as too large.
+- `qryvanta-cli plan --estimated|--actual [--format xml|json] [--out DIR]` writes the plans as
+  showplan XML, JSON or `.sqlplan` files. With `--actual`, the query's results are never printed.
+
 - Execute with debugging (Ctrl+Shift+Enter, or the header button):
   - The query runs as with Execute.
   - The analysis panel fills step by step: parse and policy, static rules, metadata rules,

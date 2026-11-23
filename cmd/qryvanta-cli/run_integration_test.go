@@ -168,3 +168,28 @@ func TestRunReadOnlyRefusalSendsNothing(t *testing.T) {
 		t.Errorf("refusals = %+v", res.Refusals)
 	}
 }
+
+// TestPlanAgainstFixtures captures estimated and actual plans of a sample query through
+// "plan", and checks the actual run's results never reach the output.
+func TestPlanAgainstFixtures(t *testing.T) {
+	opts := fixtureOptions(t)
+	file := filepath.Join("..", "..", "tests", "sample_queries", "01_employees_without_department.correct.sql")
+	for _, mode := range []string{"--estimated", "--actual"} {
+		var out, errOut bytes.Buffer
+		err := cmdPlan(context.Background(), []string{"--conn", "fixtures", "--file", file, mode, "--format", "json"}, opts, &out, &errOut)
+		if code := report(err, &bytes.Buffer{}, &errOut); code != 0 {
+			t.Fatalf("%s: exit %d: %s", mode, code, errOut.String())
+		}
+		var res planResult
+		if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+			t.Fatalf("%s: invalid JSON: %v", mode, err)
+		}
+		if !res.Complete || len(res.Plans) != 1 || !strings.Contains(res.Plans[0].XML, "<ShowPlanXML") {
+			t.Fatalf("%s: result = %+v", mode, res)
+		}
+		// The query lists employees: their names are in the results only, never in a plan.
+		if strings.Contains(out.String()+errOut.String(), "Amal Fernando") {
+			t.Fatalf("%s: query results reached the output", mode)
+		}
+	}
+}
