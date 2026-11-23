@@ -156,8 +156,12 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
   });
   const onEditorCommand = (command: EditorCommand) => {
     if (command === "execute") exec.execute();
-    else if (command === "cancel") exec.stop();
+    else if (command === "executeDebug") executeDebug();
+    else if (command === "cancel") stopAll();
   };
+
+  // Step statuses of Execute with debugging stream in as events.
+  useEffect(() => backend.onDiagnosisEvent((e) => useAnalysisStore.getState().applyStep(e)), []);
 
   // Start the parser in the background and show a warning if it cannot run.
   const [parserStatus, setParserStatus] = useState<ParserStatus | null>(null);
@@ -176,11 +180,14 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
   const syntaxState = useSyntaxStore((s) => (activeTab ? s.byTab[activeTab.id] : undefined));
   const problems = activeTab ? currentDiagnostics(syntaxState, activeTab.content) : [];
 
+  // A running Execute with debugging can be stopped like a query.
+  const analysisRunning = useAnalysisStore((s) => s.running && s.steps !== null);
+
   // Analyze runs the rules on what Execute would run: the selection, or the whole tab.
-  const analyze = () => {
+  const analysisTarget = () => {
     const target = editorRef.current?.getRunTarget();
-    if (!activeTab || !target) return;
-    void useAnalysisStore.getState().analyze({
+    if (!activeTab || !target) return null;
+    return {
       tabId: activeTab.id,
       sql: target.sql,
       tabText: activeTab.content,
@@ -189,7 +196,24 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
       // Metadata rules read the catalog of the tab's connection, when it is the connected one.
       connectionId: activeTab.connectionId && activeTab.connectionId === activeId ? activeTab.connectionId : "",
       database: activeTab.database ?? "",
-    });
+    };
+  };
+  const analyze = () => {
+    const target = analysisTarget();
+    if (target) void useAnalysisStore.getState().analyze(target);
+  };
+  // Execute with debugging: the query runs as usual (when it can), and the analysis panel fills
+  // step by step. It needs no connection: without one, only the static rules run.
+  const executeDebug = () => {
+    const target = analysisTarget();
+    if (!target) return;
+    if (!exec.blockedReason) exec.execute();
+    refs.analysis.current?.expand();
+    void useAnalysisStore.getState().diagnose(target);
+  };
+  const stopAll = () => {
+    exec.stop();
+    useAnalysisStore.getState().cancelDiagnosis();
   };
 
   const disconnect = () => void conn.disconnect();
@@ -211,7 +235,14 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
         onOpenSettings={openSettings}
         panels={visible}
         onTogglePanel={togglePanel}
-        execution={{ blockedReason: exec.blockedReason, running: exec.running, onExecute: exec.execute, onStop: exec.stop }}
+        execution={{
+          blockedReason: exec.blockedReason,
+          running: exec.running || analysisRunning,
+          onExecute: exec.execute,
+          onExecuteDebug: executeDebug,
+          debugBlockedReason: activeTab ? null : "open a query tab first",
+          onStop: stopAll,
+        }}
         databaseControls={
           <DatabaseSelector
             databases={activeId ? schema.databases[activeId] : null}

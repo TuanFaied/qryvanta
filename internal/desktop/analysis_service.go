@@ -2,6 +2,9 @@ package desktop
 
 import (
 	"context"
+	"errors"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"github.com/TuanFaied/qryvanta/internal/analyzer"
 	"github.com/TuanFaied/qryvanta/internal/app"
@@ -9,15 +12,42 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/instrumentation"
 )
 
-// AnalysisService runs the diagnostic rules for the analysis panel. It executes nothing; with a
-// connection it reads catalog metadata for the metadata rules.
-type AnalysisService struct {
-	core *app.Core
+// EventDiagnosis carries the step statuses of a running diagnosis to the frontend.
+const EventDiagnosis = "qryvanta:diagnosis"
+
+func init() {
+	application.RegisterEvent[DiagnosisEvent](EventDiagnosis)
 }
 
-// NewAnalysisService creates the service.
+// DiagnosisEvent is one step status of a diagnosis ("Execute with debugging"). The frontend drops
+// events whose RunID is not the diagnosis it shows.
+type DiagnosisEvent struct {
+	RunID  string         `json:"runId"`
+	Step   app.Step       `json:"step"`
+	Status app.StepStatus `json:"status"`
+	Reason string         `json:"reason"`
+	// Findings is the number of findings after the step, when it changed them (-1 otherwise).
+	Findings int `json:"findings"`
+}
+
+// AnalysisService runs the diagnostic rules for the analysis panel. It executes nothing but
+// probes the user approved; with a connection it reads catalog metadata for the metadata rules.
+type AnalysisService struct {
+	core *app.Core
+	emit func(DiagnosisEvent)
+}
+
+// NewAnalysisService creates the service. Diagnosis events go to every window of the running app.
 func NewAnalysisService(core *app.Core) *AnalysisService {
-	return &AnalysisService{core: core}
+	return newAnalysisService(core, func(e DiagnosisEvent) {
+		if a := application.Get(); a != nil {
+			a.Event.Emit(EventDiagnosis, e)
+		}
+	})
+}
+
+func newAnalysisService(core *app.Core, emit func(DiagnosisEvent)) *AnalysisService {
+	return &AnalysisService{core: core, emit: emit}
 }
 
 // Analysis is the analysis panel's view of a script.
@@ -42,6 +72,10 @@ type Analysis struct {
 	// Probes could confirm or dismiss findings. They are shown in full and run only when the
 	// user approves them (RunProbes).
 	Probes []instrumentation.Probe `json:"probes"`
+	// Steps is the final status of each step of a diagnosis (empty for Analyze).
+	Steps []app.StepEvent `json:"steps"`
+	// Stopped is true when the diagnosis was cancelled part-way; the findings are those found so far.
+	Stopped bool `json:"stopped"`
 }
 
 // Analyze runs the rules over sql. connectionID and database select the catalog the metadata
@@ -51,7 +85,7 @@ func (s *AnalysisService) Analyze(ctx context.Context, sql, connectionID, databa
 	a, err := s.core.Analyze(ctx, sql, app.AnalysisTarget{ConnectionID: connectionID, Database: database})
 	if err != nil {
 		return Analysis{Reason: err.Error(), Findings: []diagnostics.Finding{}, Failures: []analyzer.RuleFailure{},
-			Metadata: app.MetadataStatus{Unresolved: []app.UnresolvedTable{}}, Probes: []instrumentation.Probe{}}
+			Metadata: app.MetadataStatus{Unresolved: []app.UnresolvedTable{}}, Probes: []instrumentation.Probe{}, Steps: []app.StepEvent{}}
 	}
 	return Analysis{
 		ID:           a.ID,
@@ -63,6 +97,42 @@ func (s *AnalysisService) Analyze(ctx context.Context, sql, connectionID, databa
 		SyntaxErrors: a.SyntaxErrors,
 		Metadata:     a.Metadata,
 		Probes:       a.Probes,
+		Steps:        []app.StepEvent{},
+	}
+}
+
+// Diagnose runs the debugging flow ("Execute with debugging"): parse and policy, static rules,
+// metadata rules, and proposed probes, which wait for the user's approval (RunProbes). Each step's
+// status is emitted as an EventDiagnosis with runID as it happens. Cancelling the call stops the
+// flow; the steps not reached are reported as skipped and the findings so far are returned.
+func (s *AnalysisService) Diagnose(ctx context.Context, runID, sql, connectionID, database string) Analysis {
+	d, err := s.core.Diagnose(ctx, sql, app.DiagnoseOptions{
+		Target: app.AnalysisTarget{ConnectionID: connectionID, Database: database},
+		Emit: func(e app.StepEvent) {
+			n := -1
+			if e.Findings != nil {
+				n = len(e.Findings)
+			}
+			s.emit(DiagnosisEvent{RunID: runID, Step: e.Step, Status: e.Status, Reason: e.Reason, Findings: n})
+		},
+	})
+	stopped := errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+	if err != nil && !stopped {
+		return Analysis{Reason: err.Error(), Findings: []diagnostics.Finding{}, Failures: []analyzer.RuleFailure{},
+			Metadata: app.MetadataStatus{Unresolved: []app.UnresolvedTable{}}, Probes: []instrumentation.Probe{}, Steps: d.Steps}
+	}
+	return Analysis{
+		ID:           d.ID,
+		Available:    true,
+		Findings:     d.Findings,
+		Failures:     d.Failures,
+		Rules:        d.Rules,
+		Statements:   d.Statements,
+		SyntaxErrors: d.SyntaxErrors,
+		Metadata:     d.Metadata,
+		Probes:       d.Probes,
+		Steps:        d.Steps,
+		Stopped:      stopped,
 	}
 }
 

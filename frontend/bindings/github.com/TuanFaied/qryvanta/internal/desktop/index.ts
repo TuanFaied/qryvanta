@@ -32,6 +32,7 @@ export type {
     ConnectionError,
     ConnectionInput,
     DatabasesResult,
+    DiagnosisEvent,
     ExecutionEvent,
     FileDocument,
     MetadataError,

@@ -13,6 +13,7 @@ declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "qryvanta:close-requested": void;
+            "qryvanta:diagnosis": desktop$0.DiagnosisEvent;
             "qryvanta:execution": desktop$0.ExecutionEvent;
         }
     }

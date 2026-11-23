@@ -37,6 +37,8 @@ const planFinding: Finding = {
 const analysis = (extra: Partial<Analysis> = {}): Analysis => ({
   id: "a1",
   probes: [],
+  steps: [],
+  stopped: false,
   available: true,
   reason: "",
   findings: [],
@@ -58,7 +60,7 @@ function setup(state: Partial<ReturnType<typeof useAnalysisStore.getState>>, act
   return { onAnalyze, onRevealRange };
 }
 
-beforeEach(() => useAnalysisStore.setState({ target: null, running: false, result: null, error: null }));
+beforeEach(() => useAnalysisStore.setState({ target: null, running: false, result: null, error: null, steps: null }));
 
 describe("AnalysisPanel", () => {
   it("starts empty and analyzes on request", async () => {
@@ -173,5 +175,52 @@ describe("AnalysisPanel", () => {
     cleanup();
     setup({ target, error: "Analyze failed: no backend" });
     expect(screen.getByText("Could not analyze the query: Analyze failed: no backend")).toBeInTheDocument();
+  });
+});
+
+describe("Execute with debugging steps", () => {
+  const steps = (status: Record<string, [string, string]>) =>
+    (["parse", "static", "metadata", "probes", "runProbes"] as const).map((step) => ({
+      step,
+      status: (status[step]?.[0] ?? "pending") as never,
+      reason: status[step]?.[1] ?? "",
+    }));
+
+  it("shows each step's status while it runs, and no findings yet", () => {
+    setup({ target, running: true, steps: steps({ parse: ["done", "1 batch(es), 1 statement(s)."], static: ["running", ""] }) });
+    const list = screen.getByRole("list", { name: "Debugging steps" });
+    expect(within(list).getByLabelText("Parse and check the policy: done")).toHaveTextContent("1 batch(es), 1 statement(s).");
+    expect(within(list).getByLabelText("Static rules: running…")).toBeInTheDocument();
+    expect(within(list).getByLabelText("Metadata rules: pending")).toBeInTheDocument();
+    expect(screen.queryByText("Analyzing…")).not.toBeInTheDocument();
+  });
+
+  it("shows skipped and failed steps with the reason, then the findings", () => {
+    setup({
+      target,
+      result: analysis({ findings: [nullFinding] }),
+      steps: steps({
+        parse: ["done", ""],
+        static: ["done", "1 finding."],
+        metadata: ["skipped", "Not connected: connect to check keys, types and nullability."],
+        probes: ["waiting", "1 probe(s) proposed; approve them to run."],
+        runProbes: ["failed", "probe p1 is over the probe budget"],
+      }),
+    });
+    expect(screen.getByLabelText("Metadata rules: skipped")).toHaveTextContent("Not connected: connect to check keys");
+    expect(screen.getByLabelText("Propose probes: waiting for approval")).toBeInTheDocument();
+    expect(screen.getByLabelText("Run approved probes: failed")).toHaveTextContent("over the probe budget");
+    expect(screen.getByRole("button", { name: nullFinding.title })).toBeInTheDocument();
+  });
+
+  it("says when it was stopped part-way, and keeps the findings so far", () => {
+    setup({
+      target,
+      result: analysis({ findings: [nullFinding], stopped: true }),
+      steps: steps({ parse: ["done", ""], static: ["done", ""], metadata: ["skipped", "Cancelled."], probes: ["skipped", "Cancelled."], runProbes: ["skipped", "Cancelled."] }),
+    });
+    expect(screen.getByText(/Stopped part-way/)).toBeInTheDocument();
+    expect(screen.getAllByText("Cancelled.")).toHaveLength(3);
+    expect(screen.getByRole("button", { name: nullFinding.title })).toBeInTheDocument();
   });
 });

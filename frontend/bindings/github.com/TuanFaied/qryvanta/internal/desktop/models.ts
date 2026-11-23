@@ -82,6 +82,16 @@ export interface Analysis {
      * user approves them (RunProbes).
      */
     "probes": instrumentation$0.Probe[] | null;
+
+    /**
+     * Steps is the final status of each step of a diagnosis (empty for Analyze).
+     */
+    "steps": app$0.StepEvent[] | null;
+
+    /**
+     * Stopped is true when the diagnosis was cancelled part-way; the findings are those found so far.
+     */
+    "stopped": boolean;
 }
 
 /**
@@ -149,6 +159,22 @@ export interface ConnectionInput {
 export interface DatabasesResult {
     "databases": schema$0.Database[] | null;
     "error": MetadataError | null;
+}
+
+/**
+ * DiagnosisEvent is one step status of a diagnosis ("Execute with debugging"). The frontend drops
+ * events whose RunID is not the diagnosis it shows.
+ */
+export interface DiagnosisEvent {
+    "runId": string;
+    "step": app$0.Step;
+    "status": app$0.StepStatus;
+    "reason": string;
+
+    /**
+     * Findings is the number of findings after the step, when it changed them (-1 otherwise).
+     */
+    "findings": number;
 }
 
 /**

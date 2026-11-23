@@ -8,6 +8,24 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Execute with debugging (Ctrl+Shift+Enter, or the header button):
+  - The query runs as with Execute.
+  - The analysis panel fills step by step: parse and policy, static rules, metadata rules,
+    proposed probes, then the approved probes. Each step shows running, done, skipped (and
+    why), failed, or waiting for approval.
+  - Stop cancels the query and the diagnosis. The findings of the finished steps stay.
+- `qryvanta-cli diagnose [--conn X] [--file query.sql]` runs the same flow without running the
+  query:
+  - `--format text|json`;
+  - `--probes none|ask|all` (`ask` shows each probe's SQL first; `all` respects the budget);
+  - `--fail-on` severity;
+  - exit codes 0 clean, 1 findings, 2 usage, 3 timed out or cancelled, 4 could not run.
+  - Without `--conn`, only the static rules run.
+- The scenario suite: `tests/sample_queries/manifest.json` lists the finding each scenario must
+  produce (rule ID and classification). The integration tests check that every buggy query
+  produces it, with probes, and its corrected query does not. Scenarios 03 (duplicates by
+  spelling) and 09 (aggregation grain) are not detected yet, and say why.
+
 - Probes: read-only queries that measure what a finding claims (architecture D4).
   - **Proposed:** the analysis proposes them for a connected tab, from four fixed templates:
     - rows per join value (fan-out);

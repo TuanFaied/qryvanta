@@ -14,7 +14,7 @@ const placeholders = [
     label: "Diagnostics",
     icon: ListChecks,
     title: "No diagnostics",
-    body: "Findings from Execute with debugging appear here, each with its evidence and severity.",
+    body: "Findings from Execute with debugging (Ctrl+Shift+Enter) and Analyze appear in the Analysis panel, each with its evidence, step by step.",
   },
   {
     value: "plan",

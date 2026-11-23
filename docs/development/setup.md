@@ -299,6 +299,44 @@ cat report.sql | qryvanta-cli run --conn fixtures --database QryvantaSample --fo
 - Exit codes: `0` success, `1` query error or failed batch, `2` usage error, `3` timed out or
   cancelled, `4` refused by read-only mode. Ctrl+C cancels the query on the server.
 
+## Diagnosing queries from the CLI
+
+`qryvanta-cli diagnose` runs the diagnostic engine's flow, the same as "Execute with debugging"
+in the desktop app. It does not run the query itself:
+
+1. Parse the query and check the read-only policy.
+2. Run the static rules.
+3. With `--conn`: run the metadata rules (keys, types, nullability).
+4. Propose probes.
+5. Run the approved probes.
+
+```bash
+qryvanta-cli diagnose --conn fixtures --file tests/sample_queries/01_employees_without_department.buggy.sql
+```
+
+```bash
+qryvanta-cli diagnose --file query.sql --format json --fail-on medium
+```
+
+| Flag | Meaning |
+|---|---|
+| `--conn NAME\|ID` | Saved connection for the metadata rules and probes. Without it, only the static rules run. |
+| `--database DB` | Database for the metadata. The default is the connection's database. |
+| `--query SQL` / `--file PATH` / stdin | The query. |
+| `--format text\|json` | `text` (default) prints each step to stderr as it finishes, and the findings to stdout. `json` prints one document: `steps`, `findings` (the engine's finding schema, with evidence and corrections), `dismissed`, `probes` with their SQL and results, `metadata`, `refusals`. |
+| `--probes none\|ask\|all` | `ask` lists every probe with its SQL and asks `Run N probe(s)? [y/N]`. It is the default when stdin is a terminal, the SQL comes from `--file` or `--query`, and the format is `text`. `all` runs every probe within the budget (Settings: maximum probe queries per run). `none` runs none, and is the default otherwise. |
+| `--fail-on SEVERITY` | The lowest severity that makes the exit code 1: `critical`, `high` (default), `medium`, `low` or `informational`. |
+| `--timeout S` | Stop the diagnosis after S seconds (exit 3). |
+
+- Exit codes:
+  - `0`: no findings at or above `--fail-on`;
+  - `1`: such findings;
+  - `2`: usage error;
+  - `3`: timed out or cancelled (Ctrl+C);
+  - `4`: the diagnosis could not run (parser unavailable, connection failed).
+- Probes run under the read-only session guard with the probe timeout, two at a time, as in the
+  desktop app.
+
 ## Notes
 
 - `frontend/dist/.gitkeep` is committed so that `go build` and `go test ./...` work on a fresh clone

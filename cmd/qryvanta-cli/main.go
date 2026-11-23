@@ -48,6 +48,17 @@ Commands:
                  go to stdout, messages to stderr. Exit codes: 0 success, 1 query
                  error, 2 usage error, 3 timed out or cancelled (Ctrl+C cancels on
                  the server), 4 refused by read-only mode.
+  diagnose [--conn NAME|ID] [--database DB] [--file query.sql | --query SQL]
+           [--format text|json] [--probes none|ask|all] [--fail-on SEVERITY]
+           [--timeout SECONDS]
+                 Find bugs in a query with the diagnostic engine, as "Execute with
+                 debugging" does: static rules, then (with --conn) metadata rules and
+                 probes. Nothing but approved probes runs, and the query itself does
+                 not. --probes ask lists each probe's SQL and asks first (the default
+                 on a terminal); all runs them within the probe budget; none skips
+                 them (the default otherwise). Exit codes: 0 no findings at or above
+                 --fail-on (default high), 1 such findings, 2 usage error, 3 timed
+                 out or cancelled, 4 the diagnosis could not run.
   parse [--file query.sql | --query SQL] [--compat LEVEL] [--json] [--model]
                  Split a script into GO batches and report syntax errors with the
                  T-SQL parser (qryvanta-tsqlparser next to this program, or at
@@ -121,6 +132,8 @@ func dispatch(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 		return cmdConnections(rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout)
 	case "run":
 		return cmdRun(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
+	case "diagnose":
+		return cmdDiagnose(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
 	case "parse":
 		return cmdParse(ctx, rest[1:], app.Options{ConfigPath: *configPath, DisableFileLog: true}, stdout, stderr)
 	case "help":
