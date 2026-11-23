@@ -4,6 +4,7 @@
 export {
     Classification,
     EvidenceKind,
+    MeasurementKind,
     Severity
 } from "./models.js";
 

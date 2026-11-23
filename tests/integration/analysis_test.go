@@ -73,7 +73,9 @@ func TestTableMetadata(t *testing.T) {
 
 // TestSampleQueriesWithMetadata analyzes every sample query on the fixture database and checks
 // the exact rules each one triggers, metadata rules included.
-func TestSampleQueriesWithMetadata(t *testing.T) {
+// analysisCore is a core connected to the fixture database, as the desktop app would be.
+func analysisCore(t *testing.T) (*app.Core, app.AnalysisTarget, context.Context) {
+	t.Helper()
 	if os.Getenv("QRYVANTA_PARSER_PATH") == "" {
 		t.Skip("QRYVANTA_PARSER_PATH not set; analysis needs the parser sidecar")
 	}
@@ -93,11 +95,15 @@ func TestSampleQueriesWithMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
+	t.Cleanup(cancel)
 	if _, err := core.Pool().Connect(ctx, prof.ID); err != nil {
 		t.Fatal(err)
 	}
-	target := app.AnalysisTarget{ConnectionID: prof.ID, Database: m.Database}
+	return core, app.AnalysisTarget{ConnectionID: prof.ID, Database: m.Database}, ctx
+}
+
+func TestSampleQueriesWithMetadata(t *testing.T) {
+	core, target, ctx := analysisCore(t)
 
 	// The rules each sample triggers, in order of position. Samples not listed trigger none.
 	want := map[string][]string{
@@ -141,6 +147,69 @@ func TestSampleQueriesWithMetadata(t *testing.T) {
 			if name == "05_date_boundary.buggy.sql" && a.Findings[0].Classification != "confirmed" {
 				t.Errorf("sample 05 = %s, want confirmed", a.Findings[0].Classification)
 			}
+		})
+	}
+}
+
+// TestProbesMeasureSampleScenarios analyzes buggy samples, runs every planned probe (as the user
+// approving them would) and checks the measured evidence against the fixture data.
+func TestProbesMeasureSampleScenarios(t *testing.T) {
+	core, target, ctx := analysisCore(t)
+	cases := []struct {
+		file, rule string
+		// summary is a fragment of the probe result that confirms the finding.
+		summary string
+	}{
+		// Each order has several items and several payments: the two joins multiply.
+		{"02_one_to_many_fanout.buggy.sql", "QRY-JOIN-003", "rows per value"},
+		// Two employees have no department and one an unknown one: the INNER JOIN drops 3 of 12.
+		{"01_employees_without_department.buggy.sql", "QRY-JOIN-005", "3 of 12 dbo.Employees rows have no match in dbo.Departments (2 of them with NULL in DepartmentID)"},
+		// A guest order has a NULL CustomerID.
+		{"04_not_in_with_null.buggy.sql", "QRY-NULL-002", "dbo.Orders.CustomerID has 1 NULL,"},
+		// One order was placed on 31 January at 16:45.
+		{"05_date_boundary.buggy.sql", "QRY-DATE-002", "1 row of dbo.Orders falls after 2026-01-31"},
+		// The join on OrderItemID drops a line (#08).
+		{"08_wrong_join_key.buggy.sql", "QRY-JOIN-006", "have no match in dbo.Products"},
+	}
+	for _, c := range cases {
+		t.Run(c.file, func(t *testing.T) {
+			a, err := core.Analyze(ctx, readSample(t, c.file), target)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(a.Probes) == 0 {
+				t.Fatalf("no probes were planned: %+v", a.Findings)
+			}
+			var ids []string
+			for _, p := range a.Probes {
+				if !p.OverBudget {
+					ids = append(ids, p.ID)
+				}
+			}
+			run, err := core.RunProbes(ctx, a.ID, ids)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, r := range run.Results {
+				if r.Error != "" {
+					t.Fatalf("probe %s failed: %s", r.ProbeID, r.Error)
+				}
+			}
+			for _, f := range run.Findings {
+				if f.RuleID != c.rule {
+					continue
+				}
+				if f.Classification != "confirmed" {
+					t.Fatalf("%s = %s, want confirmed by the probe", f.RuleID, f.Classification)
+				}
+				for _, e := range f.Evidence {
+					if e.Kind == "probe" && strings.Contains(e.Summary, c.summary) {
+						return
+					}
+				}
+				t.Fatalf("no probe evidence containing %q in %+v", c.summary, f.Evidence)
+			}
+			t.Fatalf("no %s finding after the probes: %+v (dismissed %+v)", c.rule, run.Findings, run.Dismissed)
 		})
 	}
 }

@@ -262,6 +262,7 @@ WHERE o.object_id = @id`, id).Scan(&t.Schema, &t.Name, &kind)
 	if err != nil {
 		return schema.Table{}, convertError(err)
 	}
+	t.Database = database
 	switch kind {
 	case "U":
 		t.Kind = schema.KindTable

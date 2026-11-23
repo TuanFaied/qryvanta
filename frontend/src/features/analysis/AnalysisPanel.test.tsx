@@ -35,6 +35,8 @@ const planFinding: Finding = {
 };
 
 const analysis = (extra: Partial<Analysis> = {}): Analysis => ({
+  id: "a1",
+  probes: [],
   available: true,
   reason: "",
   findings: [],

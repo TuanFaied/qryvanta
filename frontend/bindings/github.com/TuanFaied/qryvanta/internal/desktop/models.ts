@@ -21,6 +21,9 @@ import * as diagnostics$0 from "../diagnostics/models.js";
 import * as executor$0 from "../executor/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as instrumentation$0 from "../instrumentation/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as parser$0 from "../parser/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -36,6 +39,11 @@ import * as version$0 from "../version/models.js";
  * Analysis is the analysis panel's view of a script.
  */
 export interface Analysis {
+    /**
+     * ID names the analysis for RunProbes.
+     */
+    "id": string;
+
     /**
      * Available is false when the parser cannot run; Reason says why. Then there are no
      * findings, which is not the same as "no findings".
@@ -68,6 +76,12 @@ export interface Analysis {
      * Metadata says whether keys, types and nullability were checked, and which tables could not be.
      */
     "metadata": app$0.MetadataStatus;
+
+    /**
+     * Probes could confirm or dismiss findings. They are shown in full and run only when the
+     * user approves them (RunProbes).
+     */
+    "probes": instrumentation$0.Probe[] | null;
 }
 
 /**
@@ -248,6 +262,20 @@ export enum PasswordAction {
      */
     PasswordClear = "clear",
 };
+
+/**
+ * ProbeRun is the result of running approved probes.
+ */
+export interface ProbeRun {
+    /**
+     * Error is set when the probes could not run at all (unknown analysis, over budget, not
+     * connected); each probe's own failure is in its result.
+     */
+    "error": string;
+    "results": instrumentation$0.Result[] | null;
+    "findings": diagnostics$0.Finding[] | null;
+    "dismissed": instrumentation$0.Dismissal[] | null;
+}
 
 /**
  * SaveConfigResult reports the outcome of UpdateConfig. Field errors are returned as data,

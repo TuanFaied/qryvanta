@@ -160,7 +160,7 @@ func (betweenDates) Info() Info {
 		ID:       "QRY-DATE-002",
 		Title:    "BETWEEN with a date as the end of a datetime range",
 		Severity: diagnostics.SeverityMedium,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic, diagnostics.EvidenceMetadata},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic, diagnostics.EvidenceMetadata, diagnostics.EvidenceProbe},
 	}
 }
 
@@ -181,6 +181,7 @@ func (betweenDates) Check(in *Input) ([]diagnostics.Finding, error) {
 			// Metadata: a date column has no time, so BETWEEN is right; a datetime column confirms it.
 			class := diagnostics.Potential
 			var typed []diagnostics.Evidence
+			var measure []diagnostics.Measurement
 			if r, ok := in.resolveColumn(root.from, e.Operand); ok {
 				switch {
 				case r.column.Type == "date":
@@ -189,6 +190,8 @@ func (betweenDates) Check(in *Input) ([]diagnostics.Finding, error) {
 					class = diagnostics.Confirmed
 					typed = append(typed, columnEvidence(r, "type", r.column.DataType,
 						fmt.Sprintf("%s.%s is %s, which has a time of day.", r.table.FullName(), r.column.Name, r.column.DataType)))
+					measure = append(measure, diagnostics.Measurement{Kind: diagnostics.MeasureRangeEnd, Table: ref(r.table),
+						Columns: []string{r.column.Name}, Values: []string{high, next}})
 				}
 			}
 			out = append(out, diagnostics.Finding{
@@ -206,6 +209,7 @@ func (betweenDates) Check(in *Input) ([]diagnostics.Finding, error) {
 					Span:        span,
 					Replacement: fmt.Sprintf("%s >= %s AND %s < %s", c, in.Text(e.Low.Span), c, quoteLike(e.High, next)),
 				},
+				Measurements: measure,
 			})
 		})
 	}

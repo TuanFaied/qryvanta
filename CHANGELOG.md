@@ -8,6 +8,22 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Probes: read-only queries that measure what a finding claims (architecture D4).
+  - **Proposed:** the analysis proposes them for a connected tab, from four fixed templates:
+    - rows per join value (fan-out);
+    - rows a join drops;
+    - NULLs in a NOT IN subquery's column;
+    - rows a BETWEEN end misses.
+  - **Safe SQL:** identifiers are quoted from the catalog and values are parameters, and every
+    probe passes the read-only allowlist.
+  - **Approval:** the analysis panel lists each probe with its SQL, and nothing runs until you
+    approve ("Run N probes").
+  - **Running:** probes run under the read-only guard with the probe timeout, two at a time, and
+    can be cancelled. Probes over the budget (Settings) are listed but not run.
+  - **Results:** a measured problem (for example "3 of 12 rows have no match") confirms the
+    finding. A measurement that shows none dismisses it and says why.
+- Query parameters in the executor: generated queries pass values as `@name` parameters.
+
 - Metadata for the analysis. With a connected tab, Analyze reads the catalog entries of the
   tables the query uses: column types, nullability, keys and foreign keys. They are cached per
   connection, and Refresh clears them. Tables that cannot be read are listed, and never fail the

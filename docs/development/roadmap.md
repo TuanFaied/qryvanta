@@ -72,7 +72,8 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   `BETWEEN` on datetime end boundaries, COUNT(col) versus COUNT(*) versus COUNT(DISTINCT) (#68)
 - ✅ Metadata rules: join on non-key columns (fan-out risk), join type mismatch, nullable join keys,
   joins that do not follow the foreign key; metadata confirms or dismisses static findings (#69)
-- Probes (D4): fan-out per join, unmatched rows per INNER JOIN, rows excluded per predicate
+- ✅ Probes (D4): fan-out per join, unmatched rows per INNER JOIN, rows missed by a BETWEEN end,
+  NULLs in a NOT IN subquery; approval list, budget and cancellation (#70)
 - CLI: `qryvanta-cli diagnose query.sql --conn X`
 
 ## Phase 6: Execution plans ⬜

@@ -18,7 +18,7 @@ func (notInNull) Info() Info {
 		ID:       "QRY-NULL-002",
 		Title:    "NOT IN with a subquery that can return NULL",
 		Severity: diagnostics.SeverityHigh,
-		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic, diagnostics.EvidenceMetadata},
+		Evidence: []diagnostics.EvidenceKind{diagnostics.EvidenceStatic, diagnostics.EvidenceMetadata, diagnostics.EvidenceProbe},
 	}
 }
 
@@ -67,6 +67,7 @@ func (notInNull) Check(in *Input) ([]diagnostics.Finding, error) {
 		}
 		// Metadata: a non-nullable column cannot return NULL; a nullable one is named.
 		var nullable []diagnostics.Evidence
+		var measure []diagnostics.Measurement
 		if q.Kind == parser.QuerySelect && len(q.Select) == 1 && q.Select[0].Expr != nil {
 			if r, ok := in.resolveColumn(q.From, q.Select[0].Expr); ok {
 				if !r.column.Nullable {
@@ -74,6 +75,11 @@ func (notInNull) Check(in *Input) ([]diagnostics.Finding, error) {
 				}
 				nullable = append(nullable, columnEvidence(r, "nullable", "yes",
 					fmt.Sprintf("%s.%s allows NULL.", r.table.FullName(), r.column.Name)))
+				// The NULLs the subquery returns: measurable when it reads one table without a filter.
+				if q.Where == nil && len(leaves(q.From)) == 1 && len(q.GroupBy) == 0 && q.Having == nil && q.Top == nil {
+					measure = append(measure, diagnostics.Measurement{Kind: diagnostics.MeasureNulls, Table: ref(r.table),
+						Columns: []string{r.column.Name}})
+				}
 			}
 		}
 		f := diagnostics.Finding{
@@ -84,6 +90,7 @@ func (notInNull) Check(in *Input) ([]diagnostics.Finding, error) {
 			Classification: diagnostics.Potential,
 			Span:           span,
 			Evidence:       append(evidence("NOT IN compares with every value the subquery returns, NULLs included."), nullable...),
+			Measurements:   measure,
 		}
 		if rewrite, ok := notExists(in, e); ok {
 			f.Correction = &diagnostics.Correction{

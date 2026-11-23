@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { backend, type Analysis } from "@/services/backend";
+import { backend, type Analysis, type ProbeRun } from "@/services/backend";
 import { editorPosition, useAnalysisStore, type AnalysisTarget } from "./analysis-store";
 
 const s = () => useAnalysisStore.getState();
@@ -14,6 +14,8 @@ const target = (sql: string, extra: Partial<AnalysisTarget> = {}): AnalysisTarge
   ...extra,
 });
 const result = (rules = 1): Analysis => ({
+  id: "a1",
+  probes: [],
   available: true,
   reason: "",
   findings: [],
@@ -26,7 +28,7 @@ const result = (rules = 1): Analysis => ({
 
 beforeEach(() => {
   vi.restoreAllMocks();
-  useAnalysisStore.setState({ target: null, running: false, result: null, error: null });
+  useAnalysisStore.setState({ target: null, running: false, result: null, error: null, probes: { running: false, results: [], dismissed: [], error: null } });
 });
 
 describe("analysis store", () => {
@@ -89,5 +91,53 @@ describe("editorPosition", () => {
     expect(editorPosition(t, 1, 1)).toEqual({ line: 3, column: 9 });
     expect(editorPosition(t, 2, 4)).toEqual({ line: 4, column: 4 });
     expect(editorPosition(target("x"), 1, 5)).toEqual({ line: 1, column: 5 });
+  });
+});
+
+describe("probes", () => {
+  const run = (extra: Partial<ProbeRun> = {}): ProbeRun => ({ error: "", results: [], findings: [], dismissed: [], ...extra });
+
+  it("runs only the approved probes of the current analysis and replaces its findings", async () => {
+    vi.spyOn(backend, "analyze").mockResolvedValue(result());
+    await s().analyze(target("SELECT 1"));
+    const runProbes = vi.spyOn(backend, "runProbes").mockResolvedValue(
+      run({ results: [{ probeId: "p1", elapsedMs: 5, error: "", summary: "3 rows dropped.", showsProblem: true, values: {} }] }),
+    );
+    await s().runProbes(["p1"]);
+    expect(runProbes).toHaveBeenCalledWith("a1", ["p1"], expect.any(AbortSignal));
+    expect(s().probes.results).toHaveLength(1);
+    expect(s().probes.running).toBe(false);
+  });
+
+  it("does nothing without approved probes or an analysis", async () => {
+    const runProbes = vi.spyOn(backend, "runProbes");
+    await s().runProbes(["p1"]);
+    vi.spyOn(backend, "analyze").mockResolvedValue(result());
+    await s().analyze(target("SELECT 1"));
+    await s().runProbes([]);
+    expect(runProbes).not.toHaveBeenCalled();
+  });
+
+  it("cancels the run and says so", async () => {
+    vi.spyOn(backend, "analyze").mockResolvedValue(result());
+    await s().analyze(target("SELECT 1"));
+    vi.spyOn(backend, "runProbes").mockImplementation(
+      (_id, _ids, signal) =>
+        new Promise((_resolve, reject) => signal!.addEventListener("abort", () => reject(new Error("cancelled")))),
+    );
+    const pending = s().runProbes(["p1"]);
+    expect(s().probes.running).toBe(true);
+    s().cancelProbes();
+    await pending;
+    expect(s().probes.running).toBe(false);
+    expect(s().probes.error).toBe("Cancelled: no findings were changed.");
+  });
+
+  it("reports a refusal from the backend", async () => {
+    vi.spyOn(backend, "analyze").mockResolvedValue(result());
+    await s().analyze(target("SELECT 1"));
+    vi.spyOn(backend, "runProbes").mockResolvedValue(run({ error: "probe p3 is over the probe budget" }));
+    await s().runProbes(["p3"]);
+    expect(s().probes.error).toBe("probe p3 is over the probe budget");
   });
 });

@@ -32,6 +32,15 @@ type Request struct {
 	Database string
 	Limits   Limits
 	Policy   Policy
+	// Params are sent with every batch as named parameters (@Name), never spliced into the SQL.
+	// Generated probe queries use them for values copied from the user's query.
+	Params []Param
+}
+
+// Param is a named query parameter. Value is a string, an integer, a float or a time.Time.
+type Param struct {
+	Name  string
+	Value any
 }
 
 // Batch is one batch of a script.
@@ -49,6 +58,15 @@ func (r Request) BatchesOf() []Batch {
 		return r.Batches
 	}
 	return []Batch{{SQL: r.SQL, Line: 1, Repeat: 1}}
+}
+
+// Args returns the request's parameters as database/sql named arguments.
+func (r Request) Args() []any {
+	args := make([]any, 0, len(r.Params))
+	for _, p := range r.Params {
+		args = append(args, sql.Named(p.Name, p.Value))
+	}
+	return args
 }
 
 // Policy controls the session guard (execution policy layer 2, architecture decision D5).

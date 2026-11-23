@@ -18,10 +18,17 @@ import type { Diagnostic, Scope, ScopeSource } from "../../bindings/github.com/T
 import { Outcome } from "../../bindings/github.com/TuanFaied/qryvanta/internal/executor/models";
 import type { RuleFailure } from "../../bindings/github.com/TuanFaied/qryvanta/internal/analyzer/models";
 import type { MetadataStatus, UnresolvedTable } from "../../bindings/github.com/TuanFaied/qryvanta/internal/app/models";
+import type {
+  Dismissal,
+  Param as ProbeParam,
+  Probe,
+  Result as ProbeResult,
+} from "../../bindings/github.com/TuanFaied/qryvanta/internal/instrumentation/models";
 import type { Correction, Evidence, Finding, Span } from "../../bindings/github.com/TuanFaied/qryvanta/internal/diagnostics/models";
 import { Classification, EvidenceKind, Severity } from "../../bindings/github.com/TuanFaied/qryvanta/internal/diagnostics/models";
 import type {
   Analysis,
+  ProbeRun,
   ExecutionEvent,
   SyntaxCheck,
   FileDocument,
@@ -53,6 +60,7 @@ export type { FileDocument, Formatting, OpenFileResult, SaveFileResult };
 export type { BatchRun, Diagnostic, ExecutionEvent, Message, Refusal, ResultColumn, Scope, ScopeSource, Summary, SyntaxCheck, Value };
 export type { ParserStatus };
 export type { Analysis, Correction, Evidence, Finding, MetadataStatus, RuleFailure, Span, UnresolvedTable };
+export type { Dismissal, Probe, ProbeParam, ProbeResult, ProbeRun };
 export { Classification, EvidenceKind, Severity };
 export { Outcome };
 export { AccessLevel, AuthMethod, EncryptMode, Encoding, ErrorCode, KeywordCase, LogLevel, ObjectKind, PasswordAction, Theme };
@@ -265,6 +273,23 @@ export const backend = {
           reason: res.metadata?.reason ?? "",
           unresolved: res.metadata?.unresolved ?? [],
         },
+        probes: (res.probes ?? []).map((p) => ({ ...p, params: p.params ?? [], findings: p.findings ?? [] })),
+      };
+    }),
+
+  /**
+   * Runs the probes the user approved, by ID. The backend runs the SQL it generated for the
+   * analysis, never SQL from here. Aborting the signal cancels every probe. error is set when the
+   * probes could not run at all; each probe's own failure is in its result.
+   */
+  runProbes: (analysisId: string, probeIds: string[], signal?: AbortSignal): Promise<ProbeRun> =>
+    call("Run probes", async () => {
+      const res = await withSignal(AnalysisService.RunProbes(analysisId, probeIds), signal);
+      return {
+        ...res,
+        results: (res.results ?? []).map((r) => ({ ...r, values: r.values ?? {} })),
+        findings: (res.findings ?? []).map((f) => ({ ...f, evidence: f.evidence ?? [] })),
+        dismissed: (res.dismissed ?? []).map((d) => ({ ...d, finding: { ...d.finding, evidence: d.finding.evidence ?? [] } })),
       };
     }),
 

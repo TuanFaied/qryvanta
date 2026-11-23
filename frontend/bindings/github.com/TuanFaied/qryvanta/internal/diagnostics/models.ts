@@ -104,6 +104,37 @@ export interface Finding {
 }
 
 /**
+ * MeasurementKind is what a probe measures.
+ */
+export enum MeasurementKind {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * MeasureFanOut: how many rows of Table share each value of Columns.
+     */
+    MeasureFanOut = "fanOut",
+
+    /**
+     * MeasureUnmatched: rows of Table whose Columns match no row of Other on OtherColumns.
+     */
+    MeasureUnmatched = "unmatched",
+
+    /**
+     * MeasureNulls: rows of Table where Columns[0] is NULL.
+     */
+    MeasureNulls = "nulls",
+
+    /**
+     * MeasureRangeEnd: rows of Table where Columns[0] is after Values[0] and before Values[1]
+     * (the part of the last day that BETWEEN … AND Values[0] misses).
+     */
+    MeasureRangeEnd = "rangeEnd",
+};
+
+/**
  * MetadataEvidence is one property of a database object, as the catalog reports it.
  */
 export interface MetadataEvidence {

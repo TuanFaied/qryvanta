@@ -78,7 +78,7 @@ internal/
                        (Phase 4: structured query model next)
   analyzer/            Rule interface, registry and engine that turn the QueryModel into findings
   diagnostics/         Finding, Evidence, Severity, Classification and their validation
-  instrumentation/     (Phase 5/7) Probe query generation and approval workflow
+  instrumentation/     Probe query templates and the interpretation of their results
   plan/                (Phase 6) Showplan XML parsing into an operator graph
   compare/             (Phase 7) Deterministic result comparison
   session/             (Phase 8) Debugging sessions and history
@@ -363,6 +363,43 @@ These are two different things with two different rules.
 
 There is a "probe budget" setting (maximum probes per run, maximum estimated cost) so a
 debugging run cannot turn into a heavy workload.
+
+**Implementation (#70).**
+
+- **Where probes come from:** rules do not write SQL. They describe a `diagnostics.Measurement`
+  with names from the resolved catalog (#69). `internal/instrumentation` turns it into a probe
+  from one of four templates:
+
+  | Template | Measures | Confirms |
+  |---|---|---|
+  | `fanOut` | rows per value of the join columns: values, repeated values, max and average rows per value | `QRY-JOIN-003` (both shapes) |
+  | `unmatched` | rows of a table with no match in the other on the join columns, and how many have NULL there | `QRY-JOIN-005`, `QRY-JOIN-006` |
+  | `nulls` | NULLs in a column | `QRY-NULL-002` (subquery over one table, no filter) |
+  | `rangeEnd` | rows after a BETWEEN end and before the next day | `QRY-DATE-002` (datetime columns) |
+
+  - Identifiers are quoted from the catalog names (three-part, `QUOTENAME` rules).
+  - Values from the query (the BETWEEN end) are `@p1`/`@p2` parameters, never spliced into the SQL.
+  - One probe serves every finding that needs the same measurement.
+- **Planning:** `app.Core.Analyze` plans the probes of a connected analysis.
+  - Every probe is parsed and checked against the read-only allowlist (D5 layer 1); a template
+    that fails it is dropped and logged as a bug.
+  - Probes after the budget are marked over budget.
+  - The plan stays in the core: the UI receives the probes to show, and approves them by ID.
+- **Running:** `Core.RunProbes(analysisID, probeIDs)` runs only probes that analysis planned, and
+  refuses unknown or over-budget IDs.
+  - It uses the executor (same runner) with the session guard (D5 layer 2), the probe timeout,
+    and at most 10 rows.
+  - At most 2 probes run at once, and cancelling cancels them all.
+  - The results stay with the analysis for the session; Phase 8 stores them.
+- **Effect on findings:** a result that shows the problem adds probe evidence and makes its
+  findings *Confirmed*. A result that shows none dismisses them, with the measurement as the
+  reason; a dismissal waits until every probe of the finding ran. A failed or cancelled probe
+  changes nothing.
+- **Budget:** "Maximum probe queries per run" (default 10; 0 disables probes) and "Probe query
+  timeout" (default 15 seconds) are in Settings. The maximum estimated cost needs estimated plans
+  and arrives with Phase 6.
+- **Approval:** the analysis panel lists every probe with what it would prove, its SQL and its
+  parameters. "Run N probes" is the approval for that analysis only: analyze again to run again.
 
 ### D5. Execution policy (read-only by default)
 

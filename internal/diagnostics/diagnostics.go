@@ -151,6 +151,43 @@ type Finding struct {
 	Span       Span        `json:"span"`
 	Evidence   []Evidence  `json:"evidence"`
 	Correction *Correction `json:"correction,omitempty"`
+	// Measurements describe probes that could confirm or dismiss the finding (D4). Rules fill
+	// them from resolved metadata; internal/instrumentation turns them into SQL from fixed
+	// templates. They stay on the server: the UI sees the generated probes instead.
+	Measurements []Measurement `json:"-"`
+}
+
+// MeasurementKind is what a probe measures.
+type MeasurementKind string
+
+const (
+	// MeasureFanOut: how many rows of Table share each value of Columns.
+	MeasureFanOut MeasurementKind = "fanOut"
+	// MeasureUnmatched: rows of Table whose Columns match no row of Other on OtherColumns.
+	MeasureUnmatched MeasurementKind = "unmatched"
+	// MeasureNulls: rows of Table where Columns[0] is NULL.
+	MeasureNulls MeasurementKind = "nulls"
+	// MeasureRangeEnd: rows of Table where Columns[0] is after Values[0] and before Values[1]
+	// (the part of the last day that BETWEEN … AND Values[0] misses).
+	MeasureRangeEnd MeasurementKind = "rangeEnd"
+)
+
+// TableRef names a resolved table: the names come from the catalog, not from the query text.
+type TableRef struct {
+	Database string
+	Schema   string
+	Name     string
+}
+
+// Measurement is what a probe would measure for a finding.
+type Measurement struct {
+	Kind         MeasurementKind
+	Table        TableRef
+	Columns      []string
+	Other        *TableRef
+	OtherColumns []string
+	// Values are literals copied from the query; probes pass them as parameters.
+	Values []string
 }
 
 // Validate checks f against the analyzed sql and returns every problem it finds, joined.

@@ -9,6 +9,7 @@ import (
 
 	"github.com/TuanFaied/qryvanta/internal/analyzer"
 	"github.com/TuanFaied/qryvanta/internal/connection"
+	"github.com/TuanFaied/qryvanta/internal/instrumentation"
 	"github.com/TuanFaied/qryvanta/internal/parser"
 	"github.com/TuanFaied/qryvanta/internal/schema"
 )
@@ -25,6 +26,8 @@ type AnalysisTarget struct {
 
 // Analysis is the result of analyzing a script.
 type Analysis struct {
+	// ID names the analysis for RunProbes.
+	ID string `json:"id"`
 	analyzer.Report
 	// Statements is the number of top-level statements that were analyzed.
 	Statements int `json:"statements"`
@@ -32,6 +35,9 @@ type Analysis struct {
 	SyntaxErrors int `json:"syntaxErrors"`
 	// Metadata says whether the metadata rules could run, and which tables they could not check.
 	Metadata MetadataStatus `json:"metadata"`
+	// Probes are the queries that could confirm or dismiss findings, generated from fixed
+	// templates (D4). They need a connection and run only when the user approves them.
+	Probes []instrumentation.Probe `json:"probes"`
 }
 
 // MetadataStatus says what the metadata rules could check.
@@ -66,7 +72,11 @@ func (c *Core) Analyze(ctx context.Context, sql string, target AnalysisTarget) (
 	if err != nil {
 		return Analysis{}, err
 	}
-	a := Analysis{Report: rep, SyntaxErrors: len(res.Diagnostics), Metadata: status}
+	a := Analysis{ID: newID(), Report: rep, SyntaxErrors: len(res.Diagnostics), Metadata: status, Probes: []instrumentation.Probe{}}
+	if status.Checked {
+		a.Probes = c.planProbes(ctx, rep.Findings)
+	}
+	c.analyses.add(&analysisRecord{id: a.ID, target: target, sql: sql, findings: rep.Findings, probes: a.Probes})
 	for _, b := range res.Batches {
 		a.Statements += len(b.Statements)
 	}
