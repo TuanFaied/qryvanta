@@ -8,6 +8,16 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- The execution plan view:
+  - The Execution plan tab draws each plan as a graph: right to left (or left to right), arrows
+    as thick as their rows, cost shares, and warning and estimate-gap badges.
+  - An operator's estimated and actual values appear side by side; missing values read
+    "unavailable", never 0.
+  - Predicates, output columns and warnings are listed, and a predicate that maps to one
+    condition selects it in the editor.
+  - A statement picker groups statements by batch. Actions: Copy XML, Save .sqlplan, zoom, fit,
+    minimap.
+
 - A showplan XML parser (`internal/plan`):
   - **What it produces:** statements and a tree of operators, with:
     - estimated rows, executions, costs and row size;

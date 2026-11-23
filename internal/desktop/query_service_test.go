@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -210,5 +212,42 @@ func TestQueryServiceForgetsOldPlans(t *testing.T) {
 	}
 	if _, err := s.PlanXML(fmt.Sprintf("run-%d", keptPlanRuns), 0); err != nil {
 		t.Fatalf("the newest run's plans: %v", err)
+	}
+}
+
+// fixturePlanRunner sends a captured actual plan of sample 08.
+type fixturePlanRunner struct{ xml string }
+
+func (r *fixturePlanRunner) Execute(_ context.Context, _ *sql.DB, req executor.Request, sink executor.Sink) executor.Summary {
+	_ = sink.(executor.PlanSink).Plan(executor.Plan{Mode: req.Plan, Batch: 0, Execution: 1, Statement: 1, XML: r.xml})
+	return executor.Summary{Outcome: executor.OutcomeSucceeded}
+}
+
+func TestQueryServicePlanGraph(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "tests", "plans", "fixtures", "08_wrong_join_key.buggy.actual.sqlplan"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, _, id := newQueryTestService(t, &fixturePlanRunner{xml: string(data)})
+	if _, err := s.Execute(context.Background(), "run-g", id, "", "SELECT 1", "actual"); err != nil {
+		t.Fatal(err)
+	}
+	g := s.PlanGraph(context.Background(), "run-g", 0)
+	if g.Error != "" || g.Plan == nil || !g.Plan.Actual || len(g.Plan.Statements) != 1 || g.Plan.Statements[0].Root == nil {
+		t.Fatalf("graph = %+v", g)
+	}
+	if len(g.Gaps) == 0 {
+		t.Fatal("an actual plan has no gaps compared")
+	}
+	if g := s.PlanGraph(context.Background(), "run-g", 5); g.Error == "" {
+		t.Error("a missing plan index must be an error")
+	}
+
+	bad, _, id2 := newQueryTestService(t, &fixturePlanRunner{xml: "<ShowPlanXML Version=\"9.9\"/>"})
+	if _, err := bad.Execute(context.Background(), "run-h", id2, "", "SELECT 1", "estimated"); err != nil {
+		t.Fatal(err)
+	}
+	if g := bad.PlanGraph(context.Background(), "run-h", 0); !strings.Contains(g.Error, "unsupported showplan version") {
+		t.Errorf("unsupported plan: %+v", g)
 	}
 }

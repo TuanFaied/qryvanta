@@ -87,7 +87,7 @@ Details: [phase-1-plan.md](phase-1-plan.md)
   session restored, size limit, desktop commands and `qryvanta-cli plan` (#72)
 - ✅ Showplan XML parser into an operator graph (operators, estimated and actual rows, costs, warnings),
   linked to the script's statements (#73)
-- React Flow plan view; estimated and actual values always labelled
+- ✅ React Flow plan view; estimated and actual values always labelled (#74)
 - Plan-based findings: large estimate/actual gaps, implicit conversions, spills, missing-join warnings
 
 ## Phase 7: Debugging visualization and comparison ⬜

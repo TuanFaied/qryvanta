@@ -27,6 +27,9 @@ import * as instrumentation$0 from "../instrumentation/models.js";
 import * as parser$0 from "../parser/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as plan$0 from "../plan/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as schema$0 from "../schema/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -253,6 +256,35 @@ export interface MetadataError {
 }
 
 /**
+ * NodeGap is the estimate-against-actual comparison of one operator.
+ */
+export interface NodeGap {
+    "statement": number;
+    "nodeId": number;
+
+    /**
+     * EstimatedRows is the estimate for all executions (rows per execution × executions).
+     */
+    "estimatedRows": number;
+    "actualRows": number;
+
+    /**
+     * Factor is the larger of the two divided by the smaller (each at least 1).
+     */
+    "factor": number;
+
+    /**
+     * Big is true when the gap reaches GapFactor and GapMinRows.
+     */
+    "big": boolean;
+
+    /**
+     * Under is true when the optimizer under-estimated (actual > estimated).
+     */
+    "under": boolean;
+}
+
+/**
  * ObjectsResult is returned by Objects.
  */
 export interface ObjectsResult {
@@ -293,6 +325,28 @@ export enum PasswordAction {
      */
     PasswordClear = "clear",
 };
+
+/**
+ * PlanGraph is a plan of a run as an operator graph, for the plan view.
+ */
+export interface PlanGraph {
+    /**
+     * Error is set when the plan cannot be shown (no longer kept, unsupported version, invalid).
+     */
+    "error": string;
+    "plan": plan$0.Plan | null;
+
+    /**
+     * Batch is the batch (0-based) of the run that produced the plan.
+     */
+    "batch": number;
+
+    /**
+     * Gaps are the operators whose estimate and actual rows were compared, by statement index and
+     * node ID; Big marks the gaps the view highlights (the same threshold as the plan rules).
+     */
+    "gaps": NodeGap[] | null;
+}
 
 /**
  * PlanInfo describes a plan of a run, without its XML.

@@ -61,6 +61,15 @@ export function Execute(runID: string, connectionID: string, database: string, s
 }
 
 /**
+ * PlanGraph parses a plan of a recent run into its operator graph. It links the plan's statements
+ * to the run's SQL and its predicates to the query's conditions where that is unambiguous, so the
+ * view can select a clause in the editor (positions are relative to the run's SQL).
+ */
+export function PlanGraph(runID: string, index: number): $CancellablePromise<$models.PlanGraph> {
+    return $Call.ByID(2272805055, runID, index);
+}
+
+/**
  * PlanXML returns a plan document of a recent run: the showplan XML, which SSMS can open as a
  * .sqlplan file.
  */

@@ -530,7 +530,22 @@ documentation states clearly which guarantees are hard and which are best effort
   runs). It announces each plan as a `plan` event without its XML, and `PlanXML` returns the
   XML on request.
 - **CLI:** `qryvanta-cli plan --estimated|--actual` writes the XML, or JSON, or `.sqlplan` files.
-- The plan view is the next issue.
+- **The plan view (#74):** the Execution plan tab draws each statement with React Flow.
+  - **Layout:** a tree with the root on the left and data flowing right to left (toggle: left to
+    right).
+  - **Operators:** name, object and cost share, with a warning badge, and a ×factor badge when
+    the gap between estimated and actual rows reaches the shared threshold (`plan.GapFactor` 10
+    and `plan.GapMinRows` 100, also used by the plan rules).
+  - **Arrows:** thickness follows actual rows in actual plans, otherwise estimated rows for all
+    executions, and the legend says which.
+  - **Details:** estimated and actual values side by side. A value the plan lacks reads
+    "unavailable", never 0; "—" marks values SQL Server never estimates or measures.
+  - **Predicates:** clicking an operator whose predicates map to exactly one condition
+    (`plan.MapPredicates`) selects it in the editor; otherwise nothing is selected.
+  - **Navigation:** statements are picked by batch. Actions: Copy XML, Save .sqlplan, zoom, fit,
+    and a minimap from 15 operators.
+  - **Large plans:** nodes draw only their name below 0.45 zoom, and only visible elements render
+    above 400 operators.
 
 **The operator graph (#73).** `internal/plan` turns showplan XML into a product-neutral model, and
 nothing else reads the XML.
@@ -698,7 +713,7 @@ Third-party components get their own logger through `logging.Logger.ForComponent
 ### D9. Frontend
 
 React 19, TypeScript (strict), Vite, Tailwind CSS v4, shadcn/ui, and Zustand for UI state.
-Monaco (Phase 3), TanStack Table (Phase 3), React Flow (Phases 6–7), and Recharts where
+Monaco (Phase 3), TanStack Table (Phase 3), React Flow (`@xyflow/react`, the plan view since #74; every plan number labelled estimated or actual, missing values "unavailable"), and Recharts where
 useful. The dark theme is the default, with a light theme available. All backend calls go
 through generated bindings wrapped in `frontend/src/services`, so components never import
 bindings directly.
