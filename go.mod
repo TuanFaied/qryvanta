@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/golang-sql/sqlexp v0.1.0
-	github.com/microsoft/go-mssqldb v1.11.2
+	github.com/microsoft/go-mssqldb v1.12.0
 	github.com/wailsapp/wails/v3 v3.1.0
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/text v0.43.0
