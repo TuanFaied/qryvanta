@@ -3,6 +3,7 @@ package desktop
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -10,6 +11,7 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/executor"
 	"github.com/TuanFaied/qryvanta/internal/parser"
+	"github.com/TuanFaied/qryvanta/internal/plan"
 )
 
 // EventExecution carries the results of a running query to the frontend.
@@ -84,6 +86,7 @@ type QueryService struct {
 
 	plansMu  sync.Mutex
 	plans    map[string][]executor.Plan // plan documents of recent runs, by run ID
+	planSQL  map[string]string          // the SQL each of those runs ran, to link plans to it
 	planRuns []string                   // run IDs in arrival order, to forget the oldest
 }
 
@@ -97,7 +100,8 @@ func NewQueryService(core *app.Core) *QueryService {
 }
 
 func newQueryService(core *app.Core, emit func(ExecutionEvent)) *QueryService {
-	return &QueryService{core: core, emit: emit, runs: map[string]context.CancelFunc{}, plans: map[string][]executor.Plan{}}
+	return &QueryService{core: core, emit: emit, runs: map[string]context.CancelFunc{}, plans: map[string][]executor.Plan{},
+		planSQL: map[string]string{}}
 }
 
 // MaxRunIDLength bounds the frontend-chosen run ID.
@@ -135,6 +139,11 @@ func (s *QueryService) Execute(ctx context.Context, runID, connectionID, databas
 		s.mu.Unlock()
 	}()
 
+	if mode != executor.PlanNone {
+		s.plansMu.Lock()
+		s.planSQL[runID] = sql
+		s.plansMu.Unlock()
+	}
 	req := executor.Request{SQL: sql, Database: database, Limits: s.core.ExecutionLimits(), Plan: mode}
 	sum := s.core.Execute(ctx, connectionID, req, &eventSink{runID: runID, emit: s.emit, keep: s.keepPlan})
 	s.emit(ExecutionEvent{RunID: runID, Kind: KindDone, Summary: &sum})
@@ -225,6 +234,7 @@ func (s *QueryService) keepPlan(runID string, p executor.Plan) int {
 		s.planRuns = append(s.planRuns, runID)
 		if len(s.planRuns) > keptPlanRuns {
 			delete(s.plans, s.planRuns[0])
+			delete(s.planSQL, s.planRuns[0])
 			s.planRuns = s.planRuns[1:]
 		}
 	}
@@ -245,4 +255,63 @@ func (s *QueryService) PlanXML(runID string, index int) (string, error) {
 		return "", errors.New("no such plan")
 	}
 	return plans[index].XML, nil
+}
+
+// PlanGraph is a plan of a run as an operator graph, for the plan view.
+type PlanGraph struct {
+	// Error is set when the plan cannot be shown (no longer kept, unsupported version, invalid).
+	Error string     `json:"error"`
+	Plan  *plan.Plan `json:"plan"`
+	// Batch is the batch (0-based) of the run that produced the plan.
+	Batch int `json:"batch"`
+	// Gaps are the operators whose estimate and actual rows were compared, by statement index and
+	// node ID; Big marks the gaps the view highlights (the same threshold as the plan rules).
+	Gaps []NodeGap `json:"gaps"`
+}
+
+// NodeGap is the estimate-against-actual comparison of one operator.
+type NodeGap struct {
+	Statement int `json:"statement"`
+	NodeID    int `json:"nodeId"`
+	plan.Gap
+}
+
+// PlanGraph parses a plan of a recent run into its operator graph. It links the plan's statements
+// to the run's SQL and its predicates to the query's conditions where that is unambiguous, so the
+// view can select a clause in the editor (positions are relative to the run's SQL).
+func (s *QueryService) PlanGraph(ctx context.Context, runID string, index int) PlanGraph {
+	out := PlanGraph{Gaps: []NodeGap{}}
+	s.plansMu.Lock()
+	plans, ok := s.plans[runID]
+	sql := s.planSQL[runID]
+	s.plansMu.Unlock()
+	if !ok || index < 0 || index >= len(plans) {
+		out.Error = "The plans of this run are no longer kept; run it again."
+		return out
+	}
+	doc := plans[index]
+	p, err := plan.Parse(strings.NewReader(doc.XML), 0)
+	if err != nil {
+		out.Error = "The plan cannot be shown: " + err.Error()
+		return out
+	}
+	out.Plan, out.Batch = p, doc.Batch
+	if res, err := s.core.Parser().Parse(ctx, sql, parser.Options{Model: true}); err == nil && doc.Batch < len(res.Batches) {
+		b := res.Batches[doc.Batch]
+		plan.Link(p, doc.Batch, sql, b)
+		for i := range p.Statements {
+			st := &p.Statements[i]
+			if st.Script != nil && st.Script.Statement < len(b.Statements) {
+				plan.MapPredicates(st, b.Statements[st.Script.Statement])
+			}
+		}
+	}
+	for i := range p.Statements {
+		p.Statements[i].Walk(func(o *plan.Operator) {
+			if g, ok := plan.EstimateGap(o); ok {
+				out.Gaps = append(out.Gaps, NodeGap{Statement: i, NodeID: o.NodeID, Gap: g})
+			}
+		})
+	}
+	return out
 }

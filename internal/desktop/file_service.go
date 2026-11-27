@@ -11,6 +11,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"github.com/TuanFaied/qryvanta/internal/app"
+	"github.com/TuanFaied/qryvanta/internal/fsutil"
 	"github.com/TuanFaied/qryvanta/internal/sqlfile"
 )
 
@@ -44,6 +45,7 @@ type SaveFileResult struct {
 type FileDialogs interface {
 	OpenSQL(dir string) (string, error)
 	SaveSQL(dir, name string) (string, error)
+	SavePlan(dir, name string) (string, error)
 }
 
 // FileService opens and saves .sql files through native dialogs.
@@ -136,6 +138,41 @@ func (s *FileService) SaveAs(suggestedName, content string, encoding sqlfile.Enc
 	return SaveFileResult{Path: path, Name: filepath.Base(path), Encoding: encoding}
 }
 
+// SavePlanAs asks for a file name and writes a showplan XML document there as a .sqlplan file,
+// which SSMS opens. The XML is written as is (UTF-8).
+func (s *FileService) SavePlanAs(suggestedName, xml string) SaveFileResult {
+	if !strings.HasPrefix(strings.TrimSpace(xml), "<ShowPlanXML") {
+		return SaveFileResult{Error: "This is not a showplan document."}
+	}
+	path, err := s.dialogs.SavePlan(s.dir(), withExtension(suggestedName, ".sqlplan", "Plan.sqlplan"))
+	if err != nil {
+		s.log.Warn("save plan dialog failed", "err", err)
+		return SaveFileResult{Error: "The save dialog could not be shown: " + err.Error()}
+	}
+	if path == "" {
+		return SaveFileResult{Cancelled: true}
+	}
+	path = filepath.Clean(withExtension(path, ".sqlplan", "Plan.sqlplan"))
+	if err := fsutil.WriteFileAtomic(path, []byte(xml), 0o644); err != nil {
+		return SaveFileResult{Error: writeError(path, err)}
+	}
+	s.mu.Lock()
+	s.lastDir = filepath.Dir(path)
+	s.mu.Unlock()
+	return SaveFileResult{Path: path, Name: filepath.Base(path)}
+}
+
+// withExtension adds ext to a name without an extension (fallback when the name is empty).
+func withExtension(name, ext, fallback string) string {
+	if strings.TrimSpace(name) == "" {
+		return fallback
+	}
+	if filepath.Ext(name) == "" {
+		return name + ext
+	}
+	return name
+}
+
 func (s *FileService) remember(path string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -198,6 +235,23 @@ func (wailsDialogs) OpenSQL(dir string) (string, error) {
 		SetTitle("Open SQL file").
 		CanChooseFiles(true).
 		AddFilter("SQL files (*.sql)", "*.sql").
+		AddFilter("All files (*.*)", "*.*")
+	if dir != "" {
+		d.SetDirectory(dir)
+	}
+	if w := a.Window.Current(); w != nil {
+		d.AttachToWindow(w)
+	}
+	return d.PromptForSingleSelection()
+}
+
+func (wailsDialogs) SavePlan(dir, name string) (string, error) {
+	a := application.Get()
+	d := a.Dialog.SaveFile().
+		SetMessage("Save execution plan").
+		SetFilename(name).
+		CanCreateDirectories(true).
+		AddFilter("Execution plans (*.sqlplan)", "*.sqlplan").
 		AddFilter("All files (*.*)", "*.*")
 	if dir != "" {
 		d.SetDirectory(dir)

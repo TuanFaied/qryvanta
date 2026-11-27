@@ -29,6 +29,8 @@ import { Classification, EvidenceKind, Severity } from "../../bindings/github.co
 import type {
   Analysis,
   DiagnosisEvent,
+  NodeGap,
+  PlanGraph,
   PlanInfo,
   ProbeRun,
   ExecutionEvent,
@@ -65,6 +67,19 @@ export type { Analysis, Correction, Evidence, Finding, MetadataStatus, RuleFailu
 export type { Dismissal, Probe, ProbeParam, ProbeResult, ProbeRun };
 export type { DiagnosisEvent, StepEvent };
 export type { PlanInfo };
+export type { NodeGap, PlanGraph };
+export type {
+  Clause as PlanClause,
+  Column as PlanColumn,
+  Estimates as PlanEstimates,
+  Actuals as PlanActuals,
+  $Object as PlanObject,
+  Operator as PlanOperator,
+  Plan,
+  Predicate as PlanPredicate,
+  Statement as PlanStatement,
+  Warning as PlanWarning,
+} from "../../bindings/github.com/TuanFaied/qryvanta/internal/plan/models";
 /** Execution plans a run asks for: none, estimated (compile only) or actual (run and capture). */
 export type PlanMode = "" | "estimated" | "actual";
 export { Classification, EvidenceKind, Severity };
@@ -258,6 +273,20 @@ export const backend = {
    */
   execute: (runId: string, connectionId: string, database: string, sql: string, plan: PlanMode = ""): Promise<Summary> =>
     call("Execute", () => QueryService.Execute(runId, connectionId, database, sql, plan)),
+
+  /**
+   * A plan of a recent run as an operator graph, linked to the run's SQL where unambiguous.
+   * error is set when it cannot be shown (no longer kept, unsupported version).
+   */
+  planGraph: (runId: string, index: number): Promise<PlanGraph> =>
+    call("Show the plan", async () => {
+      const res = await QueryService.PlanGraph(runId, index);
+      return { ...res, gaps: res.gaps ?? [] };
+    }),
+
+  /** Saves showplan XML as a .sqlplan file chosen in a dialog. */
+  savePlanAs: (suggestedName: string, xml: string): Promise<SaveFileResult> =>
+    call("Save the plan", () => FileService.SavePlanAs(suggestedName, xml)),
 
   /** The showplan XML of a plan of a recent run (SSMS opens it as a .sqlplan file). */
   planXml: (runId: string, index: number): Promise<string> => call("Read the plan", () => QueryService.PlanXML(runId, index)),

@@ -29,3 +29,13 @@ if (!window.matchMedia) {
 Element.prototype.scrollIntoView ??= function scrollIntoView() {};
 Element.prototype.hasPointerCapture ??= () => false;
 Element.prototype.releasePointerCapture ??= () => {};
+
+// React Flow reads transforms through DOMMatrixReadOnly, which jsdom lacks.
+class DOMMatrixReadOnlyStub {
+  m22 = 1;
+  constructor(transform?: string) {
+    const scale = transform?.match(/scale\(([1-9.])\)/)?.[1];
+    this.m22 = scale !== undefined ? Number(scale) : 1;
+  }
+}
+(globalThis as Record<string, unknown>).DOMMatrixReadOnly ??= DOMMatrixReadOnlyStub;

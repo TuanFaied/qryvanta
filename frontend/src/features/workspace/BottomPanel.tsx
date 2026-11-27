@@ -102,7 +102,7 @@ export function BottomPanel({
           />
         </TabsContent>
         <TabsContent value="plan" className="min-h-0 flex-1">
-          <PlansView run={run} />
+          <PlansView run={run} onRevealRange={onRevealRange} />
         </TabsContent>
         {placeholders.map((t) => (
           <TabsContent key={t.value} value={t.value} className="min-h-0 flex-1">

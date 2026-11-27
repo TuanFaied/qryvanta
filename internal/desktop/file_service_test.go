@@ -29,6 +29,11 @@ func (f *fakeDialogs) SaveSQL(dir, name string) (string, error) {
 	return f.save, f.err
 }
 
+func (f *fakeDialogs) SavePlan(dir, name string) (string, error) {
+	f.gotDir, f.gotName = dir, name
+	return f.save, f.err
+}
+
 func newTestFileService(d *fakeDialogs) *FileService {
 	return newFileService(d, slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
@@ -152,5 +157,27 @@ func TestWindowServiceInterceptsCloseOnlyWithUnsavedChanges(t *testing.T) {
 	s.Close() // no window attached: only records the decision
 	if s.interceptClose() || prompts != 1 {
 		t.Fatal("close after the user confirmed should not be blocked")
+	}
+}
+
+func TestSavePlanAs(t *testing.T) {
+	dir := t.TempDir()
+	d := &fakeDialogs{save: filepath.Join(dir, "orders")}
+	s := newTestFileService(d)
+	xml := `<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.564"/>`
+	res := s.SavePlanAs("Query 1", xml)
+	if res.Error != "" || res.Name != "orders.sqlplan" || d.gotName != "Query 1.sqlplan" {
+		t.Fatalf("result %+v, suggested %q", res, d.gotName)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "orders.sqlplan"))
+	if err != nil || string(data) != xml {
+		t.Fatalf("file = %q, %v", data, err)
+	}
+	if res := s.SavePlanAs("x", "SELECT 1"); res.Error == "" {
+		t.Error("a document that is not a showplan must be refused")
+	}
+	d.save = ""
+	if res := s.SavePlanAs("", xml); !res.Cancelled || d.gotName != "Plan.sqlplan" {
+		t.Errorf("cancel: %+v, suggested %q", res, d.gotName)
 	}
 }

@@ -104,6 +104,17 @@ type Predicate struct {
 	Kind    string   `json:"kind"`
 	Text    string   `json:"text"`
 	Columns []Column `json:"columns"`
+	// Clause is the condition of the query the predicate comes from, when MapPredicates could
+	// tell unambiguously.
+	Clause *Clause `json:"clause,omitempty"`
+}
+
+// Clause locates a condition in the analyzed SQL: UTF-16 offsets, 1-based line and column.
+type Clause struct {
+	Offset int `json:"offset"`
+	Length int `json:"length"`
+	Line   int `json:"line"`
+	Column int `json:"column"`
 }
 
 // Column is a column reference. Computed values have only a Name (Expr1002).

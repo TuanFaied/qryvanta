@@ -65,3 +65,70 @@ func TestPlansLinkToTheirScript(t *testing.T) {
 		t.Fatalf("only %d of %d plans matched by text", byText, len(files))
 	}
 }
+
+// TestPredicatesMapToClauses maps plan predicates to the query's conditions where that is
+// unambiguous: every mapped clause refers to the predicate's columns, and the sample with a wrong
+// join key maps its seek to the ON condition and its residual to the WHERE condition.
+func TestPredicatesMapToClauses(t *testing.T) {
+	path := os.Getenv("QRYVANTA_PARSER_PATH")
+	if path == "" {
+		t.Skip("QRYVANTA_PARSER_PATH not set")
+	}
+	c := sidecar.New(sidecar.Options{Path: path, Timeout: 20 * time.Second})
+	t.Cleanup(func() { _ = c.Close() })
+
+	files, _ := filepath.Glob(filepath.Join("fixtures", "*.sqlplan"))
+	mapped := 0
+	for _, f := range files {
+		base := filepath.Base(f)
+		cut := strings.Index(base, ".buggy.")
+		if cut < 0 {
+			cut = strings.Index(base, ".correct.")
+		}
+		sample := base[:cut] + "." + strings.Split(base[cut+1:], ".")[0]
+		sqlBytes, err := os.ReadFile(filepath.Join("..", "sample_queries", sample+".sql"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sql := string(sqlBytes)
+		res, err := c.Parse(context.Background(), sql, parser.Options{Model: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		in, _ := os.Open(f)
+		p, err := plan.Parse(in, 0)
+		in.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		plan.Link(p, 0, sql, res.Batches[0])
+		clauses := map[string]string{}
+		for i := range p.Statements {
+			st := &p.Statements[i]
+			plan.MapPredicates(st, res.Batches[0].Statements[st.Script.Statement])
+			st.Walk(func(o *plan.Operator) {
+				for _, pr := range o.Predicates {
+					if pr.Clause == nil {
+						continue
+					}
+					mapped++
+					text := parser.SpanText(sql, parser.Span{Offset: pr.Clause.Offset, Length: pr.Clause.Length})
+					for _, col := range pr.Columns {
+						if col.Table != "" && !strings.Contains(strings.ToLower(text), strings.ToLower(col.Name)) {
+							t.Errorf("%s: %s predicate %q mapped to %q, which does not use %s", base, pr.Kind, pr.Text, text, col.Name)
+						}
+					}
+					clauses[pr.Kind] = text
+				}
+			})
+		}
+		if strings.HasPrefix(base, "08_wrong_join_key.buggy.") {
+			if clauses["seek"] != "p.ProductID = oi.OrderItemID" || clauses["residual"] != "oi.OrderID = 103" {
+				t.Errorf("%s: clauses = %v", base, clauses)
+			}
+		}
+	}
+	if mapped == 0 {
+		t.Fatal("no predicate was mapped to a clause")
+	}
+}

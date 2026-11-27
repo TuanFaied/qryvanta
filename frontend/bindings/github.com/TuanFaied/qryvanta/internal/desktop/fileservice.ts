@@ -45,3 +45,11 @@ export function Save(path: string, content: string, encoding: sqlfile$0.Encoding
 export function SaveAs(suggestedName: string, content: string, encoding: sqlfile$0.Encoding): $CancellablePromise<$models.SaveFileResult> {
     return $Call.ByID(68904731, suggestedName, content, encoding);
 }
+
+/**
+ * SavePlanAs asks for a file name and writes a showplan XML document there as a .sqlplan file,
+ * which SSMS opens. The XML is written as is (UTF-8).
+ */
+export function SavePlanAs(suggestedName: string, xml: string): $CancellablePromise<$models.SaveFileResult> {
+    return $Call.ByID(2707176200, suggestedName, xml);
+}
