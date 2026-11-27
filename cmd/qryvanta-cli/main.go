@@ -49,12 +49,15 @@ Commands:
                  error, 2 usage error, 3 timed out or cancelled (Ctrl+C cancels on
                  the server), 4 refused by read-only mode.
   diagnose [--conn NAME|ID] [--database DB] [--file query.sql | --query SQL]
-           [--format text|json] [--probes none|ask|all] [--fail-on SEVERITY]
-           [--timeout SECONDS]
+           [--format text|json] [--plan estimated|actual|none]
+           [--probes none|ask|all] [--fail-on SEVERITY] [--timeout SECONDS]
                  Find bugs in a query with the diagnostic engine, as "Execute with
-                 debugging" does: static rules, then (with --conn) metadata rules and
-                 probes. Nothing but approved probes runs, and the query itself does
-                 not. --probes ask lists each probe's SQL and asks first (the default
+                 debugging" does: static rules, then (with --conn) metadata rules,
+                 plan rules and probes. --plan estimated (the default with --conn)
+                 compiles the query for its plan without running it; actual runs it
+                 under read-only mode and the limits for measured rows, discarding
+                 its results; none skips plans. Otherwise nothing but approved probes
+                 runs. --probes ask lists each probe's SQL and asks first (the default
                  on a terminal); all runs them within the probe budget; none skips
                  them (the default otherwise). Exit codes: 0 no findings at or above
                  --fail-on (default high), 1 such findings, 2 usage error, 3 timed

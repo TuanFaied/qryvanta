@@ -121,26 +121,26 @@ func TestDiagnoseProbeModes(t *testing.T) {
 	terminal(t, false)
 
 	opts, runner := probeOpts(t, 10)
-	res, code := diagnoseJSON(t, opts, "--conn", "Fixture", "--file", sample01, "--probes", "none", "--fail-on", "medium")
+	res, code := diagnoseJSON(t, opts, "--conn", "Fixture", "--plan", "none", "--file", sample01, "--probes", "none", "--fail-on", "medium")
 	if code != exitFindings || join005(t, res) != "potential" || runner.runs != 0 || len(res.Probes) != 1 || res.Probes[0].Result != nil {
 		t.Fatalf("none: exit %d, runs %d, result %+v", code, runner.runs, res)
 	}
 
-	res, _ = diagnoseJSON(t, opts, "--conn", "Fixture", "--file", sample01, "--probes", "all")
+	res, _ = diagnoseJSON(t, opts, "--conn", "Fixture", "--plan", "none", "--file", sample01, "--probes", "all")
 	if join005(t, res) != "confirmed" || runner.runs != 1 || res.Probes[0].Result == nil ||
 		!strings.Contains(res.Probes[0].Result.Summary, "3 of 12 dbo.Employees rows have no match") {
 		t.Fatalf("all: runs %d, result %+v", runner.runs, res)
 	}
 
 	withStdin(t, "y\n")
-	stdout, stderr, _ := diagnoseCmd(t, context.Background(), opts, "--conn", "Fixture", "--file", sample01, "--probes", "ask")
+	stdout, stderr, _ := diagnoseCmd(t, context.Background(), opts, "--conn", "Fixture", "--plan", "none", "--file", sample01, "--probes", "ask")
 	if runner.runs != 2 || !strings.Contains(stderr, "Run 1 probe(s)? [y/N]") || !strings.Contains(stderr, "NOT EXISTS") ||
 		!strings.Contains(stdout, "Confirmed issue · QRY-JOIN-005") {
 		t.Fatalf("ask y: runs %d\nstderr %s\nstdout %s", runner.runs, stderr, stdout)
 	}
 
 	withStdin(t, "n\n")
-	stdout, _, _ = diagnoseCmd(t, context.Background(), opts, "--conn", "Fixture", "--file", sample01, "--probes", "ask")
+	stdout, _, _ = diagnoseCmd(t, context.Background(), opts, "--conn", "Fixture", "--plan", "none", "--file", sample01, "--probes", "ask")
 	if runner.runs != 2 || !strings.Contains(stdout, "Potential issue · QRY-JOIN-005") {
 		t.Fatalf("ask n: runs %d\n%s", runner.runs, stdout)
 	}
@@ -149,8 +149,8 @@ func TestDiagnoseProbeModes(t *testing.T) {
 func TestDiagnoseProbesRespectTheBudget(t *testing.T) {
 	terminal(t, false)
 	opts, runner := probeOpts(t, 0)
-	res, _ := diagnoseJSON(t, opts, "--conn", "Fixture", "--file", sample01, "--probes", "all")
-	if runner.runs != 0 || len(res.Probes) != 1 || !res.Probes[0].OverBudget || res.Steps[4].Status != app.StepSkipped {
+	res, _ := diagnoseJSON(t, opts, "--conn", "Fixture", "--plan", "none", "--file", sample01, "--probes", "all")
+	if runner.runs != 0 || len(res.Probes) != 1 || !res.Probes[0].OverBudget || res.Steps[5].Status != app.StepSkipped {
 		t.Fatalf("runs %d, result %+v", runner.runs, res)
 	}
 }

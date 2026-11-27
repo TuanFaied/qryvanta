@@ -53,11 +53,13 @@ never reused, so reports and suppressions can rely on it. Areas:
 | `PRED` | Predicates that cannot be true or add nothing |
 | `DATE` | Date and time filters |
 | `COUNT` | Counting |
+| `PLAN` | What execution plans show: estimates, conversions, spills, joins |
 
 ## Rules
 
 The rules read the parsed query, so text in comments and string literals never triggers them.
 `QRY-JOIN-003` to `QRY-JOIN-006` also need metadata (they run only when the tab is connected),
+`QRY-PLAN-001` to `QRY-PLAN-004` need an execution plan (see [Plans](#plans-plan-evidence)),
 and three static rules use metadata when it is there (see
 [Metadata](#metadata-confirmations-and-dismissals)). They apply wherever a query can appear: CTEs, derived
 tables, subqueries, every branch of a set operation, `UPDATE … FROM` and `DELETE … FROM`.
@@ -79,6 +81,10 @@ tables, subqueries, every branch of a set operation, `UPDATE … FROM` and `DELE
 | QRY-DATE-002 | BETWEEN with a date as the end of a datetime range | Medium | Potential |
 | QRY-COUNT-001 | COUNT(column) skips NULLs | Informational | Potential |
 | QRY-COUNT-002 | COUNT over a join may count rows more than once | Medium | Potential |
+| QRY-PLAN-001 | Estimated and actual rows far apart | Low | Optimization |
+| QRY-PLAN-002 | Implicit conversion in the plan | Medium | Potential |
+| QRY-PLAN-003 | Spill to tempdb | Low | Optimization |
+| QRY-PLAN-004 | Join without a predicate in the plan | High | Confirmed |
 
 ### QRY-NULL-001
 
@@ -162,6 +168,8 @@ WHERE o.OrderDate >= '2026-01-01';   -- every order paired with every customer
 
 How it's classified:
 - **Potential:** the product is certain, but whether it is a bug isn't, so add the join condition.
+- **Confirmed:** when the statement's execution plan warns "No Join Predicate" (see
+  [Plans](#plans-plan-evidence)).
 - **Not reported:** `CROSS JOIN` and `APPLY`, which say what they do.
 - **Silenced:** a comma join with a derived table that has at most one row (an aggregate without
   GROUP BY, `TOP (1)`, or no FROM).
@@ -417,7 +425,8 @@ SQL Server converts one side for every row, by data type precedence:
 - a `date` compared with a datetime matches only at midnight.
 
 How it's classified:
-- **Potential:** the implicit-conversion warning in an actual plan (Phase 6) confirms it.
+- **Potential:** an implicit conversion in the plan at the same condition confirms it (see
+  [Plans](#plans-plan-evidence)).
 - **Not reported:** numbers of different sizes (`int` and `bigint`), which compare correctly.
   Different collations are an error that SQL Server reports itself.
 
@@ -459,3 +468,81 @@ offered only when the wrong column is qualified; an unqualified name could becom
 How it's classified:
 - **Potential:** joining on another column can be intended.
 - **Not reported:** a join that follows any foreign key between the two tables, and self-joins.
+
+## Plans: plan evidence
+
+**Execute with debugging** and `qryvanta-cli diagnose` read the query's execution plan:
+
+- **Estimated** by default (`SET SHOWPLAN_XML`): the query does not run.
+- **Actual** when *Include actual plan* is on (Ctrl+M) or with `--plan actual`: the plan of the run
+  that just executed, with measured rows.
+
+`--plan none` skips plans. Plan findings point at the statement, or at the condition the
+operator's predicate maps to, and their evidence names the operator's node ID (shown in the
+Execution plan tab) and says whether each value was estimated or measured.
+
+Plans also confirm findings of other rules:
+
+| Rule | Plan evidence | Result |
+|---|---|---|
+| QRY-JOIN-001 | A join operator with the "No Join Predicate" warning in the same statement | *Confirmed* (QRY-PLAN-004 is not reported separately) |
+| QRY-JOIN-004 | `CONVERT_IMPLICIT` in a seek or join predicate mapped to the same condition | *Confirmed* (QRY-PLAN-002 is not reported separately) |
+| QRY-JOIN-003 | Actual plan only: the join operator mapped to the condition returned more rows than its outer input | *Confirmed*, with the measured rows |
+
+An estimated plan never gives a finding that needs measured rows (QRY-PLAN-001, QRY-PLAN-003,
+the QRY-JOIN-003 confirmation).
+
+### QRY-PLAN-001
+
+**Estimated and actual rows far apart** · Low · Optimization · plan evidence (actual)
+
+An operator returned at least **10 times** more or fewer rows than estimated, and the two differ
+by at least **100 rows** (so 1 estimated against 9 actual is not reported). Rows are compared for
+all executions: the estimate per execution times the estimated executions, against the rows
+measured over all of them. The thresholds are `plan.GapFactor` and `plan.GapMinRows`, the same
+ones the Execution plan tab's ×factor badge uses.
+
+Only the operator where the gap starts is reported: an operator whose input already has a large
+gap inherits it.
+
+Common causes: stale statistics, predicates the optimizer cannot estimate (functions on columns,
+see QRY-DATE-001), correlated columns, table variables.
+
+### QRY-PLAN-002
+
+**Implicit conversion in the plan** · Medium · Potential · plan evidence
+
+The plan converts a column's values to another type to compare them:
+
+- a `PlanAffectingConvert` warning about a `CONVERT_IMPLICIT` (the conversion affects the
+  cardinality estimate or prevents a seek), or
+- `CONVERT_IMPLICIT` in a seek or join predicate.
+
+An explicit `CAST` or `CONVERT` that the query writes is what was meant, and is not reported.
+
+```sql
+WHERE c.Email = N'a@example.com'   -- Email is varchar: the column is converted for every row
+```
+
+How it's classified:
+- **Potential:** the conversion is real, but whether it costs much depends on the data and the
+  indexes.
+- **Confirms QRY-JOIN-004** when it is at the same join condition; it is then not reported on its
+  own.
+
+### QRY-PLAN-003
+
+**Spill to tempdb** · Low · Optimization · plan evidence (actual)
+
+A sort or hash operator ran out of its memory grant and wrote rows to tempdb. The grant is sized
+from the row estimate, so an under-estimate (QRY-PLAN-001) is the usual cause. Only actual plans
+report spills.
+
+### QRY-PLAN-004
+
+**Join without a predicate in the plan** · High · Confirmed · plan evidence
+
+SQL Server's plan reports a join with no join predicate: a cartesian product. It is reported on
+its own when no QRY-JOIN-001 finding covers the statement (for example, when the predicate was
+removed by the optimizer's simplification or the statement could not be judged statically);
+otherwise it confirms QRY-JOIN-001.

@@ -25,6 +25,8 @@ type Input struct {
 	Result *parser.Result
 	// Catalog is the metadata of the tables the script reads, or nil without a connection.
 	Catalog *Catalog
+	// Plans are the execution plans of the script, linked with LinkPlans; nil without plans.
+	Plans []PlanDoc
 }
 
 // Text returns the SQL a span covers.
@@ -127,6 +129,10 @@ func Builtin() []Rule {
 		notInNull{},
 		nonSargableDate{},
 		nullComparison{},
+		estimateGap{},
+		implicitConversion{},
+		spill{},
+		noJoinPredicate{},
 		joinFanOut{},
 		joinTypeMismatch{},
 		nullableJoinKey{},

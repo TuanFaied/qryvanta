@@ -180,7 +180,7 @@ describe("AnalysisPanel", () => {
 
 describe("Execute with debugging steps", () => {
   const steps = (status: Record<string, [string, string]>) =>
-    (["parse", "static", "metadata", "probes", "runProbes"] as const).map((step) => ({
+    (["parse", "static", "metadata", "plan", "probes", "runProbes"] as const).map((step) => ({
       step,
       status: (status[step]?.[0] ?? "pending") as never,
       reason: status[step]?.[1] ?? "",

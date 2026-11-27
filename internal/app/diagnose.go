@@ -4,17 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/TuanFaied/qryvanta/internal/analyzer"
 	"github.com/TuanFaied/qryvanta/internal/diagnostics"
 	"github.com/TuanFaied/qryvanta/internal/executor"
 	"github.com/TuanFaied/qryvanta/internal/instrumentation"
 	"github.com/TuanFaied/qryvanta/internal/parser"
+	"github.com/TuanFaied/qryvanta/internal/plan"
 	"github.com/TuanFaied/qryvanta/internal/security"
 )
 
 // The debugging flow (architecture section 6): the desktop app's "Execute with debugging" and
-// "qryvanta-cli diagnose" run the same steps here. Plans join it in Phase 6.
+// "qryvanta-cli diagnose" run the same steps here.
 
 // Step is one step of a diagnosis, in order.
 type Step string
@@ -23,12 +25,13 @@ const (
 	StepParse     Step = "parse"     // parse with the QueryModel, and check the read-only policy
 	StepStatic    Step = "static"    // rules that need only the query
 	StepMetadata  Step = "metadata"  // rules that read the catalog, and upgrades of static findings
+	StepPlan      Step = "plan"      // capture or take the execution plan; plan rules and confirmations
 	StepProbes    Step = "probes"    // propose probes, and ask for approval
 	StepRunProbes Step = "runProbes" // run the approved probes and update the findings
 )
 
 // Steps lists the steps in the order they run.
-var Steps = []Step{StepParse, StepStatic, StepMetadata, StepProbes, StepRunProbes}
+var Steps = []Step{StepParse, StepStatic, StepMetadata, StepPlan, StepProbes, StepRunProbes}
 
 // StepStatus is where a step is.
 type StepStatus string
@@ -62,6 +65,13 @@ type DiagnoseOptions struct {
 	Approve func(ctx context.Context, probes []instrumentation.Probe) ([]string, error)
 	// Emit receives every step event as it happens. It may be nil.
 	Emit func(StepEvent)
+	// Plan captures an execution plan of sql through Execute (under the execution policy and
+	// limits): PlanEstimated compiles it without running it, PlanActual runs it. PlanNone, or no
+	// connection in Target, skips plans. Ignored when Plans is set.
+	Plan executor.PlanMode
+	// Plans, when set, supplies plans already captured for exactly sql (the desktop app's run
+	// with "Include actual plan"), and may wait for them. When it returns none, Plan applies.
+	Plans func(ctx context.Context) []executor.Plan
 }
 
 // Diagnosis is the result of the debugging flow.
@@ -73,11 +83,13 @@ type Diagnosis struct {
 	Steps []StepEvent `json:"steps"`
 	// ProbeRun is set when approved probes ran.
 	ProbeRun *ProbeRun `json:"probeRun,omitempty"`
+	// PlanMode is the kind of plan the findings used, empty without one.
+	PlanMode executor.PlanMode `json:"planMode,omitempty"`
 }
 
 // Diagnose runs the debugging flow over sql: parse and check the policy, the static rules, the
-// metadata rules, propose probes, and run the approved ones. It executes nothing but approved
-// probes. Cancelling ctx stops it between steps (and running probes); the remaining steps are
+// metadata rules, the plan rules, propose probes, and run the approved ones. It executes nothing
+// but approved probes and, with opts.Plan set to PlanActual, the query itself for its plan. Cancelling ctx stops it between steps (and running probes); the remaining steps are
 // reported as skipped and ctx's error is returned with what was found so far. A parser that cannot
 // run is an error (wrapping parser.ErrUnavailable).
 func (c *Core) Diagnose(ctx context.Context, sql string, opts DiagnoseOptions) (Diagnosis, error) {
@@ -166,11 +178,20 @@ func (c *Core) Diagnose(ctx context.Context, sql string, opts DiagnoseOptions) (
 		}
 		emit(StepEvent{Step: StepMetadata, Status: StepDone, Reason: reason, Findings: rep.Findings})
 	}
+	// 4. Plans.
+	if ctx.Err() != nil {
+		return stop(StepPlan)
+	}
+	ev, ok := c.diagnosePlan(ctx, sql, res, cat, engine, opts, &d)
+	if !ok {
+		return stop(StepPlan)
+	}
+	emit(ev)
 	for _, f := range d.Failures {
 		c.log.Warn("a diagnostic rule failed", "rule", f.RuleID, "error", f.Message)
 	}
 
-	// 4. Propose probes.
+	// 5. Propose probes.
 	if ctx.Err() != nil {
 		return stop(StepProbes)
 	}
@@ -209,7 +230,7 @@ func (c *Core) Diagnose(ctx context.Context, sql string, opts DiagnoseOptions) (
 	}
 	emit(StepEvent{Step: StepProbes, Status: StepDone, Reason: fmt.Sprintf("%d probe(s) proposed.", runnable)})
 
-	// 5. Run the approved probes.
+	// 6. Run the approved probes.
 	ids, err := opts.Approve(ctx, d.Probes)
 	if err != nil || ctx.Err() != nil {
 		if ctx.Err() != nil {
@@ -246,6 +267,108 @@ func (c *Core) Diagnose(ctx context.Context, sql string, opts DiagnoseOptions) (
 	}
 	emit(StepEvent{Step: StepRunProbes, Status: StepDone, Reason: reason + ".", Findings: run.Findings})
 	return d, nil
+}
+
+// diagnosePlan is the plan step: it takes or captures the plans, re-runs the rules with them and
+// applies the plans' confirmations to d. It returns the step's final event, or false when ctx was
+// cancelled during it.
+func (c *Core) diagnosePlan(ctx context.Context, sql string, res *parser.Result, cat *analyzer.Catalog,
+	engine *analyzer.Engine, opts DiagnoseOptions, d *Diagnosis) (StepEvent, bool) {
+	skip := func(reason string) (StepEvent, bool) {
+		return StepEvent{Step: StepPlan, Status: StepSkipped, Reason: reason}, true
+	}
+	fail := func(reason string) (StepEvent, bool) {
+		return StepEvent{Step: StepPlan, Status: StepFailed, Reason: reason}, true
+	}
+	running := func(reason string) {
+		if opts.Emit != nil {
+			opts.Emit(StepEvent{Step: StepPlan, Status: StepRunning, Reason: reason})
+		}
+	}
+	var docs []executor.Plan
+	mode := opts.Plan
+	note := ""
+	if opts.Plans != nil {
+		running("Waiting for the run's plan.")
+		docs = opts.Plans(ctx)
+		if ctx.Err() != nil {
+			return StepEvent{}, false
+		}
+		if len(docs) > 0 {
+			mode = docs[0].Mode
+		} else {
+			note = "The run gave no plan for this SQL. "
+		}
+	}
+	if len(docs) == 0 {
+		switch {
+		case mode == executor.PlanNone:
+			return skip(note + "No plan was requested.")
+		case opts.Target.ConnectionID == "":
+			return skip(note + "Plans need a connection.")
+		case d.SyntaxErrors > 0:
+			return skip(note + "The script has syntax errors.")
+		}
+		running("Capturing the " + string(mode) + " plan.")
+		sink := &planCollector{}
+		sum := c.Execute(ctx, opts.Target.ConnectionID, executor.Request{SQL: sql, Database: opts.Target.Database,
+			Limits: c.ExecutionLimits(), Plan: mode}, sink)
+		if ctx.Err() != nil {
+			return StepEvent{}, false
+		}
+		docs = sink.plans
+		if len(docs) == 0 {
+			reason := "The server returned no plan."
+			if sum.Error != "" {
+				reason = "The plan could not be captured: " + sum.Error
+			}
+			return fail(note + reason)
+		}
+	}
+	in := analyzer.Input{SQL: sql, Result: res, Catalog: cat}
+	broken := 0
+	for _, doc := range docs {
+		if doc.Execution > 1 {
+			continue // GO n: the first execution's plan stands for the batch
+		}
+		p, err := plan.Parse(strings.NewReader(doc.XML), 0)
+		if err != nil {
+			broken++
+			continue
+		}
+		in.Plans = append(in.Plans, analyzer.PlanDoc{Batch: doc.Batch, Plan: p})
+	}
+	if len(in.Plans) == 0 {
+		return fail(fmt.Sprintf("None of the %d plan(s) could be read.", len(docs)))
+	}
+	in.LinkPlans()
+	rep, err := engine.Analyze(ctx, &in)
+	if err != nil {
+		return StepEvent{}, false
+	}
+	rep.Findings = analyzer.ConfirmWithPlans(&in, rep.Findings)
+	d.Report = rep
+	d.PlanMode = mode
+	label := "Estimated"
+	if mode == executor.PlanActual {
+		label = "Actual"
+	}
+	reason := fmt.Sprintf("%s%s plan, %d document(s): %s", note, label, len(in.Plans), countFindings(len(rep.Findings)))
+	if broken > 0 {
+		reason = strings.TrimSuffix(reason, ".") + fmt.Sprintf("; %d plan(s) could not be read.", broken)
+	}
+	return StepEvent{Step: StepPlan, Status: StepDone, Reason: reason, Findings: rep.Findings}, true
+}
+
+// planCollector keeps the plans of a run and drops its rows.
+type planCollector struct{ plans []executor.Plan }
+
+func (*planCollector) ResultSet(int, []executor.Column) error { return nil }
+func (*planCollector) Rows(int, [][]executor.Value) error     { return nil }
+func (*planCollector) Message(executor.Message) error         { return nil }
+func (s *planCollector) Plan(p executor.Plan) error {
+	s.plans = append(s.plans, p)
+	return nil
 }
 
 func countFindings(n int) string {

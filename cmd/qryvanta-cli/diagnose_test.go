@@ -40,10 +40,30 @@ func TestDiagnoseFlags(t *testing.T) {
 		{[]string{"--file", "a.sql", "--query", "SELECT 1"}, "either --file or --query"},
 		{[]string{"--timeout", "-1", "--query", "SELECT 1"}, "--timeout must not be negative"},
 		{[]string{"--query", "SELECT 1", "extra"}, "unexpected argument"},
+		{[]string{"--plan", "both", "--query", "SELECT 1"}, "--plan must be estimated, actual or none"},
+		{[]string{"--plan", "actual", "--query", "SELECT 1"}, "--plan actual needs --conn"},
 	} {
 		_, stderr, code := diagnoseCmd(t, context.Background(), app.Options{}, c.args...)
 		if code != 2 || !strings.Contains(stderr, c.want) {
 			t.Errorf("%v: exit %d, stderr %q; want 2 and %q", c.args, code, stderr, c.want)
+		}
+	}
+}
+
+func TestDiagnosePlanModeDefaults(t *testing.T) {
+	terminal(t, false)
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"--query", "SELECT 1"}, "none"},
+		{[]string{"--query", "SELECT 1", "--conn", "x"}, "estimated"},
+		{[]string{"--query", "SELECT 1", "--conn", "x", "--plan", "actual"}, "actual"},
+		{[]string{"--query", "SELECT 1", "--conn", "x", "--plan", "none"}, "none"},
+		{[]string{"--query", "SELECT 1", "--plan", "none"}, "none"},
+	} {
+		if o, err := parseDiagnoseFlags(c.args); err != nil || o.plan != c.want {
+			t.Errorf("%v: plan = %q (%v), want %q", c.args, o.plan, err, c.want)
 		}
 	}
 }
@@ -76,7 +96,7 @@ func TestDiagnoseStaticOnlyJSON(t *testing.T) {
 	if err := json.Unmarshal([]byte(stdout), &res); err != nil {
 		t.Fatalf("invalid JSON: %v\n%s", err, stdout)
 	}
-	if res.Version != 1 || res.Outcome != "completed" || len(res.Steps) != 5 || res.Findings == nil || res.Probes == nil ||
+	if res.Version != 1 || res.Outcome != "completed" || len(res.Steps) != 6 || res.Findings == nil || res.Probes == nil ||
 		res.Steps[2].Status != app.StepSkipped || res.Connection != "" {
 		t.Fatalf("result = %+v", res)
 	}
@@ -145,7 +165,8 @@ func TestWriteDiagnosisText(t *testing.T) {
 		Connection: "Fixture", Database: "Sales",
 		Findings: []diagnostics.Finding{{RuleID: "QRY-NULL-001", Title: `"a = NULL" is never true`, Explanation: "Line one.\nLine two.",
 			Severity: diagnostics.SeverityHigh, Classification: diagnostics.Confirmed, Span: diagnostics.Span{Line: 3, Column: 7},
-			Evidence:   []diagnostics.Evidence{{Kind: diagnostics.EvidenceStatic, Summary: "Compares with NULL."}},
+			Evidence: []diagnostics.Evidence{{Kind: diagnostics.EvidenceStatic, Summary: "Compares with NULL."},
+				{Kind: diagnostics.EvidencePlan, Summary: "No join predicate.", Plan: &diagnostics.PlanEvidence{NodeID: 3, Operator: "Nested Loops", Property: "warning", Value: "No Join Predicate", Actual: true}}},
 			Correction: &diagnostics.Correction{Description: "Use IS NULL.", Replacement: "a IS NULL"}}},
 		Dismissed: []instrumentation.Dismissal{{Finding: diagnostics.Finding{Title: "fan-out"}, Reason: "unique today"}},
 		Metadata:  app.MetadataStatus{Unresolved: []app.UnresolvedTable{{Name: "dbo.Missing", Reason: "not found"}}},
@@ -154,6 +175,7 @@ func TestWriteDiagnosisText(t *testing.T) {
 		"1 finding(s) on Fixture (Sales):",
 		"HIGH · Confirmed issue · QRY-NULL-001 · line 3, column 7",
 		`"a = NULL" is never true`, "  Line two.", "- static evidence: Compares with NULL.",
+		"- plan evidence (actual, node 3 Nested Loops): No join predicate.",
 		"Suggested correction (not applied): Use IS NULL.", "a IS NULL",
 		"Dismissed by probes:", "fan-out: unique today", "dbo.Missing: not found",
 	} {

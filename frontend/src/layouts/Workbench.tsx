@@ -215,9 +215,13 @@ export function Workbench({ info, config, onThemeChange, onSaveConfig, onLoadDef
   const executeDebug = () => {
     const target = analysisTarget();
     if (!target) return;
-    if (!exec.blockedReason) exec.execute();
+    const runId = exec.blockedReason ? null : exec.execute();
     refs.analysis.current?.expand();
-    void useAnalysisStore.getState().diagnose(target);
+    // With "Include actual plan" the findings use that run's measured plan; otherwise (or when the
+    // run did not start, for example waiting for a confirmation) an estimated plan, which runs
+    // nothing. Without a connection the plan step is skipped.
+    const actual = runId !== null && useExecutionStore.getState().includeActualPlan;
+    void useAnalysisStore.getState().diagnose(target, actual ? { mode: "actual", runId } : { mode: "estimated" });
   };
   const stopAll = () => {
     exec.stop();

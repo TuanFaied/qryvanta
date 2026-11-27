@@ -26,12 +26,18 @@ export function Analyze(sql: string, connectionID: string, database: string): $C
 
 /**
  * Diagnose runs the debugging flow ("Execute with debugging"): parse and policy, static rules,
- * metadata rules, and proposed probes, which wait for the user's approval (RunProbes). Each step's
- * status is emitted as an EventDiagnosis with runID as it happens. Cancelling the call stops the
- * flow; the steps not reached are reported as skipped and the findings so far are returned.
+ * metadata rules, plan rules, and proposed probes, which wait for the user's approval
+ * (RunProbes). Each step's status is emitted as an EventDiagnosis with runID as it happens.
+ * Cancelling the call stops the flow; the steps not reached are reported as skipped and the
+ * findings so far are returned.
+ * 
+ * plan is "estimated" (compile sql for its plan, without running it), "actual" or empty (no
+ * plan). "actual" uses the plans of the query run planRunID ("Include actual plan"), waiting for
+ * it to end; it never runs the query itself, and falls back to an estimated plan when that run
+ * gave no plan for exactly sql.
  */
-export function Diagnose(runID: string, sql: string, connectionID: string, database: string): $CancellablePromise<$models.Analysis> {
-    return $Call.ByID(2965163450, runID, sql, connectionID, database);
+export function Diagnose(runID: string, sql: string, connectionID: string, database: string, plan: string, planRunID: string): $CancellablePromise<$models.Analysis> {
+    return $Call.ByID(2965163450, runID, sql, connectionID, database, plan, planRunID);
 }
 
 /**

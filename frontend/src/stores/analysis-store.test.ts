@@ -155,11 +155,11 @@ describe("Execute with debugging", () => {
       return new Promise((r) => (finish = r));
     });
     const pending = s().diagnose(target("SELECT 1"));
-    expect(steps()).toBe("parse:pending static:pending metadata:pending probes:pending runProbes:pending");
+    expect(steps()).toBe("parse:pending static:pending metadata:pending plan:pending probes:pending runProbes:pending");
     s().applyStep({ runId, step: "parse", status: "done", reason: "1 batch(es).", findings: -1 } as unknown as DiagnosisEvent);
     s().applyStep({ runId: "an-older-run", step: "static", status: "failed", reason: "", findings: -1 } as unknown as DiagnosisEvent);
     s().applyStep({ runId, step: "static", status: "running", reason: "", findings: -1 } as unknown as DiagnosisEvent);
-    expect(steps()).toBe("parse:done static:running metadata:pending probes:pending runProbes:pending");
+    expect(steps()).toBe("parse:done static:running metadata:pending plan:pending probes:pending runProbes:pending");
     expect(s().running).toBe(true);
     finish({
       ...result(),
@@ -167,12 +167,13 @@ describe("Execute with debugging", () => {
         { step: "parse", status: "done", reason: "1 batch(es)." },
         { step: "static", status: "done", reason: "0 findings." },
         { step: "metadata", status: "skipped", reason: "Not connected." },
+        { step: "plan", status: "skipped", reason: "Plans need a connection." },
         { step: "probes", status: "skipped", reason: "Probes need a connection." },
         { step: "runProbes", status: "skipped", reason: "No probes were proposed." },
       ] as unknown as Analysis["steps"],
     });
     await pending;
-    expect(steps()).toBe("parse:done static:done metadata:skipped probes:skipped runProbes:skipped");
+    expect(steps()).toBe("parse:done static:done metadata:skipped plan:skipped probes:skipped runProbes:skipped");
     expect(s().steps?.[2]?.reason).toBe("Not connected.");
     expect(s().running).toBe(false);
   });
@@ -180,7 +181,7 @@ describe("Execute with debugging", () => {
   it("marks the steps not reached as cancelled when stopped part-way", async () => {
     let runId = "";
     vi.spyOn(backend, "diagnose").mockImplementation(
-      (id, _sql, _conn, _db, signal) =>
+      (id, _sql, _conn, _db, _plan, signal) =>
         new Promise((_r, reject) => {
           runId = id;
           signal!.addEventListener("abort", () => reject(new Error("cancelled")));
@@ -191,7 +192,7 @@ describe("Execute with debugging", () => {
     s().applyStep({ runId, step: "static", status: "running", reason: "", findings: -1 } as unknown as DiagnosisEvent);
     s().cancelDiagnosis();
     await pending;
-    expect(steps()).toBe("parse:done static:skipped metadata:skipped probes:skipped runProbes:skipped");
+    expect(steps()).toBe("parse:done static:skipped metadata:skipped plan:skipped probes:skipped runProbes:skipped");
     expect(s().steps?.[1]?.reason).toBe("Cancelled.");
     expect(s().error).toBeNull();
   });
@@ -203,6 +204,13 @@ describe("Execute with debugging", () => {
     const [first, second] = diagnose.mock.calls;
     expect(first?.slice(1, 4)).toEqual(["SELECT 1", "c1", "Sales"]);
     expect(first?.[0]).not.toBe(second?.[0]);
+    expect(first?.[4]).toEqual({ mode: "" });
+  });
+
+  it("passes the plan to read", async () => {
+    const diagnose = vi.spyOn(backend, "diagnose").mockResolvedValue(result());
+    await s().diagnose(target("SELECT 1", { connectionId: "c1" }), { mode: "actual", runId: "run-7" });
+    expect(diagnose.mock.calls[0]?.[4]).toEqual({ mode: "actual", runId: "run-7" });
   });
 
   it("a plain Analyze has no steps", async () => {

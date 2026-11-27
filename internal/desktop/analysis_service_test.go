@@ -26,7 +26,7 @@ func testAnalysisService(t *testing.T, p parser.Parser) *AnalysisService {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = core.Close() })
-	return NewAnalysisService(core)
+	return NewAnalysisService(core, nil)
 }
 
 func TestAnalysisServiceParserUnavailable(t *testing.T) {
@@ -73,8 +73,8 @@ func TestDiagnoseStreamsStepStatuses(t *testing.T) {
 	log := &diagnosisLog{}
 	s := testAnalysisService(t, parsertest.Fake{})
 	s.emit = log.add
-	a := s.Diagnose(context.Background(), "run-1", "SELECT 1", "", "")
-	want := "parse:running parse:done static:running static:done metadata:running metadata:skipped probes:skipped runProbes:skipped"
+	a := s.Diagnose(context.Background(), "run-1", "SELECT 1", "", "", "", "")
+	want := "parse:running parse:done static:running static:done metadata:running metadata:skipped plan:skipped probes:skipped runProbes:skipped"
 	if got := log.statuses(); got != want {
 		t.Fatalf("events = %s\nwant     %s", got, want)
 	}
@@ -83,7 +83,7 @@ func TestDiagnoseStreamsStepStatuses(t *testing.T) {
 			t.Fatalf("event without the run ID: %+v", e)
 		}
 	}
-	if !a.Available || a.Stopped || len(a.Steps) != 5 || a.ID == "" || a.Findings == nil || a.Probes == nil {
+	if !a.Available || a.Stopped || len(a.Steps) != 6 || a.ID == "" || a.Findings == nil || a.Probes == nil {
 		t.Fatalf("analysis = %+v", a)
 	}
 }
@@ -98,11 +98,11 @@ func TestDiagnoseCancelledPartWay(t *testing.T) {
 			cancel() // Stop while the metadata step would start
 		}
 	}
-	a := s.Diagnose(ctx, "run-2", "SELECT 1", "", "")
+	a := s.Diagnose(ctx, "run-2", "SELECT 1", "", "", "", "")
 	if !a.Available || !a.Stopped {
 		t.Fatalf("analysis = %+v, want stopped with the findings so far", a)
 	}
-	if got := log.statuses(); !strings.HasSuffix(got, "static:done metadata:skipped probes:skipped runProbes:skipped") {
+	if got := log.statuses(); !strings.HasSuffix(got, "static:done metadata:skipped plan:skipped probes:skipped runProbes:skipped") {
 		t.Fatalf("events = %s", got)
 	}
 	if a.Steps[2].Reason != "Cancelled." {
@@ -113,7 +113,7 @@ func TestDiagnoseCancelledPartWay(t *testing.T) {
 func TestDiagnoseParserUnavailable(t *testing.T) {
 	s := testAnalysisService(t, parsertest.Fake{Err: fmt.Errorf("%w: sidecar not found", parser.ErrUnavailable)})
 	s.emit = func(DiagnosisEvent) {}
-	a := s.Diagnose(context.Background(), "run-3", "SELECT 1", "", "")
+	a := s.Diagnose(context.Background(), "run-3", "SELECT 1", "", "", "", "")
 	if a.Available || a.Stopped || !strings.Contains(a.Reason, "sidecar not found") || a.Steps[0].Status != "failed" {
 		t.Fatalf("analysis = %+v", a)
 	}

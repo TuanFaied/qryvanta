@@ -55,6 +55,7 @@ const stepLabel: Record<StepState["step"], string> = {
   parse: "Parse and check the policy",
   static: "Static rules",
   metadata: "Metadata rules",
+  plan: "Execution plan",
   probes: "Propose probes",
   runProbes: "Run approved probes",
 };
