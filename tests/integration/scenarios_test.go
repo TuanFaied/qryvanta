@@ -8,13 +8,17 @@ import (
 	"testing"
 
 	"github.com/TuanFaied/qryvanta/internal/app"
+	"github.com/TuanFaied/qryvanta/internal/diagnostics"
+	"github.com/TuanFaied/qryvanta/internal/executor"
 	"github.com/TuanFaied/qryvanta/internal/instrumentation"
 )
 
 // TestScenarioSuite is the acceptance suite of the diagnostic engine (architecture section 9):
 // for each scenario in tests/sample_queries/manifest.json, the whole debugging flow (with every
-// probe within budget approved) must produce the expected finding on the buggy query, by rule ID
-// and classification, and must not produce it on the corrected query.
+// probe within budget approved, and the actual plan) must produce the expected finding on the buggy
+// query, by rule ID and classification, and must not produce it on the corrected query. Findings
+// the manifest lists under planEvidence must carry evidence from both the actual and the estimated
+// plan; corrected queries never carry plan evidence.
 func TestScenarioSuite(t *testing.T) {
 	core, target, ctx := analysisCore(t)
 	m := loadManifest(t)
@@ -30,9 +34,9 @@ func TestScenarioSuite(t *testing.T) {
 		}
 		return ids, nil
 	}
-	diagnose := func(t *testing.T, file string) app.Diagnosis {
+	diagnose := func(t *testing.T, file string, mode executor.PlanMode) app.Diagnosis {
 		t.Helper()
-		d, err := core.Diagnose(ctx, readSample(t, file), app.DiagnoseOptions{Target: target, Approve: approveAll})
+		d, err := core.Diagnose(ctx, readSample(t, file), app.DiagnoseOptions{Target: target, Approve: approveAll, Plan: mode})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -48,7 +52,18 @@ func TestScenarioSuite(t *testing.T) {
 				}
 			}
 		}
+		if d.PlanMode != mode {
+			t.Fatalf("plan mode = %q, want %q", d.PlanMode, mode)
+		}
 		return d
+	}
+	planEvidence := func(f diagnostics.Finding) *diagnostics.PlanEvidence {
+		for _, e := range f.Evidence {
+			if e.Plan != nil {
+				return e.Plan
+			}
+		}
+		return nil
 	}
 	describe := func(d app.Diagnosis) string {
 		var parts []string
@@ -63,7 +78,7 @@ func TestScenarioSuite(t *testing.T) {
 			if len(sc.Findings) == 0 && sc.Undetected == "" {
 				t.Fatal("the manifest gives neither expected findings nor why there are none")
 			}
-			buggy := diagnose(t, sc.Buggy.File)
+			buggy := diagnose(t, sc.Buggy.File, executor.PlanActual)
 			for _, want := range sc.Findings {
 				found := false
 				for _, f := range buggy.Findings {
@@ -73,7 +88,29 @@ func TestScenarioSuite(t *testing.T) {
 					t.Errorf("buggy query: no %s/%s finding (got %s)", want.Rule, want.Classification, describe(buggy))
 				}
 			}
-			correct := diagnose(t, sc.Correct.File)
+			for _, mode := range []executor.PlanMode{executor.PlanActual, executor.PlanEstimated} {
+				d := buggy
+				if mode == executor.PlanEstimated && len(sc.PlanEvidence) > 0 {
+					d = diagnose(t, sc.Buggy.File, mode)
+				}
+				for _, want := range sc.PlanEvidence {
+					found := false
+					for _, f := range d.Findings {
+						if ev := planEvidence(f); f.RuleID == want.Rule && ev != nil {
+							found = found || (ev.Operator == want.Operator && ev.Actual == (mode == executor.PlanActual))
+						}
+					}
+					if !found {
+						t.Errorf("buggy query, %s plan: no %s finding with plan evidence from %s (got %s)", mode, want.Rule, want.Operator, describe(d))
+					}
+				}
+			}
+			correct := diagnose(t, sc.Correct.File, executor.PlanActual)
+			for _, f := range correct.Findings {
+				if ev := planEvidence(f); ev != nil {
+					t.Errorf("corrected query has plan evidence: %s %s (node %d)", f.RuleID, f.Title, ev.NodeID)
+				}
+			}
 			for _, want := range sc.Findings {
 				for _, f := range correct.Findings {
 					if f.RuleID == want.Rule {

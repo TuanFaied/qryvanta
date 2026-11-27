@@ -179,6 +179,13 @@ function withSignal<T>(promise: Cancellable<T>, signal?: AbortSignal): Promise<T
   return promise;
 }
 
+/** The plan Execute with debugging reads: none, an estimated one, or the actual plan of a run. */
+export interface DebugPlan {
+  mode: "" | "estimated" | "actual";
+  /** The query run whose actual plan to use (mode "actual"). */
+  runId?: string;
+}
+
 export const backend = {
   getAppInfo: (): Promise<AppInfo> =>
     call("Load application info", async () => {
@@ -320,12 +327,23 @@ export const backend = {
 
   /**
    * Execute with debugging: the debugging flow (parse and policy, static rules, metadata rules,
-   * proposed probes). Each step's status arrives as an onDiagnosisEvent with runId as it happens.
-   * Aborting the signal stops the flow; the result then has stopped set and the findings so far.
+   * plan rules, proposed probes). Each step's status arrives as an onDiagnosisEvent with runId as
+   * it happens. Aborting the signal stops the flow; the result then has stopped set and the
+   * findings so far. plan "estimated" compiles the SQL for its plan; "actual" uses the plans of
+   * the query run planRunId (waiting for it to end), falling back to an estimated plan.
    */
-  diagnose: (runId: string, sql: string, connectionId: string, database: string, signal?: AbortSignal): Promise<Analysis> =>
+  diagnose: (
+    runId: string,
+    sql: string,
+    connectionId: string,
+    database: string,
+    plan: DebugPlan,
+    signal?: AbortSignal,
+  ): Promise<Analysis> =>
     call("Execute with debugging", async () =>
-      normalizeAnalysis(await withSignal(AnalysisService.Diagnose(runId, sql, connectionId, database), signal)),
+      normalizeAnalysis(
+        await withSignal(AnalysisService.Diagnose(runId, sql, connectionId, database, plan.mode, plan.runId ?? ""), signal),
+      ),
     ),
 
   /** Subscribes to diagnosis step statuses. Returns an unsubscribe function. */

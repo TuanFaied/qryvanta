@@ -251,3 +251,73 @@ func TestQueryServicePlanGraph(t *testing.T) {
 		t.Errorf("unsupported plan: %+v", g)
 	}
 }
+
+func TestQueryServiceWaitRun(t *testing.T) {
+	s, _, id := newQueryTestService(t, &planRunner{})
+	// Waiting before the run starts (the frontend's two calls can arrive in any order).
+	waited := make(chan struct{})
+	go func() {
+		s.waitRun(context.Background(), "run-w")
+		close(waited)
+	}()
+	for {
+		s.mu.Lock()
+		_, registered := s.done["run-w"]
+		s.mu.Unlock()
+		if registered {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if _, err := s.Execute(context.Background(), "run-w", id, "", "SELECT 1", "actual"); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-waited:
+	case <-time.After(5 * time.Second):
+		t.Fatal("waitRun did not return when the run ended")
+	}
+	if sql, plans := s.runPlans("run-w"); sql != "SELECT 1" || len(plans) != 2 || plans[0].Mode != executor.PlanActual {
+		t.Fatalf("runPlans = %q, %+v", sql, plans)
+	}
+	// An ended run returns at once; a run that never starts waits until ctx is done.
+	s.waitRun(context.Background(), "run-w")
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	s.waitRun(ctx, "never")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.done) != 0 {
+		t.Fatalf("waiters left behind: %v", s.done)
+	}
+}
+
+func TestDiagnoseUsesTheRunsPlans(t *testing.T) {
+	q, _, id := newQueryTestService(t, &planRunner{})
+	if _, err := q.Execute(context.Background(), "run-a", id, "", "SELECT 1", "actual"); err != nil {
+		t.Fatal(err)
+	}
+	a := &AnalysisService{core: q.core, emit: func(DiagnosisEvent) {}, queries: q}
+	stepOf := func(an Analysis) app.StepEvent {
+		for _, s := range an.Steps {
+			if s.Step == app.StepPlan {
+				return s
+			}
+		}
+		t.Fatalf("no plan step in %+v", an.Steps)
+		return app.StepEvent{}
+	}
+	// The run's two (fake) plans are used: they cannot be read, which the step says.
+	if s := stepOf(a.Diagnose(context.Background(), "d1", "SELECT 1", "", "", "actual", "run-a")); s.Status != app.StepFailed ||
+		s.Reason != "None of the 2 plan(s) could be read." {
+		t.Fatalf("plan step = %+v", s)
+	}
+	// Other SQL than the run's: no plan from the run, and an estimated plan needs a connection.
+	if s := stepOf(a.Diagnose(context.Background(), "d2", "SELECT 2", "", "", "actual", "run-a")); s.Status != app.StepSkipped ||
+		!strings.HasPrefix(s.Reason, "The run gave no plan for this SQL.") {
+		t.Fatalf("plan step = %+v", s)
+	}
+	if s := stepOf(a.Diagnose(context.Background(), "d3", "SELECT 1", "", "", "", "")); s.Reason != "No plan was requested." {
+		t.Fatalf("plan step = %+v", s)
+	}
+}

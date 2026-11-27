@@ -9,6 +9,7 @@ import (
 	"github.com/TuanFaied/qryvanta/internal/analyzer"
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/diagnostics"
+	"github.com/TuanFaied/qryvanta/internal/executor"
 	"github.com/TuanFaied/qryvanta/internal/instrumentation"
 )
 
@@ -35,15 +36,20 @@ type DiagnosisEvent struct {
 type AnalysisService struct {
 	core *app.Core
 	emit func(DiagnosisEvent)
+	// queries keeps the plans of recent runs, for a diagnosis that uses a run's actual plan.
+	queries *QueryService
 }
 
 // NewAnalysisService creates the service. Diagnosis events go to every window of the running app.
-func NewAnalysisService(core *app.Core) *AnalysisService {
-	return newAnalysisService(core, func(e DiagnosisEvent) {
+// Execute with debugging reads the actual plans of runs from queries.
+func NewAnalysisService(core *app.Core, queries *QueryService) *AnalysisService {
+	s := newAnalysisService(core, func(e DiagnosisEvent) {
 		if a := application.Get(); a != nil {
 			a.Event.Emit(EventDiagnosis, e)
 		}
 	})
+	s.queries = queries
+	return s
 }
 
 func newAnalysisService(core *app.Core, emit func(DiagnosisEvent)) *AnalysisService {
@@ -102,11 +108,17 @@ func (s *AnalysisService) Analyze(ctx context.Context, sql, connectionID, databa
 }
 
 // Diagnose runs the debugging flow ("Execute with debugging"): parse and policy, static rules,
-// metadata rules, and proposed probes, which wait for the user's approval (RunProbes). Each step's
-// status is emitted as an EventDiagnosis with runID as it happens. Cancelling the call stops the
-// flow; the steps not reached are reported as skipped and the findings so far are returned.
-func (s *AnalysisService) Diagnose(ctx context.Context, runID, sql, connectionID, database string) Analysis {
-	d, err := s.core.Diagnose(ctx, sql, app.DiagnoseOptions{
+// metadata rules, plan rules, and proposed probes, which wait for the user's approval
+// (RunProbes). Each step's status is emitted as an EventDiagnosis with runID as it happens.
+// Cancelling the call stops the flow; the steps not reached are reported as skipped and the
+// findings so far are returned.
+//
+// plan is "estimated" (compile sql for its plan, without running it), "actual" or empty (no
+// plan). "actual" uses the plans of the query run planRunID ("Include actual plan"), waiting for
+// it to end; it never runs the query itself, and falls back to an estimated plan when that run
+// gave no plan for exactly sql.
+func (s *AnalysisService) Diagnose(ctx context.Context, runID, sql, connectionID, database, plan, planRunID string) Analysis {
+	opts := app.DiagnoseOptions{
 		Target: app.AnalysisTarget{ConnectionID: connectionID, Database: database},
 		Emit: func(e app.StepEvent) {
 			n := -1
@@ -115,7 +127,24 @@ func (s *AnalysisService) Diagnose(ctx context.Context, runID, sql, connectionID
 			}
 			s.emit(DiagnosisEvent{RunID: runID, Step: e.Step, Status: e.Status, Reason: e.Reason, Findings: n})
 		},
-	})
+	}
+	switch executor.PlanMode(plan) {
+	case executor.PlanEstimated:
+		opts.Plan = executor.PlanEstimated
+	case executor.PlanActual:
+		opts.Plan = executor.PlanEstimated
+		if s.queries != nil && planRunID != "" {
+			opts.Plans = func(ctx context.Context) []executor.Plan {
+				s.queries.waitRun(ctx, planRunID)
+				ran, plans := s.queries.runPlans(planRunID)
+				if ran != sql {
+					return nil
+				}
+				return plans
+			}
+		}
+	}
+	d, err := s.core.Diagnose(ctx, sql, opts)
 	stopped := errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 	if err != nil && !stopped {
 		return Analysis{Reason: err.Error(), Findings: []diagnostics.Finding{}, Failures: []analyzer.RuleFailure{},

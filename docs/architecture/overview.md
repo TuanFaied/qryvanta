@@ -344,7 +344,8 @@ no evidence fails validation.
   | `QRY-COUNT-001` COUNT(column) | Dismissed when the column is NOT NULL (and not on the optional side of an outer join); stays potential, naming the nullable column, otherwise |
   | `QRY-JOIN-003`–`006` | Run only with metadata |
 
-  The plan (Phase 6) and probes (#70) confirm the rest: fan-out, implicit conversions.
+  Plans (#75, see D6) and probes (#70) confirm the rest: no join predicate, implicit conversions,
+  fan-out.
 
 ### D4. Probes versus modifications
 
@@ -579,6 +580,32 @@ nothing else reads the XML.
   comments ignored) when exactly one statement matches. Otherwise it matches by position when
   both have the same number of statements, which covers auto-parameterized plans (literals
   become `@1`). Anything else stays unlinked.
+
+**Plan evidence (#75).** The debugging flow reads a plan of the query, and plan rules turn it into
+findings with plan evidence (D3). The evidence names the operator's node ID and says whether the
+value was estimated or measured.
+
+- **Which plan:** an estimated plan by default, so nothing runs. With *Include actual plan* on,
+  Execute with debugging uses the actual plans of the run it starts. It waits for that run, and
+  falls back to an estimated plan when the run gave none for exactly that SQL. The CLI takes
+  `--plan estimated|actual|none`.
+- **Linking:** before the rules run, `analyzer.Input.LinkPlans` links plan statements to the
+  script (`plan.Link`) and maps predicates to conditions (`plan.MapPredicates`). A finding points
+  at the condition when an operator's predicates map to exactly one, otherwise at the statement.
+- **Rules:**
+  - `QRY-PLAN-001`: estimate gaps, using the view's threshold. It is reported only where the gap
+    starts, and only from actual plans.
+  - `QRY-PLAN-002`: `CONVERT_IMPLICIT` in a `PlanAffectingConvert` warning, or in a seek or join
+    predicate. An explicit `CAST` or `CONVERT` in the query is not reported.
+  - `QRY-PLAN-003`: spills (actual plans only).
+  - `QRY-PLAN-004`: the "No Join Predicate" warning.
+- **Confirmations:** `analyzer.ConfirmWithPlans` makes these findings *Confirmed* and drops the
+  plan finding that would repeat them:
+  - `QRY-JOIN-001`, by a "No Join Predicate" warning in its statement;
+  - `QRY-JOIN-004`, by an implicit conversion mapped to its condition;
+  - `QRY-JOIN-003` (actual plans only), by a join operator mapped to its condition that returned
+    more rows than its outer input.
+- **An estimated plan never gives a finding that needs measured rows.**
 
 ### D7. Local storage and credentials
 
@@ -902,8 +929,8 @@ UI ──► desktop.Debug(connID, sql, options)
 
 Each step is cancellable through one `context.Context`. Results stream to the UI as events.
 
-**Implementation (#71).** `app.Core.Diagnose(ctx, sql, DiagnoseOptions)` runs the flow in five
-steps. Each step emits `running`, then `done`, `skipped` (with the reason), `failed`, or
+**Implementation (#71, #75).** `app.Core.Diagnose(ctx, sql, DiagnoseOptions)` runs the flow in
+six steps. Each step emits `running`, then `done`, `skipped` (with the reason), `failed`, or
 `waiting`:
 
 1. **`parse`:** the QueryModel, and the read-only allowlist. Statements read-only mode would
@@ -911,20 +938,26 @@ steps. Each step emits `running`, then `done`, `skipped` (with the reason), `fai
 2. **`static`:** the rules that need only the query.
 3. **`metadata`:** the catalog of the tables, and every rule again with it (metadata rules,
    confirmations and dismissals). It is skipped without a connection.
-4. **`probes`:** proposed from the findings' measurements (D4). It is skipped when nothing can be
+4. **`plan`:** the plans `DiagnoseOptions.Plans` supplies (the desktop run's actual plans), or one
+   captured through `Core.Execute` (under the execution policy and limits) for
+   `DiagnoseOptions.Plan`. Then every rule runs again with the plans, and `ConfirmWithPlans`
+   applies (D6). It is skipped without a connection or with `PlanNone`.
+5. **`probes`:** proposed from the findings' measurements (D4). It is skipped when nothing can be
    measured.
-5. **`runProbes`:** the probes the caller's `Approve` returns, run as in `RunProbes`. A nil
+6. **`runProbes`:** the probes the caller's `Approve` returns, run as in `RunProbes`. A nil
    `Approve` leaves probes `waiting`: the desktop app approves later from the panel.
 
 - **Cancelling:** cancelling the context stops the flow. The steps not reached are reported as
   skipped ("Cancelled."), and the findings so far are returned with the context's error.
 - **Analyze** is `Diagnose` without approval.
 - **Desktop:** "Execute with debugging" (Ctrl+Shift+Enter, or the header button) runs the query as
-  Execute does and `AnalysisService.Diagnose` alongside it. The step statuses stream as
+  Execute does and `AnalysisService.Diagnose` alongside it. With *Include actual plan* on, the
+  plan step waits for that run and uses its plans; otherwise it reads an estimated plan. The step statuses stream as
   `qryvanta:diagnosis` events, and the analysis panel shows them above the findings. Stop cancels
   both.
-- **CLI:** `qryvanta-cli diagnose` runs the same flow, approving through `--probes`.
-- **Not yet:** plans (Phase 6) and saving the session (Phase 8).
+- **CLI:** `qryvanta-cli diagnose` runs the same flow, approving through `--probes`. `--plan`
+  chooses the plan (estimated by default with `--conn`).
+- **Not yet:** saving the session (Phase 8).
 
 ## 7. Concurrency
 

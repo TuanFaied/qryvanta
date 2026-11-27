@@ -193,3 +193,42 @@ func TestPlanAgainstFixtures(t *testing.T) {
 		}
 	}
 }
+
+// TestDiagnoseWithPlanAgainstFixtures: the plan confirms sample 10's cartesian product, with an
+// estimated plan (the default with --conn) and with an actual one.
+func TestDiagnoseWithPlanAgainstFixtures(t *testing.T) {
+	opts := fixtureOptions(t)
+	file := filepath.Join("..", "..", "tests", "sample_queries", "10_missing_join_predicate.buggy.sql")
+	for _, c := range []struct {
+		args   []string
+		mode   executor.PlanMode
+		actual bool
+	}{
+		{nil, executor.PlanEstimated, false},
+		{[]string{"--plan", "actual"}, executor.PlanActual, true},
+	} {
+		var out, errOut bytes.Buffer
+		args := append([]string{"--conn", "fixtures", "--file", file, "--format", "json", "--probes", "none", "--fail-on", "critical"}, c.args...)
+		err := cmdDiagnose(context.Background(), args, opts, &out, &errOut)
+		if code := report(err, &bytes.Buffer{}, &errOut); code != 0 {
+			t.Fatalf("%s: exit %d: %s", c.mode, code, errOut.String())
+		}
+		var res diagnoseResult
+		if err := json.Unmarshal(out.Bytes(), &res); err != nil {
+			t.Fatalf("%s: invalid JSON: %v", c.mode, err)
+		}
+		if res.Plan != c.mode {
+			t.Fatalf("plan = %q, want %q (steps %+v)", res.Plan, c.mode, res.Steps)
+		}
+		confirmed := false
+		for _, f := range res.Findings {
+			for _, e := range f.Evidence {
+				confirmed = confirmed || (f.RuleID == "QRY-JOIN-001" && string(f.Classification) == "confirmed" &&
+					e.Plan != nil && e.Plan.Actual == c.actual && e.Plan.Operator == "Nested Loops")
+			}
+		}
+		if !confirmed {
+			t.Fatalf("%s: QRY-JOIN-001 not confirmed by the plan: %+v", c.mode, res.Findings)
+		}
+	}
+}

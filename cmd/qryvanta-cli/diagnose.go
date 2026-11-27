@@ -13,6 +13,7 @@ import (
 
 	"github.com/TuanFaied/qryvanta/internal/app"
 	"github.com/TuanFaied/qryvanta/internal/diagnostics"
+	"github.com/TuanFaied/qryvanta/internal/executor"
 	"github.com/TuanFaied/qryvanta/internal/instrumentation"
 )
 
@@ -30,8 +31,8 @@ var stdinIsTerminal = func() bool {
 }
 
 type diagnoseOptions struct {
-	conn, database, file, query, format, probes, failOn string
-	timeout                                             int
+	conn, database, file, query, format, probes, failOn, plan string
+	timeout                                                   int
 }
 
 func parseDiagnoseFlags(args []string) (diagnoseOptions, error) {
@@ -44,6 +45,7 @@ func parseDiagnoseFlags(args []string) (diagnoseOptions, error) {
 	fs.StringVar(&o.query, "query", "", "SQL text")
 	fs.StringVar(&o.format, "format", "text", "text or json")
 	fs.StringVar(&o.probes, "probes", "", "none, ask or all (default: ask on a terminal, none otherwise)")
+	fs.StringVar(&o.plan, "plan", "", "estimated, actual or none (default: estimated with --conn, none otherwise)")
 	fs.StringVar(&o.failOn, "fail-on", "high", "lowest severity that makes the exit code 1")
 	fs.IntVar(&o.timeout, "timeout", 0, "stop the diagnosis after this many seconds (0: no limit)")
 	if err := fs.Parse(args); err != nil {
@@ -63,6 +65,20 @@ func parseDiagnoseFlags(args []string) (diagnoseOptions, error) {
 	}
 	if o.timeout < 0 {
 		return o, fmt.Errorf("%w: --timeout must not be negative", errUsage)
+	}
+	switch o.plan {
+	case "":
+		o.plan = "none"
+		if o.conn != "" {
+			o.plan = "estimated"
+		}
+	case "none":
+	case "estimated", "actual":
+		if o.conn == "" {
+			return o, fmt.Errorf("%w: --plan %s needs --conn", errUsage, o.plan)
+		}
+	default:
+		return o, fmt.Errorf("%w: --plan must be estimated, actual or none", errUsage)
 	}
 	sqlFromStdin := o.file == "" && o.query == ""
 	switch o.probes {
@@ -89,6 +105,7 @@ type diagnoseResult struct {
 	Connection   string                      `json:"connection,omitempty"`
 	Database     string                      `json:"database,omitempty"`
 	Outcome      string                      `json:"outcome"`
+	Plan         executor.PlanMode           `json:"plan,omitempty"`
 	Steps        []app.StepEvent             `json:"steps"`
 	Statements   int                         `json:"statements"`
 	SyntaxErrors int                         `json:"syntaxErrors"`
@@ -143,7 +160,7 @@ func cmdDiagnose(ctx context.Context, args []string, opts app.Options, stdout, s
 		}
 		res.Connection, res.Database = prof.Name, target.Database
 	} else if o.format == "text" {
-		fmt.Fprintln(stderr, "qryvanta-cli: no --conn: only the static rules run (no metadata, no probes).")
+		fmt.Fprintln(stderr, "qryvanta-cli: no --conn: only the static rules run (no metadata, plans or probes).")
 	}
 
 	text := o.format == "text"
@@ -152,6 +169,9 @@ func cmdDiagnose(ctx context.Context, args []string, opts app.Options, stdout, s
 			fmt.Fprintf(stderr, "  %-10s %-8s %s\n", e.Step, e.Status, e.Reason)
 		}
 	}}
+	if o.plan != "none" {
+		dopts.Plan = executor.PlanMode(o.plan)
+	}
 	switch o.probes {
 	case "all":
 		dopts.Approve = func(_ context.Context, probes []instrumentation.Probe) ([]string, error) {
@@ -175,6 +195,7 @@ func cmdDiagnose(ctx context.Context, args []string, opts app.Options, stdout, s
 	default:
 		return &exitError{code: exitNotDiagnosed, err: err}
 	}
+	res.Plan = d.PlanMode
 	res.Steps, res.Statements, res.SyntaxErrors = d.Steps, d.Statements, d.SyntaxErrors
 	res.Refusals, res.Metadata, res.Findings, res.RuleFailures = d.Refusals, d.Metadata, d.Findings, d.Failures
 	res.Dismissed = []instrumentation.Dismissal{}
@@ -287,6 +308,14 @@ func writeDiagnosis(w io.Writer, r diagnoseResult) {
 			fmt.Fprintf(w, "  %s\n", line)
 		}
 		for _, e := range f.Evidence {
+			if e.Plan != nil {
+				kind := "estimated"
+				if e.Plan.Actual {
+					kind = "actual"
+				}
+				fmt.Fprintf(w, "  - plan evidence (%s, node %d %s): %s\n", kind, e.Plan.NodeID, e.Plan.Operator, e.Summary)
+				continue
+			}
 			fmt.Fprintf(w, "  - %s evidence: %s\n", e.Kind, e.Summary)
 		}
 		if f.Correction != nil {

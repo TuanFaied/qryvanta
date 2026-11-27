@@ -187,7 +187,8 @@
       "title": "Missing join predicate",
       "question": "The customer for each order placed in January 2026.",
       "cause": "A comma join without a join predicate pairs each of the 4 orders with all 8 customers.",
-      "findings": [{ "rule": "QRY-JOIN-001", "classification": "potential" }],
+      "findings": [{ "rule": "QRY-JOIN-001", "classification": "confirmed" }],
+      "planEvidence": [{ "rule": "QRY-JOIN-001", "operator": "Nested Loops" }],
       "buggy": {
         "file": "10_missing_join_predicate.buggy.sql",
         "rows": 32,

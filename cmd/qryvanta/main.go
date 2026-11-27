@@ -34,6 +34,7 @@ func run() error {
 	defer core.Close()
 
 	windows := desktop.NewWindowService()
+	queries := desktop.NewQueryService(core)
 	wailsApp := application.New(application.Options{
 		Name:        "Qryvanta",
 		Description: "Desktop SQL execution debugging platform",
@@ -45,8 +46,8 @@ func run() error {
 			application.NewService(desktop.NewConnectionService(core)),
 			application.NewService(desktop.NewSchemaService(core)),
 			application.NewService(desktop.NewFileService(core)),
-			application.NewService(desktop.NewQueryService(core)),
-			application.NewService(desktop.NewAnalysisService(core)),
+			application.NewService(queries),
+			application.NewService(desktop.NewAnalysisService(core, queries)),
 			application.NewService(windows),
 		},
 		Assets: application.AssetOptions{

@@ -73,9 +73,10 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
   else if (running) blockedReason = "a query is already running";
 
   const start = useCallback(
-    (request: RunRequest) => {
-      executeQuery(request);
+    (request: RunRequest): string => {
+      const runId = executeQuery(request);
       onStarted();
+      return runId;
     },
     [onStarted],
   );
@@ -87,19 +88,20 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
         const access = database ? (useAccessStore.getState().results[accessKey(request.connectionId, database)] ?? null) : null;
         if (access?.level !== AccessLevel.AccessReadOnly) {
           setPending({ request, access });
-          return;
+          return null;
         }
       }
-      start(request);
+      return start(request);
     },
     [config.execution.readOnly, start],
   );
 
-  // plan: "estimated" compiles without running; otherwise "Include actual plan" decides.
-  const execute = useCallback((plan?: PlanMode) => {
-    if (blockedReason || !tab?.connectionId) return;
+  // plan: "estimated" compiles without running; otherwise "Include actual plan" decides. Returns
+  // the run's ID when it started now, null when it did not (blocked, or waiting for a confirmation).
+  const execute = useCallback((plan?: PlanMode): string | null => {
+    if (blockedReason || !tab?.connectionId) return null;
     const target = editorRef.current?.getRunTarget();
-    if (!target || target.sql.trim() === "") return;
+    if (!target || target.sql.trim() === "") return null;
     const request: RunRequest = {
       tabId: tab.id,
       connectionId: tab.connectionId,
@@ -116,9 +118,9 @@ export function useExecution({ config, activeConnectionId, editorRef, onStarted,
     const errors = target.fromSelection ? diagnosticsInLines(all, target.startLine, lastLine) : all;
     if (errors.length > 0) {
       setPendingSyntax({ request, database: tab.database, diagnostics: errors });
-      return;
+      return null;
     }
-    proceed(request, tab.database);
+    return proceed(request, tab.database);
   }, [blockedReason, tab, editorRef, proceed]);
 
   const stop = useCallback(() => {

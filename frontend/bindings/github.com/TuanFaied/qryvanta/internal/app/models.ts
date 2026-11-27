@@ -46,6 +46,11 @@ export enum Step {
     StepMetadata = "metadata",
 
     /**
+     * capture or take the execution plan; plan rules and confirmations
+     */
+    StepPlan = "plan",
+
+    /**
      * propose probes, and ask for approval
      */
     StepProbes = "probes",

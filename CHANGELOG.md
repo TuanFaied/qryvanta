@@ -8,6 +8,26 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Plan-based findings (architecture D6):
+  - **New rules:**
+    - `QRY-PLAN-001`: estimated and actual rows far apart (10× and at least 100 rows), reported
+      where the gap starts. Actual plans only.
+    - `QRY-PLAN-002`: implicit conversions (`CONVERT_IMPLICIT`) in a plan warning or a seek or
+      join predicate.
+    - `QRY-PLAN-003`: spills to tempdb. Actual plans only.
+    - `QRY-PLAN-004`: a join without a join predicate.
+  - **Confirmations:** plans confirm `QRY-JOIN-001` (No Join Predicate) and `QRY-JOIN-004` (an
+    implicit conversion at the join). Actual plans also confirm `QRY-JOIN-003`, when the join
+    returned more rows than its outer input.
+  - **Evidence:** each piece names the operator's node ID and says whether its value was estimated
+    or measured. An estimated plan never gives a finding that needs measured rows.
+  - **Execute with debugging** has a new "Execution plan" step. It reads an estimated plan, or the
+    run's actual plan when *Include actual plan* is on.
+  - **`qryvanta-cli diagnose --plan estimated|actual|none`:** estimated is the default with
+    `--conn`.
+  - **Scenario 10** (missing join predicate) is now *Confirmed* by its plan. Corrected queries
+    never get plan evidence.
+
 - The execution plan view:
   - The Execution plan tab draws each plan as a graph: right to left (or left to right), arrows
     as thick as their rows, cost shares, and warning and estimate-gap badges.

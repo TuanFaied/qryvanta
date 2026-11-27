@@ -3,6 +3,7 @@ package desktop
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 
@@ -83,6 +84,8 @@ type QueryService struct {
 
 	mu   sync.Mutex
 	runs map[string]context.CancelFunc
+	// done has a channel for each run something waits for (waitRun); it closes when the run ends.
+	done map[string]chan struct{}
 
 	plansMu  sync.Mutex
 	plans    map[string][]executor.Plan // plan documents of recent runs, by run ID
@@ -100,8 +103,8 @@ func NewQueryService(core *app.Core) *QueryService {
 }
 
 func newQueryService(core *app.Core, emit func(ExecutionEvent)) *QueryService {
-	return &QueryService{core: core, emit: emit, runs: map[string]context.CancelFunc{}, plans: map[string][]executor.Plan{},
-		planSQL: map[string]string{}}
+	return &QueryService{core: core, emit: emit, runs: map[string]context.CancelFunc{}, done: map[string]chan struct{}{},
+		plans: map[string][]executor.Plan{}, planSQL: map[string]string{}}
 }
 
 // MaxRunIDLength bounds the frontend-chosen run ID.
@@ -136,6 +139,10 @@ func (s *QueryService) Execute(ctx context.Context, runID, connectionID, databas
 	defer func() {
 		s.mu.Lock()
 		delete(s.runs, runID)
+		if ch, ok := s.done[runID]; ok {
+			close(ch)
+			delete(s.done, runID)
+		}
 		s.mu.Unlock()
 	}()
 
@@ -240,6 +247,45 @@ func (s *QueryService) keepPlan(runID string, p executor.Plan) int {
 	}
 	s.plans[runID] = append(s.plans[runID], p)
 	return len(s.plans[runID]) - 1
+}
+
+// waitRun waits until the run with runID has ended, or ctx is done. A run that has not started yet
+// (Execute and the wait are separate calls from the frontend) is waited for; a run that already
+// ended with plans returns at once.
+func (s *QueryService) waitRun(ctx context.Context, runID string) {
+	s.mu.Lock()
+	_, running := s.runs[runID]
+	if !running {
+		s.plansMu.Lock()
+		_, ended := s.planSQL[runID]
+		s.plansMu.Unlock()
+		if ended {
+			s.mu.Unlock()
+			return
+		}
+	}
+	ch, ok := s.done[runID]
+	if !ok {
+		ch = make(chan struct{})
+		s.done[runID] = ch
+	}
+	s.mu.Unlock()
+	select {
+	case <-ch:
+	case <-ctx.Done():
+		s.mu.Lock()
+		if _, running := s.runs[runID]; !running && s.done[runID] == ch {
+			delete(s.done, runID) // the run never started
+		}
+		s.mu.Unlock()
+	}
+}
+
+// runPlans returns the plans a run kept and the SQL it ran.
+func (s *QueryService) runPlans(runID string) (string, []executor.Plan) {
+	s.plansMu.Lock()
+	defer s.plansMu.Unlock()
+	return s.planSQL[runID], slices.Clone(s.plans[runID])
 }
 
 // PlanXML returns a plan document of a recent run: the showplan XML, which SSMS can open as a

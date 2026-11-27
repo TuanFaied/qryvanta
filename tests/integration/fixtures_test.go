@@ -33,13 +33,21 @@ type scenario struct {
 	// not; Undetected says why a scenario has none yet.
 	Findings   []expectedFinding `json:"findings"`
 	Undetected string            `json:"undetected"`
-	Buggy      expectation       `json:"buggy"`
-	Correct    expectation       `json:"correct"`
+	// PlanEvidence are findings of the buggy query that its execution plan gives evidence for
+	// (estimated and actual plans alike); corrected queries never get plan evidence.
+	PlanEvidence []expectedPlanEvidence `json:"planEvidence"`
+	Buggy        expectation            `json:"buggy"`
+	Correct      expectation            `json:"correct"`
 }
 
 type expectedFinding struct {
 	Rule           string `json:"rule"`
 	Classification string `json:"classification"`
+}
+
+type expectedPlanEvidence struct {
+	Rule     string `json:"rule"`
+	Operator string `json:"operator"`
 }
 
 type expectation struct {

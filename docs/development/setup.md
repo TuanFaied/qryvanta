@@ -339,13 +339,14 @@ cancelled, `4` refused by read-only mode.
 ## Diagnosing queries from the CLI
 
 `qryvanta-cli diagnose` runs the diagnostic engine's flow, the same as "Execute with debugging"
-in the desktop app. It does not run the query itself:
+in the desktop app. It does not run the query itself, except with `--plan actual`:
 
 1. Parse the query and check the read-only policy.
 2. Run the static rules.
 3. With `--conn`: run the metadata rules (keys, types, nullability).
-4. Propose probes.
-5. Run the approved probes.
+4. With `--conn`: read an execution plan and run the plan rules.
+5. Propose probes.
+6. Run the approved probes.
 
 ```bash
 qryvanta-cli diagnose --conn fixtures --file tests/sample_queries/01_employees_without_department.buggy.sql
@@ -360,6 +361,7 @@ qryvanta-cli diagnose --file query.sql --format json --fail-on medium
 | `--conn NAME\|ID` | Saved connection for the metadata rules and probes. Without it, only the static rules run. |
 | `--database DB` | Database for the metadata. The default is the connection's database. |
 | `--query SQL` / `--file PATH` / stdin | The query. |
+| `--plan estimated\|actual\|none` | The plan the plan rules read. `estimated` (the default with `--conn`) compiles the query without running it. `actual` runs it under read-only mode and the limits, for measured rows, and discards its results. `none` skips plans (the default without `--conn`). The JSON document's `plan` says which plan was used. |
 | `--format text\|json` | `text` (default) prints each step to stderr as it finishes, and the findings to stdout. `json` prints one document: `steps`, `findings` (the engine's finding schema, with evidence and corrections), `dismissed`, `probes` with their SQL and results, `metadata`, `refusals`. |
 | `--probes none\|ask\|all` | `ask` lists every probe with its SQL and asks `Run N probe(s)? [y/N]`. It is the default when stdin is a terminal, the SQL comes from `--file` or `--query`, and the format is `text`. `all` runs every probe within the budget (Settings: maximum probe queries per run). `none` runs none, and is the default otherwise. |
 | `--fail-on SEVERITY` | The lowest severity that makes the exit code 1: `critical`, `high` (default), `medium`, `low` or `informational`. |

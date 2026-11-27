@@ -1,8 +1,8 @@
 import { create } from "zustand";
-import { backend, type Analysis, type DiagnosisEvent, type Dismissal, type ProbeResult } from "@/services/backend";
+import { backend, type Analysis, type DebugPlan, type DiagnosisEvent, type Dismissal, type ProbeResult } from "@/services/backend";
 
 /** The steps of Execute with debugging, in order. */
-export const debugSteps = ["parse", "static", "metadata", "probes", "runProbes"] as const;
+export const debugSteps = ["parse", "static", "metadata", "plan", "probes", "runProbes"] as const;
 export type DebugStep = (typeof debugSteps)[number];
 
 /** Where a step of Execute with debugging is: "pending" until its first event. */
@@ -51,8 +51,9 @@ interface AnalysisStoreState {
   probes: ProbeState;
   /** The step statuses of Execute with debugging; null for a plain Analyze. */
   steps: StepState[] | null;
-  /** Runs Execute with debugging's flow on target; a newer run cancels the older one. */
-  diagnose: (target: AnalysisTarget) => Promise<void>;
+  /** Runs Execute with debugging's flow on target; a newer run cancels the older one. Without
+   * plan, no plan is read. */
+  diagnose: (target: AnalysisTarget, plan?: DebugPlan) => Promise<void>;
   /** Applies a step status of the current diagnosis (events of other runs are dropped). */
   applyStep: (event: DiagnosisEvent) => void;
   /** Stops the running diagnosis (its finished steps and findings stay). */
@@ -99,7 +100,7 @@ export const useAnalysisStore = create<AnalysisStoreState>((set, get) => ({
     }
   },
 
-  diagnose: async (target) => {
+  diagnose: async (target, plan = { mode: "" }) => {
     inFlight?.abort();
     probesInFlight?.abort();
     const controller = new AbortController();
@@ -108,7 +109,7 @@ export const useAnalysisStore = create<AnalysisStoreState>((set, get) => ({
     diagnosisRun = runId;
     set({ target, running: true, result: null, error: null, probes: noProbes, steps: pendingSteps() });
     try {
-      const result = await backend.diagnose(runId, target.sql, target.connectionId, target.database, controller.signal);
+      const result = await backend.diagnose(runId, target.sql, target.connectionId, target.database, plan, controller.signal);
       if (diagnosisRun !== runId) return;
       set({ result, running: false, steps: mergeSteps(get().steps, result.steps ?? []) });
     } catch (err) {
